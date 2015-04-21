@@ -1,0 +1,19 @@
+{
+  "name": "webinate-users",
+  "version": "0.0.0",
+  "description": "User management helper for the webinate product range",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MKHenson/webinate-users.git"
+  },
+  "author": "Mathew Henson <mat@webinate.net> (http://webinate.net)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MKHenson/webinate-users/issues"
+  },
+  "homepage": "https://github.com/MKHenson/webinate-users"
+}
