@@ -1,8 +1,10 @@
 Webinate Users
 ===============
 
-A small library providing utility methods for logging in and managing users accross the Webinate product range
+A small library providing utility methods for logging in and managing users accross the Webinate product range.
+
+* Version 0.0.2
 
 ## Installation
 
-  npm install webinate-users --save
+  npm install webinate-users
