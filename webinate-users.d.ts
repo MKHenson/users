@@ -1,4 +1,13 @@
-﻿declare module "webinate-users" {
+﻿/// <reference path="./node_modules/webinate-colors/definitions.d.ts" />
+/// <reference path="./lib/definitions/es6-promise.d.ts" />
+/// <reference path="./lib/definitions/node.d.ts" />
+/// <reference path="./lib/definitions/mongodb.d.ts" />
+/// <reference path="./lib/definitions/validator.d.ts" />
+/// <reference path="./lib/definitions/bcrypt.d.ts" />
+/// <reference path="./lib/definitions/recaptcha-async.d.ts" />
+/// <reference path="./lib/definitions/nodemailer.d.ts" />
+
+declare module "webinate-users" {
 
 	import mongodb = require("mongodb");
 	import http = require("http");
