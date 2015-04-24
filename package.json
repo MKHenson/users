@@ -1,8 +1,8 @@
 {
   "name": "webinate-users",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "User management helper for the webinate product range",
-  "main": "main.js",
+  "main": "lib/Main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

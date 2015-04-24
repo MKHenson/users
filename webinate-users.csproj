@@ -20,7 +20,9 @@
   <ItemGroup>
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="package.json" />
+  </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="lib\definitions\bcrypt.d.ts" />
     <TypeScriptCompile Include="lib\definitions\es6-promise.d.ts" />
@@ -29,9 +31,14 @@
     <TypeScriptCompile Include="lib\definitions\nodemailer.d.ts" />
     <TypeScriptCompile Include="lib\definitions\recaptcha-async.d.ts" />
     <TypeScriptCompile Include="lib\definitions\validator.d.ts" />
+    <TypeScriptCompile Include="lib\Main.ts" />
     <TypeScriptCompile Include="lib\Users.ts" />
     <TypeScriptCompile Include="lib\Session.ts" />
+    <TypeScriptCompile Include="webinate-users.d.ts" />
     <TypeScriptCompile Include="_references.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="README.md" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
@@ -57,6 +64,7 @@
           <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
         </WebProjectProperties>
       </FlavorProperties>
+      <UserProperties package_1json__JSONSchema="http://json.schemastore.org/package" />
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

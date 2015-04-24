@@ -96,6 +96,9 @@ export interface IConfig
 	emailServicePassword: string;
 }
 
+/*
+* Class that represents a user and its database entry
+*/
 export class User
 {
 	dbEntry: IUserEntry;
