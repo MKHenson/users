@@ -1,6 +1,5 @@
 ﻿import http = require('http');
 import mongodb = require('mongodb');
-import colors = require('webinate-colors');
 
 /*
 * An interface to describe the data stored in the database from the sessions
@@ -313,7 +312,7 @@ export class SessionManager
 		var next: number = Infinity;
 		
 		this._timeout = 0;
-
+		
 		that._dbCollection.find(function(err: Error, result: mongodb.Cursor)
 		{
 			// If an error occurs, just try again in 2 minutes
@@ -348,11 +347,7 @@ export class SessionManager
 						{
 							that._dbCollection.remove(toRemoveQuery, function (err: Error, result: any)
 							{
-								if (err)
-									colors.log(colors.red(`Could not remove session: '${err}'"`));
-								else if (result.result.n === 0)
-									colors.log(colors.red(`No Sessions were deleted`));
-								else if (next < Infinity)
+								if (next < Infinity)
 									that._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
 							});
 						}

@@ -1,6 +1,6 @@
 {
   "name": "webinate-users",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "User management helper for the webinate product range",
   "main": "lib/Main.js",
   "scripts": {
@@ -19,7 +19,6 @@
   "dependencies" : {
 	"recaptcha-async": "~0.0.4",
 	"nodemailer": "~1.3.4",
-    "webinate-colors" : "~0.1.34",
     "mongodb" : "~2.0.21",
 	"validator" : "~3.39.0",
 	"bcrypt-nodejs" : "~0.0.3"

@@ -3,7 +3,7 @@
 	import mongodb = require("mongodb");
 	import http = require("http");
 	import validator = require("validator");
-	import bcrypt = require("bcrypt");
+	import bcrypt = require("bcrypt-nodejs");
 	import recaptcha = require("recaptcha-async");
 	import nodemailer = require('nodemailer');
 

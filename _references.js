@@ -1,4 +1,3 @@
-/// <reference path="./node_modules/webinate-colors/definitions.d.ts" />
 /// <reference path="./lib/definitions/es6-promise.d.ts" />
 /// <reference path="./lib/definitions/node.d.ts" />
 /// <reference path="./lib/definitions/mongodb.d.ts" />
