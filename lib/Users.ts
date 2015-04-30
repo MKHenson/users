@@ -231,13 +231,12 @@ export class UserManager
 				{
 					if (!captchaResult.is_valid)
 						return reject(new Error("Your captcha code seems to be wrong. Please try another."));
-
+					
 					var user: User = new User({
 						username: username,
 						password: bcrypt.hashSync(pass),
 						email: email
 					});
-
 				
 					// Return the user
 					return resolve(user);
@@ -253,17 +252,19 @@ export class UserManager
 			// New user is created, now lets save it in the database
 			return new Promise<User>(function(resolve, reject)
 			{
-				that._userCollection.insert(user.generateDbEntry(), function (error: Error, result: IUserEntry)
+				that._userCollection.insert(user.generateDbEntry(), function (error: Error, result: mongodb.WriteResult )
 				{
 					if (error) return reject(error);
 
 					// Assing the ID and pass the user on
 					user.dbEntry._id = result._id;
-					return user;
+					
+					// Return the user
+					return resolve(user);
 				});
 			});
 
-		}).then(function (user)
+		}).then(function(user)
 		{
 			// Send a message to the user to say they are registered but need to activate their account
 			var message: string = `Thank you for registering with Webinate!
@@ -284,12 +285,15 @@ export class UserManager
 			};
 
 			// Send mail
-			that._transport.sendMail(mailOptions, function (error: Error, info: any)
+			return new Promise<User>(function(resolve, reject)
 			{
-				if (error) throw new Error(`Could not send email to user: ${error.message}`);
-				return Promise.resolve(user);
+				that._transport.sendMail(mailOptions, function (error: Error, info: any)
+				{
+					if (error) throw new Error(`Could not send email to user: ${error.message}`);
+					return resolve(user);
+				});
 			});
-
+			
 		}).catch(function (error: Error)
 		{
 			return Promise.reject(error);
@@ -426,10 +430,10 @@ export class UserManager
 				user.dbEntry.lastLoggedIn = Date.now();
 
 				// Update the collection
-				that._userCollection.update({ _id: user.dbEntry._id }, { lastLoggedIn: user.dbEntry.lastLoggedIn }, function (error: Error, result: any)
+				that._userCollection.update({ _id: user.dbEntry._id }, { lastLoggedIn: user.dbEntry.lastLoggedIn }, function (error: Error, result: mongodb.WriteResult)
 				{
 					if (error) return reject(error);
-					if (result === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+					if (result.nMatched === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
 					if (!rememberMe)
 						return resolve(user);
@@ -438,10 +442,10 @@ export class UserManager
 						that._sessionManager.createSession(request, response).then(function (session: Sessions.Session)
 						{
 							// Search the collection for the user
-							that._userCollection.update({ _id: user.dbEntry._id }, { sessionId: session.sessionId }, function (error: Error, result: any)
+							that._userCollection.update({ _id: user.dbEntry._id }, { sessionId: session.sessionId }, function (error: Error, result: mongodb.WriteResult )
 							{
 								if (error) return reject(error);
-								if (result === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+								if (result.nMatched === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 								return resolve(user);
 							});
 
@@ -474,10 +478,10 @@ export class UserManager
 				if (!user) return resolve(false);
 
 				// Remove the user from the DB
-				that._userCollection.remove({ _id: user.dbEntry._id }, function (error: Error, result: any)
+				that._userCollection.remove({ _id: user.dbEntry._id }, function (error: Error, result: mongodb.WriteResult)
 				{
 					if (error) return reject(error);
-					else if (result.result.n === 0) return resolve(false);
+					else if (result.nRemoved === 0) return resolve(false);
 					else return resolve(true);
 				});
 			});
