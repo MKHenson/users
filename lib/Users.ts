@@ -197,7 +197,7 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {ErrorController} [Optional]
 	*/
-	private register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
+	register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
 	{
 		var that = this;
 
@@ -295,7 +295,7 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @param {Promise<User>} Gets the user or null if the user is not logged in
 	*/
-	public loggedIn(request: http.ServerRequest, response: http.ServerResponse): Promise<User>
+	loggedIn(request: http.ServerRequest, response: http.ServerResponse): Promise<User>
 	{
 		var that = this;
 
@@ -346,7 +346,7 @@ export class UserManager
 	* @param {user : string} user The username or email of the user to get
 	* @returns {Promise<User>}
 	*/
-	public getUser(user: string): Promise<User>
+	getUser(user: string): Promise<User>
 	{
 		var that = this;
 		
@@ -378,7 +378,7 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
-	public logIn(username: string = "", pass: string = "", rememberMe: boolean = true, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
+	logIn(username: string = "", pass: string = "", rememberMe: boolean = true, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
 	{
 		var that = this;
 
@@ -445,7 +445,7 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
 	*/
-	public remove(username: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+	remove(username: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
 	{
 		var that = this;
 
@@ -473,7 +473,7 @@ export class UserManager
 	* @param {number} startIndex The starting index from where we are fetching users from
 	* @returns {Promise<Array<User>>}
 	*/
-	public getUsers(startIndex: number = 0, limit: number = 0): Promise<Array<User>>
+	getUsers(startIndex: number = 0, limit: number = 0): Promise<Array<User>>
 	{
 		var that = this;
 		return new Promise < Array < User >>( function( resolve, reject )

@@ -108,7 +108,7 @@ export declare class UserManager {
     * @param {http.ServerResponse} response
     * @returns {ErrorController} [Optional]
     */
-    private register(username?, pass?, email?, captcha?, captchaChallenge?, request?, response?);
+    register(username?: string, pass?: string, email?: string, captcha?: string, captchaChallenge?: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
     /**
     * Checks to see if a user is logged in
     * @param {http.ServerRequest} request
