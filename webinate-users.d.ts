@@ -141,7 +141,7 @@
 		* @param {http.ServerResponse} response
 		* @returns {ErrorController} [Optional]
 		*/
-		private register(username: string, pass: string, email: string, captcha: string, captchaChallenge: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+		public register(username: string, pass: string, email: string, captcha: string, captchaChallenge: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
 
 		/**
 		* Checks to see if a user is logged in
@@ -157,7 +157,7 @@
 		* @param {http.ServerResponse} response
 		* @returns {Promise<boolean>}
 		*/
-		logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
+		public logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
 
 		/**
 		* Gets a user by a username or email
