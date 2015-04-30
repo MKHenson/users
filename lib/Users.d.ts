@@ -36,6 +36,11 @@ export interface IConfig {
     */
     captchaPrivateKey: string;
     /**
+    * The public key to use for Google captcha
+    * Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
+    */
+    captchaPublicKey: string;
+    /**
     * The domain or host of the site
     */
     host: string;
@@ -109,6 +114,11 @@ export declare class UserManager {
     * @returns {ErrorController} [Optional]
     */
     register(username?: string, pass?: string, email?: string, captcha?: string, captchaChallenge?: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+    /**
+    * Creates the script tag for the Google captcha API
+    * @param {string}
+    */
+    getCaptchaHTML(): string;
     /**
     * Checks to see if a user is logged in
     * @param {http.ServerRequest} request

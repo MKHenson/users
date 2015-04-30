@@ -61,6 +61,12 @@ export interface IConfig
 	captchaPrivateKey: string;
 
 	/**
+	* The public key to use for Google captcha 
+	* Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
+	*/
+	captchaPublicKey: string;
+
+	/**
 	* The domain or host of the site
 	*/
 	host: string;
@@ -231,9 +237,10 @@ export class UserManager
 						password: bcrypt.hashSync(pass),
 						email: email
 					});
-					
+
+				
 					// Return the user
-					return user;
+					return resolve(user);
 				});
 
 				// Check for valid captcha
@@ -287,6 +294,16 @@ export class UserManager
 		{
 			return Promise.reject(error);
 		});
+	}
+
+	/**
+	* Creates the script tag for the Google captcha API
+	* @param {string}
+	*/
+	getCaptchaHTML(): string
+	{
+		var captchaChecker = new recaptcha.reCaptcha();
+		return captchaChecker.getCaptchaHtml(this._config.captchaPublicKey, "", this._config.secure);
 	}
 
 	/**

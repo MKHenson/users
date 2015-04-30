@@ -33,14 +33,20 @@ declare module "recaptcha-async" {
 		checkAnswer(privateKey: string, remoteIp: string, challenge: string, response: string);
 
 		/**
+		* Gets the challenge HTML (javascript and non-javascript version).
+		* The resulting reCAPTCHA HTML widget is embedded within the HTML form it was called from.
+		* 
+		* @param string pubkey A public key for reCAPTCHA
+		* @param string error The error given by reCaptcha response (optional)
+		* @param boolean use_ssl Should the request be made over ssl? (optional)
+		* @return string - The HTML to be embedded in the user's form.
+		*/
+		getCaptchaHtml(pubkey: string, error?: string, use_ssl?: boolean): string;
+
+		/**
 		* Adds an event listener for data calls on the recaptcha check
 		*/
 		on(event: string, callback: (res: ICaptureResponse) => void);
-
-		/**
-		* Gets the captcha HTML
-		*/
-		getCaptchaHtml(publicKey : string, error: any ): string;
 	}
 }
 
