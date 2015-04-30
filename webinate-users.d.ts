@@ -62,6 +62,12 @@
 		captchaPrivateKey: string;
 
 		/**
+		* The public key to use for Google captcha 
+		* Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
+		*/
+		captchaPublicKey: string;
+
+		/**
 		* The domain or host of the site
 		*/
 		host: string;
