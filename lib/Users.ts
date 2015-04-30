@@ -363,7 +363,7 @@ export class UserManager
 			that._userCollection.findOne({ $or: target }, function (error: Error, userEntry: IUserEntry)
 			{
 				if (error) return reject(error);
-				else if (!user) return resolve(null);
+				else if (!userEntry) return resolve(null);
 				else return resolve(new User(userEntry));
 			});
 		});
