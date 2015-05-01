@@ -12,9 +12,9 @@ import nodemailer = require('nodemailer');
 export interface IUserEntry
 {
 	_id?: mongodb.ObjectID;
-	username: string;
-	email: string;
-	password: string;
+	username?: string;
+	email?: string;
+	password?: string;
 	registerKey?: string;
 	sessionId?: string;
 	lastLoggedIn?: number;
@@ -136,9 +136,10 @@ export class User
 
 	/**
 	* Creates a random string that is assigned to the dbEntry registration key
+	* @param {number} length The length of the password
 	* @returns {string}
 	*/
-	private generateRegistrationKey(length: number = 10): string
+	generateRegistrationKey(length: number = 10): string
 	{
 		var text = "";
 		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -201,7 +202,7 @@ export class UserManager
 	* @param {string} captchaChallenge The captcha challenge
 	* @param {http.ServerRequest} request 
 	* @param {http.ServerResponse} response
-	* @returns {ErrorController} [Optional]
+	* @returns {Promise<User>}
 	*/
 	register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
 	{
@@ -252,12 +253,12 @@ export class UserManager
 			// New user is created, now lets save it in the database
 			return new Promise<User>(function(resolve, reject)
 			{
-				that._userCollection.insert(user.generateDbEntry(), function (error: Error, result: mongodb.WriteResult )
+				that._userCollection.insert(user.generateDbEntry(), function (error: Error, result: mongodb.WriteResult<IUserEntry>)
 				{
 					if (error) return reject(error);
 
 					// Assing the ID and pass the user on
-					user.dbEntry._id = result._id;
+					user.dbEntry._id = result.ops[0]._id;
 					
 					// Return the user
 					return resolve(user);
@@ -270,7 +271,7 @@ export class UserManager
 			var message: string = `Thank you for registering with Webinate!
 				To activate your account please click the link below:
 				
-				${( that._config.secure ? "https://" : "http://" )}${that._config.host}:${that._config.port}/user/activate-account?key=:${user.dbEntry.registerKey}&user=:${user.dbEntry.username}
+				${that.createActivationLink(user)}
 				
 				Thanks
 				The Webinate Team`;
@@ -289,11 +290,77 @@ export class UserManager
 			{
 				that._transport.sendMail(mailOptions, function (error: Error, info: any)
 				{
-					if (error) throw new Error(`Could not send email to user: ${error.message}`);
+					if (error) reject( new Error(`Could not send email to user: ${error.message}`));
 					return resolve(user);
 				});
 			});
 			
+		}).catch(function (error: Error)
+		{
+			return Promise.reject(error);
+		});
+	}
+
+	/** 
+	* Creates the link to send to the user for activation
+	* @param {string} username The username of the user
+	* @returns {Promise<boolean>}
+	*/
+	private createActivationLink( user : User ): string
+	{
+		return `${(this._config.secure ? "https://" : "http://")}${this._config.host }:${this._config.port }/user/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
+	}
+
+	/** 
+	* Attempts to resend the activation link
+	* @param {string} username The username of the user
+	* @returns {Promise<boolean>}
+	*/
+	resendActivation(username: string): Promise<boolean>
+	{
+		var that = this;
+
+		// First check if user exists, make sure the details supplied are ok, then create the new user
+		return that.getUser(username).then(function(user: User)
+		{
+			// If we already a user then error out
+			if (!user) throw new Error("No user exists with the specified details");
+	
+			return new Promise<boolean>(function (resolve, reject)
+			{
+				var newKey = user.generateRegistrationKey();
+				that._userCollection.update({ _id: user.dbEntry._id }, <IUserEntry>{ registerKey: newKey }, function(error: Error, result: mongodb.WriteResult<any>)
+				{
+					if (error) return reject(error);
+
+					// Send a message to the user to say they are registered but need to activate their account
+					var message: string = `Thank you for registering with Webinate!
+					To activate your account please click the link below:
+
+					${that.createActivationLink(user)}
+
+					Thanks
+					The Webinate Team`;
+
+					// Setup e-mail data with unicode symbols
+					var mailOptions: MailComposer = {
+						from: that._config.emailFrom,
+						to: user.dbEntry.email,
+						subject: "Activate your account",
+						text: message,
+						html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+					};
+				
+					that._transport.sendMail(mailOptions, function (error: Error, info: any)
+					{
+						if (error)
+							reject(new Error(`Could not send email to user: ${error.message}`));
+
+						return resolve(true);
+					});
+				});
+			});
+		
 		}).catch(function (error: Error)
 		{
 			return Promise.reject(error);
@@ -430,10 +497,10 @@ export class UserManager
 				user.dbEntry.lastLoggedIn = Date.now();
 
 				// Update the collection
-				that._userCollection.update({ _id: user.dbEntry._id }, { lastLoggedIn: user.dbEntry.lastLoggedIn }, function (error: Error, result: mongodb.WriteResult)
+				that._userCollection.update({ _id: user.dbEntry._id }, { lastLoggedIn: user.dbEntry.lastLoggedIn }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
 				{
 					if (error) return reject(error);
-					if (result.nMatched === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+					if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
 					if (!rememberMe)
 						return resolve(user);
@@ -442,10 +509,10 @@ export class UserManager
 						that._sessionManager.createSession(request, response).then(function (session: Sessions.Session)
 						{
 							// Search the collection for the user
-							that._userCollection.update({ _id: user.dbEntry._id }, { sessionId: session.sessionId }, function (error: Error, result: mongodb.WriteResult )
+							that._userCollection.update({ _id: user.dbEntry._id }, { sessionId: session.sessionId }, function (error: Error, result: mongodb.WriteResult<IUserEntry> )
 							{
 								if (error) return reject(error);
-								if (result.nMatched === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+								if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 								return resolve(user);
 							});
 
@@ -478,10 +545,10 @@ export class UserManager
 				if (!user) return resolve(false);
 
 				// Remove the user from the DB
-				that._userCollection.remove({ _id: user.dbEntry._id }, function (error: Error, result: mongodb.WriteResult)
+				that._userCollection.remove({ _id: user.dbEntry._id }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
 				{
 					if (error) return reject(error);
-					else if (result.nRemoved === 0) return resolve(false);
+					else if (result.result.n === 0) return resolve(false);
 					else return resolve(true);
 				});
 			});

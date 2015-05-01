@@ -1,6 +1,6 @@
 {
   "name": "webinate-users",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "User management helper for the webinate product range",
   "main": "lib/Main.js",
   "scripts": {

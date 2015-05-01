@@ -26,7 +26,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="lib\definitions\bcrypt.d.ts" />
     <TypeScriptCompile Include="lib\definitions\es6-promise.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\mongodb-writeconcern.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\mongodb-write-result.d.ts" />
     <TypeScriptCompile Include="lib\definitions\mongodb.d.ts" />
     <TypeScriptCompile Include="lib\definitions\node.d.ts" />
     <TypeScriptCompile Include="lib\definitions\nodemailer.d.ts" />

@@ -121,6 +121,13 @@
 		* @returns {IUserEntry}
 		*/
 		generateDbEntry(): IUserEntry;
+
+		/**
+		* Creates a random string that is assigned to the dbEntry registration key
+		* @param {number} length The length of the password
+		* @returns {string}
+		*/
+		generateRegistrationKey(length: number): string
 	}
 
 	/**
@@ -145,9 +152,16 @@
 		* @param {string} captchaChallenge The captcha challenge
 		* @param {http.ServerRequest} request 
 		* @param {http.ServerResponse} response
-		* @returns {ErrorController} [Optional]
+		* @returns {Promise<User>}
 		*/
-		public register(username: string, pass: string, email: string, captcha: string, captchaChallenge: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+		register(username: string, pass: string, email: string, captcha: string, captchaChallenge: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+
+		/** 
+		* Attempts to resend the activation link
+		* @param {string} username The username of the user
+		* @returns {Promise<boolean>}
+		*/
+		resendActivation(username: string): Promise<boolean>;
 
 		/**
 		* Checks to see if a user is logged in
@@ -155,7 +169,7 @@
 		* @param {http.ServerResponse} response
 		* @param {Promise<User>} Gets the user or null if the user is not logged in
 		*/
-		public loggedIn(request: http.ServerRequest, response: http.ServerResponse): Promise<User>;
+		loggedIn(request: http.ServerRequest, response: http.ServerResponse): Promise<User>;
 
 		/**
 		* Attempts to log the user out
@@ -163,14 +177,14 @@
 		* @param {http.ServerResponse} response
 		* @returns {Promise<boolean>}
 		*/
-		public logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
+		logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
 
 		/**
 		* Gets a user by a username or email
 		* @param {user : string} user The username or email of the user to get
 		* @returns {Promise<User>}
 		*/
-		public getUser(user: string): Promise<User>;
+		getUser(user: string): Promise<User>;
 
 		/**
 		* Attempts to log a user in
@@ -181,7 +195,7 @@
 		* @param {http.ServerResponse} response
 		* @returns {Promise<User>}
 		*/
-		public logIn(username: string, pass: string, rememberMe: boolean, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+		logIn(username: string, pass: string, rememberMe: boolean, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
 
 		/**
 		* Removes a user by his email or username
@@ -190,7 +204,7 @@
 		* @param {http.ServerResponse} response
 		* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
 		*/
-		public remove(username: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
+		remove(username: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
 
 		/** 
 		* Prints user objects from the database
@@ -198,6 +212,6 @@
 		* @param {number} startIndex The starting index from where we are fetching users from
 		* @returns {Promise<Array<User>>}
 		*/
-		public getUsers(startIndex: number, limit: number): Promise<Array<User>>;
+		getUsers(startIndex: number, limit: number): Promise<Array<User>>;
 	}
 }

@@ -2,9 +2,9 @@ import mongodb = require("mongodb");
 import http = require("http");
 export interface IUserEntry {
     _id?: mongodb.ObjectID;
-    username: string;
-    email: string;
-    password: string;
+    username?: string;
+    email?: string;
+    password?: string;
     registerKey?: string;
     sessionId?: string;
     lastLoggedIn?: number;
@@ -83,9 +83,10 @@ export declare class User {
     generateDbEntry(): IUserEntry;
     /**
     * Creates a random string that is assigned to the dbEntry registration key
+    * @param {number} length The length of the password
     * @returns {string}
     */
-    private generateRegistrationKey(length?);
+    generateRegistrationKey(length?: number): string;
 }
 /**
 * Main class to use for managing users
@@ -111,9 +112,21 @@ export declare class UserManager {
     * @param {string} captchaChallenge The captcha challenge
     * @param {http.ServerRequest} request
     * @param {http.ServerResponse} response
-    * @returns {ErrorController} [Optional]
+    * @returns {Promise<User>}
     */
     register(username?: string, pass?: string, email?: string, captcha?: string, captchaChallenge?: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+    /**
+    * Creates the link to send to the user for activation
+    * @param {string} username The username of the user
+    * @returns {Promise<boolean>}
+    */
+    private createActivationLink(user);
+    /**
+    * Attempts to resend the activation link
+    * @param {string} username The username of the user
+    * @returns {Promise<boolean>}
+    */
+    resendActivation(username: string): Promise<boolean>;
     /**
     * Creates the script tag for the Google captcha API
     * @param {string}
