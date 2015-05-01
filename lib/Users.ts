@@ -374,6 +374,48 @@ export class UserManager
 		});
 	}
 
+	/** 
+	* Checks the users activation code to see if its valid
+	* @param {string} username The username of the user
+	* @returns {Promise<boolean>}
+	*/
+	checkActivation( username : string, code : string ): Promise<boolean>
+	{
+		var that = this;
+		return new Promise<boolean>(function( resolve, reject )
+		{
+			// Get the user
+			that.getUser(username).then(function(user)
+			{
+				// No user - so invalid
+				if (!user)
+					return reject(new Error("No user exists with those credentials"));
+
+				// If key is already blank - then its good to go
+				if (user.dbEntry.registerKey == "")
+					return resolve(true);
+
+				// Check key
+				if (user.dbEntry.registerKey != code)
+					return reject(new Error("Activation key is not valid. Please try send another."));
+				
+				// Update the key to be blank
+				that._userCollection.update(<IUserEntry>{ _id: user.dbEntry._id }, <IUserEntry>{ registerKey: "" }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
+				{
+					if (error)
+						return reject(error);
+
+					// All done :)
+					resolve(true);
+				});
+
+			}).catch(function (error: Error)
+			{
+				reject(error);
+			});
+		});
+	}
+
 	/**
 	* Creates the script tag for the Google captcha API
 	* @param {string}

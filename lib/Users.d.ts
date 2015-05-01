@@ -134,6 +134,12 @@ export declare class UserManager {
     */
     resendActivation(username: string): Promise<boolean>;
     /**
+    * Checks the users activation code to see if its valid
+    * @param {string} username The username of the user
+    * @returns {Promise<boolean>}
+    */
+    checkActivation(username: string, code: string): Promise<boolean>;
+    /**
     * Creates the script tag for the Google captcha API
     * @param {string}
     */

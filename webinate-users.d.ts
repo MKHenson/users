@@ -170,6 +170,13 @@
 		*/
 		resendActivation(username: string): Promise<boolean>;
 
+		/** 
+		* Checks the users activation code to see if its valid
+		* @param {string} username The username of the user
+		* @returns {Promise<boolean>}
+		*/
+		checkActivation(username: string, code: string): Promise<boolean>;
+
 		/**
 		* Checks to see if a user is logged in
 		* @param {http.ServerRequest} request 
