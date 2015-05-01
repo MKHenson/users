@@ -100,6 +100,13 @@ export interface IConfig
 	* The password of the email service
 	*/
 	emailServicePassword: string;
+
+	/**
+	* This is the relative URL that the registration link sends to the user when clicking to activate their account.
+	* An example might be 'api/activate-account'
+	* This will be sent out as http(s)://HOST:PORT/activationURL?[Additional details]
+	*/
+	activationURL: string;
 }
 
 /*
@@ -308,7 +315,7 @@ export class UserManager
 	*/
 	private createActivationLink( user : User ): string
 	{
-		return `${(this._config.secure ? "https://" : "http://")}${this._config.host }:${this._config.port }/user/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
+		return `${(this._config.secure ? "https://" : "http://") }${this._config.host }:${this._config.port }/${this._config.activationURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
 	}
 
 	/** 

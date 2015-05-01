@@ -68,6 +68,12 @@ export interface IConfig {
     * The password of the email service
     */
     emailServicePassword: string;
+    /**
+    * This is the relative URL that the registration link sends to the user when clicking to activate their account.
+    * An example might be 'api/activate-account'
+    * This will be sent out as http(s)://HOST:PORT/activationURL?[Additional details]
+    */
+    activationURL: string;
 }
 export declare class User {
     dbEntry: IUserEntry;
