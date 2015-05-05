@@ -3,7 +3,7 @@ Webinate Users
 
 A small library providing utility methods for logging in and managing users accross the Webinate product range.
 
-* Version 0.0.24
+* Version 0.0.25
 
 ## Installation
 

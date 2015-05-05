@@ -300,7 +300,7 @@ export class UserManager
 					if (!captchaResult.is_valid)
 						return reject(new Error("Your captcha code seems to be wrong. Please try another."));
 
-					return that.createUser(username, email, pass);
+					return resolve( that.createUser(username, email, pass) );
 				});
 
 				// Check for valid captcha
