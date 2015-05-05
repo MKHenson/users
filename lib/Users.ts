@@ -265,7 +265,7 @@ export class UserManager
 					if (error) return reject(error);
 
 					// Assing the ID and pass the user on
-					user.dbEntry._id = result.ops[0]._id;
+					user.dbEntry = result.ops[0];
 					
 					// Return the user
 					return resolve(user);
@@ -315,7 +315,7 @@ export class UserManager
 	*/
 	private createActivationLink( user : User ): string
 	{
-		return `${(this._config.secure ? "https://" : "http://") }${this._config.host }:${this._config.port }/${this._config.activationURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
+		return `${(this._config.secure ? "https://" : "http://") }${this._config.host }:${this._config.port }/${this._config.activationURL}?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
 	}
 
 	/** 
