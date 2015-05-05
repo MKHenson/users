@@ -126,6 +126,7 @@ export declare class UserManager {
     constructor(userCollection: mongodb.Collection, sessionCollection: mongodb.Collection, config: IConfig);
     /**
     * Initializes the API
+    * @returns {Promise<void>}
     */
     initialize(): Promise<void>;
     /**

@@ -229,6 +229,7 @@ export class UserManager
 
 	/** 
 	* Initializes the API
+	* @returns {Promise<void>}
 	*/
 	initialize(): Promise<void>
 	{

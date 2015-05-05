@@ -177,6 +177,12 @@
 		constructor(userCollection: mongodb.Collection, sessionCollection: mongodb.Collection, config: IConfig);
 
 		/** 
+		* Initializes the API
+		* @returns {Promise<void>}
+		*/
+		initialize(): Promise<void>
+
+		/** 
 		* Attempts to register a new user
 		* @param {string} username The username of the user
 		* @param {string} pass The users secret password
@@ -188,6 +194,16 @@
 		* @returns {Promise<User>}
 		*/
 		register(username: string, pass: string, email: string, captcha: string, captchaChallenge: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>;
+
+		/**
+		* Creates a new user
+		* @param {string} user The unique username
+		* @param {string} email The unique email
+		* @param {string} password The password for the user
+		* @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
+		* @returns {Promise<User>}
+		*/
+		createUser(user: string, email: string, password: string, privilege: UserPrivileges): Promise<User>
 
 		/** 
 		* Attempts to resend the activation link
