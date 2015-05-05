@@ -540,6 +540,8 @@ export class UserManager
 				if (existingUser)
 					return reject(new Error(`A user '${user}' already exists`));
 
+				throw new Error();
+
 			}).catch(function (error: Error)
 			{
 				// Create the user
