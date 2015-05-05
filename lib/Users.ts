@@ -336,7 +336,7 @@ export class UserManager
 			return new Promise<boolean>(function (resolve, reject)
 			{
 				var newKey = user.generateRegistrationKey();
-				that._userCollection.update({ _id: user.dbEntry._id }, <IUserEntry>{ registerKey: newKey }, function(error: Error, result: mongodb.WriteResult<any>)
+				that._userCollection.update({ _id: user.dbEntry._id }, { $set: <IUserEntry>{ registerKey: newKey } }, function (error: Error, result: mongodb.WriteResult<any>)
 				{
 					if (error) return reject(error);
 
@@ -400,7 +400,7 @@ export class UserManager
 					return reject(new Error("Activation key is not valid. Please try send another."));
 				
 				// Update the key to be blank
-				that._userCollection.update(<IUserEntry>{ _id: user.dbEntry._id }, <IUserEntry>{ registerKey: "" }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
+				that._userCollection.update(<IUserEntry>{ _id: user.dbEntry._id }, { $set: <IUserEntry>{ registerKey: "" } }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
 				{
 					if (error)
 						return reject(error);
@@ -546,7 +546,7 @@ export class UserManager
 				user.dbEntry.lastLoggedIn = Date.now();
 
 				// Update the collection
-				that._userCollection.update({ _id: user.dbEntry._id }, { lastLoggedIn: user.dbEntry.lastLoggedIn }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
+				that._userCollection.update({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } }, function (error: Error, result: mongodb.WriteResult<IUserEntry>)
 				{
 					if (error) return reject(error);
 					if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
@@ -558,7 +558,7 @@ export class UserManager
 						that._sessionManager.createSession(request, response).then(function (session: Sessions.Session)
 						{
 							// Search the collection for the user
-							that._userCollection.update({ _id: user.dbEntry._id }, { sessionId: session.sessionId }, function (error: Error, result: mongodb.WriteResult<IUserEntry> )
+							that._userCollection.update({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }, function (error: Error, result: mongodb.WriteResult<IUserEntry> )
 							{
 								if (error) return reject(error);
 								if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
