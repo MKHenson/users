@@ -8,6 +8,16 @@
 	import nodemailer = require('nodemailer');
 
 	/*
+	* Describes what kind of privileges the user has
+	*/
+	export enum UserPrivileges
+	{
+		SuperAdmin = 1,
+		Admin = 2,
+		Regular = 3
+	}
+
+	/*
 	* An interface to describe the data stored in the database for users
 	*/
 	export interface IUserEntry
@@ -19,6 +29,17 @@
 		registerKey?: string;
 		sessionId?: string;
 		lastLoggedIn?: number;
+		privileges?: UserPrivileges;
+	}
+
+	/*
+	* Represents the details of the admin user
+	*/
+	export interface IAdminUser
+	{
+		username: string;
+		email: string;
+		password: string;
 	}
 
 	/*
@@ -108,6 +129,11 @@
 		* This will be sent out as http(s)://HOST:PORT/activationURL?[Additional details]
 		*/
 		activationURL: string;
+
+		/**
+		* The administrative user
+		*/
+		adminUser: IAdminUser;
 	}
 
 	/*

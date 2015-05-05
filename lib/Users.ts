@@ -7,6 +7,16 @@ import recaptcha = require("recaptcha-async");
 import nodemailer = require('nodemailer');
 
 /*
+* Describes what kind of privileges the user has
+*/
+export enum UserPrivileges
+{
+	SuperAdmin = 1,
+	Admin = 2,
+	Regular = 3
+}
+
+/*
 * An interface to describe the data stored in the database for users
 */
 export interface IUserEntry
@@ -18,6 +28,17 @@ export interface IUserEntry
 	registerKey?: string;
 	sessionId?: string;
 	lastLoggedIn?: number;
+	privileges?: UserPrivileges;
+}
+
+/*
+* Represents the details of the admin user
+*/
+export interface IAdminUser
+{
+	username: string;
+	email: string;
+	password: string;
 }
 
 /*
@@ -107,6 +128,11 @@ export interface IConfig
 	* This will be sent out as http(s)://HOST:PORT/activationURL?[Additional details]
 	*/
 	activationURL: string;
+
+	/**
+	* The administrative user
+	*/
+	adminUser: IAdminUser;
 }
 
 /*
@@ -137,7 +163,8 @@ export class User
 			password: this.dbEntry.password,
 			registerKey: this.generateRegistrationKey(10),
 			sessionId: this.dbEntry.sessionId,
-			username: this.dbEntry.username
+			username: this.dbEntry.username,
+			privileges: this.dbEntry.privileges
 		};
 	}
 
@@ -201,6 +228,35 @@ export class UserManager
 	}
 
 	/** 
+	* Initializes the API
+	*/
+	initialize(): Promise<void>
+	{
+		var that = this;
+		var config = this._config;
+
+		return new Promise<void>(function( resolve, reject )
+		{
+			that.getUser(config.adminUser.username).then(function(user)
+			{
+				// Admin user already exists
+				
+			}).catch(function(error: Error)
+			{
+				// No admin user exists, so lets try to create one
+				that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, UserPrivileges.SuperAdmin ).then(function (newUser)
+				{
+					resolve();
+
+				}).catch(function (error)
+				{
+					reject(error);
+				});
+			})
+		});
+	}
+
+	/** 
 	* Attempts to register a new user
 	* @param {string} username The username of the user
 	* @param {string} pass The users secret password
@@ -239,37 +295,12 @@ export class UserManager
 				{
 					if (!captchaResult.is_valid)
 						return reject(new Error("Your captcha code seems to be wrong. Please try another."));
-					
-					var user: User = new User({
-						username: username,
-						password: bcrypt.hashSync(pass),
-						email: email
-					});
-				
-					// Return the user
-					return resolve(user);
+
+					return that.createUser(username, email, pass);
 				});
 
 				// Check for valid captcha
 				captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
-			});
-		
-		
-		}).then(function (user)
-		{
-			// New user is created, now lets save it in the database
-			return new Promise<User>(function(resolve, reject)
-			{
-				that._userCollection.insert(user.generateDbEntry(), function (error: Error, result: mongodb.WriteResult<IUserEntry>)
-				{
-					if (error) return reject(error);
-
-					// Assing the ID and pass the user on
-					user.dbEntry = result.ops[0];
-					
-					// Return the user
-					return resolve(user);
-				});
 			});
 
 		}).then(function(user)
@@ -479,13 +510,69 @@ export class UserManager
 	}
 
 	/**
-	* Gets a user by a username or email
-	* @param {user : string} user The username or email of the user to get
+	* Creates a new user
+	* @param {string} user The unique username
+	* @param {string} email The unique email
+	* @param {string} password The password for the user
+	* @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
 	* @returns {Promise<User>}
 	*/
-	getUser(user: string): Promise<User>
+	createUser(user: string, email: string, password: string, privilege: UserPrivileges = UserPrivileges.Regular): Promise<User>
 	{
 		var that = this;
+		
+		return new Promise<User>(function (resolve, reject)
+		{
+			// Basic checks
+			if (!user || validator.trim(user) == "") return reject(new Error("Username cannot be empty"));
+			if (!validator.isAlphanumeric(user)) return reject(new Error("Username must be alphanumeric"));
+			if (!email || validator.trim(email) == "") return reject(new Error("Email cannot be empty"));
+			if (!validator.isEmail(email)) return reject(new Error("Email must be valid"));
+			if (!password || validator.trim(password) == "") return reject(new Error("Password cannot be empty"));
+
+			// Check if the user already exists
+			that.getUser(user, email).then(function (existingUser)
+			{
+				if (existingUser)
+					return reject(new Error(`A user '${user}' already exists`));
+
+			}).catch(function (error: Error)
+			{
+				// Create the user
+				var newUser: User = new User({
+					username: user,
+					password: bcrypt.hashSync(password),
+					email: email,
+					privileges: privilege
+				});
+
+				// Update the database
+				that._userCollection.insert(newUser.generateDbEntry(), function (error: Error, result: mongodb.WriteResult<IUserEntry>)
+				{
+					if (error)
+						return reject(error);
+
+					// Assing the ID and pass the user on
+					newUser.dbEntry = result.ops[0];
+					
+					// Return the user
+					return resolve(newUser);
+				});
+			});
+		});
+	}
+
+	/**
+	* Gets a user by a username or email
+	* @param {string} user The username or email of the user to get
+	* @param {string} email [Optional] Do a check if the email exists as well
+	* @returns {Promise<User>}
+	*/
+	getUser(user: string, email?: string): Promise<User>
+	{
+		var that = this;
+
+		email = email != undefined ? email : user;
 		
 		return new Promise<User>(function( resolve, reject)
 		{
@@ -494,7 +581,7 @@ export class UserManager
 			if (!user || user == "") return reject(new Error("Please enter a valid username"));
 			if (!validator.isAlphanumeric(user) && !validator.isEmail(user)) return reject(new Error("Please only use alpha numeric characters for your username"));
 
-			var target = [{ email: user }, { username: user }];
+			var target = [{ email: email }, { username: user }];
 			
 			// Search the collection for the user
 			that._userCollection.findOne({ $or: target }, function (error: Error, userEntry: IUserEntry)

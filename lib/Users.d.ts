@@ -1,5 +1,10 @@
 import mongodb = require("mongodb");
 import http = require("http");
+export declare enum UserPrivileges {
+    SuperAdmin = 1,
+    Admin = 2,
+    Regular = 3,
+}
 export interface IUserEntry {
     _id?: mongodb.ObjectID;
     username?: string;
@@ -8,6 +13,12 @@ export interface IUserEntry {
     registerKey?: string;
     sessionId?: string;
     lastLoggedIn?: number;
+    privileges?: UserPrivileges;
+}
+export interface IAdminUser {
+    username: string;
+    email: string;
+    password: string;
 }
 export interface IConfig {
     sessionPath?: string;
@@ -74,6 +85,10 @@ export interface IConfig {
     * This will be sent out as http(s)://HOST:PORT/activationURL?[Additional details]
     */
     activationURL: string;
+    /**
+    * The administrative user
+    */
+    adminUser: IAdminUser;
 }
 export declare class User {
     dbEntry: IUserEntry;
@@ -109,6 +124,10 @@ export declare class UserManager {
     * @param {IConfig} The config options of this manager
     */
     constructor(userCollection: mongodb.Collection, sessionCollection: mongodb.Collection, config: IConfig);
+    /**
+    * Initializes the API
+    */
+    initialize(): Promise<void>;
     /**
     * Attempts to register a new user
     * @param {string} username The username of the user
@@ -159,11 +178,21 @@ export declare class UserManager {
     */
     logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
     /**
-    * Gets a user by a username or email
-    * @param {user : string} user The username or email of the user to get
+    * Creates a new user
+    * @param {string} user The unique username
+    * @param {string} email The unique email
+    * @param {string} password The password for the user
+    * @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
     * @returns {Promise<User>}
     */
-    getUser(user: string): Promise<User>;
+    createUser(user: string, email: string, password: string, privilege?: UserPrivileges): Promise<User>;
+    /**
+    * Gets a user by a username or email
+    * @param {string} user The username or email of the user to get
+    * @param {string} email [Optional] Do a check if the email exists as well
+    * @returns {Promise<User>}
+    */
+    getUser(user: string, email?: string): Promise<User>;
     /**
     * Attempts to log a user in
     * @param {string} username The username or email of the user
