@@ -191,7 +191,7 @@ export declare class UserManager {
     * Gets a user by a username or email
     * @param {string} user The username or email of the user to get
     * @param {string} email [Optional] Do a check if the email exists as well
-    * @returns {Promise<User>}
+    * @returns {Promise<User>} Resolves with either a valid user or null if none exists
     */
     getUser(user: string, email?: string): Promise<User>;
     /**

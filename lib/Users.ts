@@ -241,6 +241,8 @@ export class UserManager
 			that.getUser(config.adminUser.username).then(function(user)
 			{
 				// Admin user already exists
+				if (!user) throw new Error();
+
 				resolve();
 				
 			}).catch(function(error: Error)
@@ -363,6 +365,9 @@ export class UserManager
 		// First check if user exists, make sure the details supplied are ok, then create the new user
 		return that.getUser(username).then(function(user: User)
 		{
+			// If we already a user then error out
+			if (!user) throw new Error("No user exists with the specified details");
+	
 			return new Promise<boolean>(function (resolve, reject)
 			{
 				var newKey = user.generateRegistrationKey();
@@ -417,6 +422,10 @@ export class UserManager
 			// Get the user
 			that.getUser(username).then(function(user)
 			{
+				// No user - so invalid
+				if (!user)
+					return reject(new Error("No user exists with those credentials"));
+
 				// If key is already blank - then its good to go
 				if (user.dbEntry.registerKey == "")
 					return resolve(true);
@@ -561,7 +570,7 @@ export class UserManager
 	* Gets a user by a username or email
 	* @param {string} user The username or email of the user to get
 	* @param {string} email [Optional] Do a check if the email exists as well
-	* @returns {Promise<User>}
+	* @returns {Promise<User>} Resolves with either a valid user or null if none exists
 	*/
 	getUser(user: string, email?: string): Promise<User>
 	{
@@ -582,11 +591,12 @@ export class UserManager
 			that._userCollection.findOne({ $or: target }, function (error: Error, userEntry: IUserEntry)
 			{
 				if (error) return reject(error);
-				else if (!userEntry) return reject(new Error("No user can be found with those details"));
+				else if (!userEntry) return resolve(null);
 				else return resolve(new User(userEntry));
 			});
 		});
 	}
+
 	/**
 	* Attempts to log a user in
 	* @param {string} username The username or email of the user
@@ -608,6 +618,9 @@ export class UserManager
 		{
 			return new Promise<User>(function (resolve, reject)
 			{
+				// If no user - then reject
+				if (!user) return reject(new Error("The username or password is incorrect."));
+
 				// Validate password				
 				pass = validator.trim(pass);
 				if (!pass || pass == "") return reject(new Error("Please enter a valid password"));
