@@ -276,6 +276,9 @@ export class UserManager
 		// First check if user exists, make sure the details supplied are ok, then create the new user
 		return that.getUser(username).then(function(user: User)
 		{
+			// If we already a user then error out
+			if (user) throw new Error("That username or email is already in use; please choose another or login.");
+
 			// Validate other data
 			if (!pass || pass == "") throw new Error("Password cannot be null or empty");
 			if (!email || email == "") throw new Error("Email cannot be null or empty");
