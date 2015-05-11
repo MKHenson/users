@@ -1,5 +1,5 @@
 ﻿declare module "mongodb" {
-	
+
 	/**
 	* A wrapper that contains the result status of the mongo shell write methods.
 	*/

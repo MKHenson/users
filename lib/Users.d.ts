@@ -1,107 +1,19 @@
-import mongodb = require("mongodb");
-import http = require("http");
-export declare enum UserPrivileges {
-    SuperAdmin = 1,
-    Admin = 2,
-    Regular = 3,
-}
-export interface IUserEntry {
-    _id?: mongodb.ObjectID;
-    username?: string;
-    email?: string;
-    password?: string;
-    registerKey?: string;
-    sessionId?: string;
-    lastLoggedIn?: number;
-    privileges?: UserPrivileges;
-}
-export interface IAdminUser {
-    username: string;
-    email: string;
-    password: string;
-}
-export interface IConfig {
-    sessionPath?: string;
-    /**
-    * If present, the cookie (and hence the session) will apply to the given domain, including any subdomains.
-    * For example, on a request from foo.example.org, if the domain is set to '.example.org', then this session will persist across any subdomain of example.org.
-    * By default, the domain is not set, and the session will only be visible to other requests that exactly match the domain.
-    */
-    sessionDomain?: string;
-    /**
-    * A persistent connection is one that will last after the user closes the window and visits the site again (true).
-    * A non-persistent that will forget the user once the window is closed (false)
-    */
-    sessionPersistent?: boolean;
-    /**
-    * Set this to true if you are using SSL
-    */
-    secure?: boolean;
-    /**
-    * The default length of user sessions in seconds
-    */
-    sessionLifetime?: number;
-    /**
-    * The private key to use for Google captcha
-    * Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
-    */
-    captchaPrivateKey: string;
-    /**
-    * The public key to use for Google captcha
-    * Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
-    */
-    captchaPublicKey: string;
-    /**
-    * The domain or host of the site
-    */
-    host: string;
-    /**
-    * The port number to operate under
-    */
-    port: number;
-    /**
-    * The email of the admin account
-    */
-    emailAdmin: string;
-    /**
-    * The 'from' email when notifying users
-    */
-    emailFrom: string;
-    /**
-    * Email service we are using to send mail. For example 'Gmail'
-    */
-    emailService: string;
-    /**
-    * The email address / username of the service
-    */
-    emailServiceUser: string;
-    /**
-    * The password of the email service
-    */
-    emailServicePassword: string;
-    /**
-    * This is the relative URL that the registration link sends to the user when clicking to activate their account.
-    * An example might be 'api/activate-account'
-    * This will be sent out as http(s)://HOST:PORT/activationURL?[Additional details]
-    */
-    activationURL: string;
-    /**
-    * The administrative user
-    */
-    adminUser: IAdminUser;
-}
+import * as mongodb from "mongodb";
+import * as http from "http";
+import * as def from "./Definitions";
+import { SessionManager } from "./Session";
 export declare class User {
-    dbEntry: IUserEntry;
+    dbEntry: def.IUserEntry;
     /**
     * Creates a new User instance
     * @param {IUserEntry} dbEntry The data object that represents the user in the DB
     */
-    constructor(dbEntry: IUserEntry);
+    constructor(dbEntry: def.IUserEntry);
     /**
     * Generates the object to be stored in the database
     * @returns {IUserEntry}
     */
-    generateDbEntry(): IUserEntry;
+    generateDbEntry(): def.IUserEntry;
     /**
     * Creates a random string that is assigned to the dbEntry registration key
     * @param {number} length The length of the password
@@ -113,7 +25,7 @@ export declare class User {
 * Main class to use for managing users
 */
 export declare class UserManager {
-    private _sessionManager;
+    sessionManager: SessionManager;
     private _userCollection;
     private _config;
     private _transport;
@@ -123,7 +35,7 @@ export declare class UserManager {
     * @param {mongodb.Collection} sessionCollection The mongo collection that stores the session data
     * @param {IConfig} The config options of this manager
     */
-    constructor(userCollection: mongodb.Collection, sessionCollection: mongodb.Collection, config: IConfig);
+    constructor(userCollection: mongodb.Collection, sessionCollection: mongodb.Collection, config: def.IConfig);
     /**
     * Initializes the API
     * @returns {Promise<void>}
@@ -147,6 +59,12 @@ export declare class UserManager {
     * @returns {Promise<boolean>}
     */
     private createActivationLink(user);
+    /**
+    * Approves a user's activation code so they can login without email validation
+    * @param {string} username The username or email of the user
+    * @returns {Promise<void>}
+    */
+    approveActivation(username: string): Promise<void>;
     /**
     * Attempts to resend the activation link
     * @param {string} username The username of the user
@@ -186,7 +104,13 @@ export declare class UserManager {
     * @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
     * @returns {Promise<User>}
     */
-    createUser(user: string, email: string, password: string, privilege?: UserPrivileges): Promise<User>;
+    createUser(user: string, email: string, password: string, privilege?: def.UserPrivileges): Promise<User>;
+    /**
+    * Deletes a user from the database
+    * @param {string} user The unique username or email of the user to remove
+    * @returns {Promise<void>}
+    */
+    removeUser(user: string): Promise<void>;
     /**
     * Gets a user by a username or email
     * @param {string} user The username or email of the user to get

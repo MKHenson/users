@@ -1,5 +1,5 @@
-import http = require('http');
-import mongodb = require('mongodb');
+import * as http from "http";
+import * as mongodb from "mongodb";
 export interface ISessionEntry {
     _id: mongodb.ObjectID;
     sessionId: string;
@@ -45,12 +45,19 @@ export declare class SessionManager {
     */
     constructor(dbCollection: mongodb.Collection, options?: ISessionOptions);
     /**
+    * Gets an array of all active sessions
+    * @param {number} startIndex
+    * @param {number} limit
+    */
+    getActiveSessions(startIndex?: number, limit?: number): Promise<Array<ISessionEntry>>;
+    /**
     * Clears the users session cookie so that its no longer tracked
+    * @param {string} sessionId The session ID to remove, if null then the currently authenticated session will be used
     * @param {http.ServerRequest} request
     * @param {http.ServerResponse} response
     * @returns {Promise<boolean>}
     */
-    clearSession(request: http.ServerRequest, response: http.ServerResponse): Promise<boolean>;
+    clearSession(sessionId: string, request: http.ServerRequest, response: http.ServerResponse): Promise<boolean>;
     /**
     * Attempts to get a session from the request object of the client
     * @param {http.ServerRequest} request

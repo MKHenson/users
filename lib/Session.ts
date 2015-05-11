@@ -1,5 +1,5 @@
-﻿import http = require('http');
-import mongodb = require('mongodb');
+﻿import * as http from "http";
+import * as mongodb from "mongodb";
 
 /*
 * An interface to describe the data stored in the database from the sessions
@@ -78,24 +78,52 @@ export class SessionManager
 	}
 
 	/**
+	* Gets an array of all active sessions
+	* @param {number} startIndex
+	* @param {number} limit
+	*/
+	getActiveSessions(startIndex?: number, limit?: number): Promise<Array<ISessionEntry>>
+	{
+		var that = this;
+
+		return new Promise<Array<ISessionEntry>>(function (resolve, reject)
+		{
+			that._dbCollection.find({}, {}, startIndex, limit, function (error: Error, result: mongodb.Cursor)
+			{
+				if (error)
+					return reject(error);
+
+				result.toArray(function (error: Error, results: Array<ISessionEntry>)
+				{
+					if (error)
+						return reject(error);
+
+					resolve(results);
+				});
+			})
+		});
+	}
+
+	/**
 	* Clears the users session cookie so that its no longer tracked
+	* @param {string} sessionId The session ID to remove, if null then the currently authenticated session will be used
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>}
 	*/
-	clearSession(request: http.ServerRequest, response: http.ServerResponse): Promise<boolean>
+	clearSession(sessionId: string, request: http.ServerRequest, response: http.ServerResponse): Promise<boolean>
 	{
 		var that = this;
 
 		return new Promise<boolean>((resolve, reject) =>
 		{
 			// Check if the request has a valid session ID
-			var sessionId: string = that.getIDFromRequest(request);
+			var sId: string = sessionId || that.getIDFromRequest(request);
 
-			if (sessionId != "")
+			if (sId != "")
 			{
 				// We have a session ID, lets try to find it in the DB
-				that._dbCollection.findOne({ sessionId: sessionId },(err: Error, sessionDB: ISessionEntry) =>
+				that._dbCollection.findOne({ sessionId: sId },(err: Error, sessionDB: ISessionEntry) =>
 				{
 					// Cant seem to find any session - so create a new one
 					if (err)
@@ -103,7 +131,7 @@ export class SessionManager
 					else
 					{
 						// Create a new session
-						var session = new Session(sessionId, that._options);
+						var session = new Session(sId, that._options);
 						session.expiration = -1;
 
 						// Adds / updates the DB with the new session
@@ -156,7 +184,7 @@ export class SessionManager
 					else
 					{
 						// Create a new session
-						var session = new Session(sessionId, that._options, sessionDB.data);
+						var session = new Session(sessionId, that._options, sessionDB);
 
 						// Adds / updates the DB with the new session
 						that._dbCollection.update({ sessionId: session.sessionId }, session.save(), null, function (err: Error, result: any)
@@ -184,6 +212,40 @@ export class SessionManager
 				resolve(null);
 		});
 	}
+
+	///**
+	//* Attempts to renew a session, giving it a new expiration time
+	//* @param {Session} session
+	//* @param {http.ServerRequest} request
+	//* @param {http.ServerResponse} response
+	//* @returns {Promise<Session>} Returns a session or null if none can be found
+	//*/
+	//renewSession(session: Session, request: http.ServerRequest, response: http.ServerResponse): Promise<Session>
+	//{
+	//	var that = this;
+
+	//	return new Promise<Session>((resolve, reject) =>
+	//	{
+	//		// Adds / updates the DB with the new session
+	//		that._dbCollection.update({ sessionId: session.sessionId }, session.save(), null, function (err: Error, result: any)
+	//		{
+	//			if (err)
+	//				reject(err);
+	//			else
+	//			{
+	//				// make sure a timeout is pending for the expired session reaper
+	//				if (!that._timeout)
+	//					that._timeout = setTimeout(that._cleanupProxy, 60000);
+
+	//				// Set the session cookie header
+	//				response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+
+	//				// Resolve the request
+	//				resolve(session);
+	//			}
+	//		});
+	//	});
+	//}
 
 	/**
 	* Attempts to create a session from the request object of the client
@@ -377,8 +439,7 @@ export class SessionManager
 		else
 			return "";
 	}
-
-
+	
 	/**
 	* Creates a random session ID.
 	* The ID is a pseude-random ASCII string which contains at least the specified number of bits of entropy (64 in this case)
@@ -451,7 +512,7 @@ export class Session
 		if (data)
 			this.open(data);
 	}
-
+	
 	/**
 	* Fills in the data of this session from the data saved in the database
 	* @param {ISessionEntry} data The data fetched from the database

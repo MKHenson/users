@@ -10,12 +10,13 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <TypeScriptToolsVersion>1.4</TypeScriptToolsVersion>
+    <TypeScriptToolsVersion>1.5</TypeScriptToolsVersion>
     <UseIISExpress>true</UseIISExpress>
     <IISExpressSSLPort />
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
   </PropertyGroup>
   <ItemGroup>
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
@@ -24,14 +25,21 @@
     <Content Include="package.json" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="lib\Controller.ts" />
     <TypeScriptCompile Include="lib\definitions\bcrypt.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\body-parser.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\entities.d.ts" />
     <TypeScriptCompile Include="lib\definitions\es6-promise.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\mongodb-write-result.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\express.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\method-override.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\mongo-extras.d.ts" />
     <TypeScriptCompile Include="lib\definitions\mongodb.d.ts" />
+    <TypeScriptCompile Include="lib\definitions\morgan.d.ts" />
     <TypeScriptCompile Include="lib\definitions\node.d.ts" />
     <TypeScriptCompile Include="lib\definitions\nodemailer.d.ts" />
     <TypeScriptCompile Include="lib\definitions\recaptcha-async.d.ts" />
     <TypeScriptCompile Include="lib\definitions\validator.d.ts" />
+    <TypeScriptCompile Include="lib\Definitions.ts" />
     <TypeScriptCompile Include="lib\Main.ts" />
     <TypeScriptCompile Include="lib\Users.ts" />
     <TypeScriptCompile Include="lib\Session.ts" />

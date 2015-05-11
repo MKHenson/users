@@ -6,7 +6,7 @@
 	import bcrypt = require("bcrypt-nodejs");
 	import recaptcha = require("recaptcha-async");
 	import nodemailer = require('nodemailer');
-
+	
 	/*
 	* Describes what kind of privileges the user has
 	*/
