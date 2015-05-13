@@ -1,55 +1,87 @@
 ﻿import * as mongodb from "mongodb";
 
+/*
+* An interface to describe the data stored in the database for users
+*/
+export interface IUserEntry
+{
+    _id?: mongodb.ObjectID;
+    username?: string;
+    email?: string;
+    password?: string;
+    registerKey?: string;
+    sessionId?: string;
+    lastLoggedIn?: number;
+    privileges?: UserPrivileges;
+    passwordTag?: string;
+    data?: any;
+}
+
+/*
+* An interface to describe the data stored in the database from the sessions
+*/
+export interface ISessionEntry
+{
+    _id: mongodb.ObjectID;
+    sessionId: string;
+    data: any;
+    expiration: number;
+}
+
+/*
+* The default response  format
+*/
 export interface IResponse
 {
 	message: string;
 	error: boolean;
 }
 
-export interface IUserResponse extends IResponse
+/*
+* A GET request that returns the status of a user's authentication
+*/
+export interface IAuthenticationResponse extends IResponse
 {
 	authenticated: boolean;
 }
 
+/*
+* A GET request that returns an array of data items
+*/
 export interface IGetArrayResponse<T> extends IResponse
 {
 	data: Array<T>;
 }
 
-export interface IGetSingleResponse<T> extends IResponse
+/*
+* A GET request that returns a single data item
+*/
+export interface IGetResponse<T> extends IResponse
 {
     data: T;
 }
 
-export interface IMessage
-{
-	name: string;
-	email: string;
-	message: string;
-	phone?: string;
-	website?: string;
-}
-
-export interface IUserAPILogin
+/*
+* The token used for logging in
+*/
+export interface ILoginToken
 {
 	username: string;
 	password: string;
 	rememberMe: boolean;
 }
 
-export interface IUserAPIRegister
+/*
+* The token used for registration
+*/
+export interface IRegisterToken
 {
 	username: string;
 	password: string;
 	email: string;
-	captcha?: string;
-	challenge?: string;
+	captcha: string;
+	challenge: string;
 	privileges: number;
-}
-
-export interface IUserAPIActivationLink
-{
-	username: string;
 }
 
 /*
@@ -60,23 +92,6 @@ export enum UserPrivileges
 	SuperAdmin = 1,
 	Admin = 2,
 	Regular = 3
-}
-
-/*
-* An interface to describe the data stored in the database for users
-*/
-export interface IUserEntry
-{
-	_id?: mongodb.ObjectID;
-	username?: string;
-	email?: string;
-	password?: string;
-	registerKey?: string;
-	sessionId?: string;
-	lastLoggedIn?: number;
-    privileges?: UserPrivileges;
-    passwordTag?: string;
-    data?: any;
 }
 
 /*
@@ -105,15 +120,15 @@ export interface IConfig
     restURL: string;
 
     /**
-	* The base URL sent to users emails for when their password is reset
-	*/
-    passwordResetURL: string;
-
-	/**
 	* The URL to redirect to if the user attempts to activate their account
 	*/
     accountRedirectURL: string;
 
+    /**
+	* The base URL sent to users emails for when their password is reset
+	*/
+    passwordResetURL: string;
+    
     /**
 	* The URL to redirect to when
 	*/
@@ -127,7 +142,12 @@ export interface IConfig
 	/**
 	* The name of the collection for storing session details
 	*/
-	sessionCollection: string;
+    sessionCollection: string;
+
+    /**
+	* An array of approved domains that can access this API. Eg ["webinate.net", "google.com"]
+	*/
+    approvedDomains: Array<string>;
 
 	/**
 	* The port number to use for regular HTTP.
@@ -139,7 +159,6 @@ export interface IConfig
 	*/
 	portHTTPS: number;
 	
-
 	/**
 	* The port number to use for the database
 	*/
@@ -241,3 +260,7 @@ export interface IConfig
 	*/
 	adminUser: IAdminUser;
 }
+
+export interface IGetUser extends IGetResponse<IUserEntry> { }
+export interface IGetUsers extends IGetArrayResponse<IUserEntry> { }
+export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }

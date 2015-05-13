@@ -1,16 +1,7 @@
 ﻿import * as http from "http";
 import * as mongodb from "mongodb";
+import {ISessionEntry} from "./Definitions";
 
-/*
-* An interface to describe the data stored in the database from the sessions
-*/
-export interface ISessionEntry
-{
-	_id: mongodb.ObjectID;
-	sessionId: string;
-	data: any;
-	expiration: number;
-}
 
 /*
 * Describes the options for the session
@@ -86,7 +77,7 @@ export class SessionManager
 	{
 		var that = this;
 
-		return new Promise<Array<ISessionEntry>>(function (resolve, reject)
+        return new Promise<Array<ISessionEntry>>(function (resolve, reject)
 		{
 			that._dbCollection.find({}, {}, startIndex, limit, function (error: Error, result: mongodb.Cursor)
 			{

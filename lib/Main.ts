@@ -43,8 +43,7 @@ try
 		// Use middlewares
 		app.use(morgan('dev'));
 		app.use(methodOverride());
-
-
+        
 		// Start node server.js 
 		var httpServer = http.createServer(app);
 		httpServer.listen(config.portHTTP);

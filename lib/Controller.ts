@@ -2,10 +2,11 @@
 import bodyParser = require('body-parser');
 
 // NEW ES6 METHOD
+import * as http from "http";
 import * as entities from "entities";
 import * as def from "./Definitions";
 import * as mongodb from "mongodb";
-import {Session, ISessionEntry} from "./Session";
+import {Session} from "./Session";
 import {UserManager, User} from "./Users";
 
 /**
@@ -33,7 +34,34 @@ class Controller
 		var router = express.Router();
 		router.use(bodyParser.urlencoded({ 'extended': true }));
 		router.use(bodyParser.json());
-		router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+        router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+
+        var matches: Array<RegExp> = [];
+        for (var i = 0, l = config.approvedDomains.length; i < l; i++)
+            matches.push(new RegExp(config.approvedDomains[i]));
+
+        // Approves the valid domains for CORS requests
+        router.all("*", function (req: express.Request, res: express.Response, next: Function)
+        {
+            if ((<http.ServerRequest>req).headers.origin) {
+                for (var m = 0, l = matches.length; m < l; m++)
+                    if ((<http.ServerRequest>req).headers.origin.match(matches[m])) {
+                        res.setHeader('Access-Control-Allow-Origin', (<http.ServerRequest>req).headers.origin);
+                        res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+                        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Mime-Type, X-File-Name, Cache-Control');
+                        res.setHeader("Access-Control-Allow-Credentials", "true");
+                        break;
+                    }
+            }
+
+            if (req.method === 'OPTIONS')
+            {
+                res.status(200);
+                res.end();
+            }
+            else
+                next();
+        });
 		
         router.get("/users/:username", this.getUser.bind(this));
         router.get("/users", this.getUsers.bind(this));
@@ -160,7 +188,7 @@ class Controller
             if (!user)
                 return Promise.reject(new Error("No user found"));
 
-            var token: def.IGetSingleResponse<def.IUserEntry> = {
+            var token: def.IGetUser = {
                 error: false,
                 message: `Found ${user.dbEntry.username}`,
                 data: user.generateCleanedData(Boolean(req.query.verbose))
@@ -201,14 +229,12 @@ class Controller
             for (var i = 0, l = users.length; i < l; i++)
                 sanitizedData.push(users[i].generateCleanedData(Boolean(req.query.verbose)));
 
-            var token: def.IGetArrayResponse<def.IUserEntry> = {
+            var token: def.IGetUsers = {
                 error: false,
                 message: `Found ${users.length} users`,
                 data: sanitizedData
             };
-
             
-
             return res.end(JSON.stringify(token));
 
         }).catch(function (error: Error)
@@ -237,8 +263,8 @@ class Controller
 			return that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit));
 
 		}).then(function (sessions)
-		{
-            var token: def.IGetArrayResponse<ISessionEntry> = {
+        {
+            var token: def.IGetSessions = {
 				error: false,
 				message: `Found ${sessions.length} active sessions`,
 				data: sessions
@@ -432,11 +458,11 @@ class Controller
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
 
-        var token: def.IUserAPILogin = req.body;
+        var token: def.ILoginToken = req.body;
 
 		this._userManager.logIn(token.username, token.password, token.rememberMe, req, res).then(function (user)
 		{
-            return res.end(JSON.stringify(<def.IUserResponse>{
+            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "User is authenticated" : "User is not authenticated"),
 				authenticated: (user ? true : false),
 				error: false
@@ -444,7 +470,7 @@ class Controller
 
 		}).catch(function (error: Error)
 		{
-            return res.end(JSON.stringify(<def.IUserResponse>{
+            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,
 				error: true
@@ -472,7 +498,7 @@ class Controller
 
 		}).catch(function (error: Error)
 		{
-            return res.end(JSON.stringify(<def.IUserResponse>{
+            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,
 				error: true
@@ -491,11 +517,11 @@ class Controller
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
 
-        var token: def.IUserAPIRegister = req.body;
+        var token: def.IRegisterToken = req.body;
         
 		this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, req, res).then(function (user)
 		{
-            return res.end(JSON.stringify(<def.IUserResponse>{
+            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
 				authenticated: (user ? true : false),
 				error: false
@@ -503,7 +529,7 @@ class Controller
 
 		}).catch(function (error: Error)
 		{
-            return res.end(JSON.stringify(<def.IUserResponse>{
+            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,
 				error: true
@@ -559,7 +585,7 @@ class Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
-		var token: def.IUserAPIRegister = req.body;
+		var token: def.IRegisterToken = req.body;
 
 		// Not allowed to create super users
 		if (token.privileges == def.UserPrivileges.SuperAdmin)
@@ -604,7 +630,7 @@ class Controller
 
 		this._userManager.loggedIn(req, res).then(function (user)
 		{
-			return res.end(JSON.stringify(<def.IUserResponse>{
+			return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "User is authenticated" : "User is not authenticated"),
 				authenticated: (user ? true : false),
 				error: false
@@ -612,7 +638,7 @@ class Controller
 
 		}).catch(function (error: Error)
 		{
-			return res.end(JSON.stringify(<def.IUserResponse>{
+			return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,
 				error: true

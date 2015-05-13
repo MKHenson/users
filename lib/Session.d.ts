@@ -1,11 +1,6 @@
 import * as http from "http";
 import * as mongodb from "mongodb";
-export interface ISessionEntry {
-    _id: mongodb.ObjectID;
-    sessionId: string;
-    data: any;
-    expiration: number;
-}
+import { ISessionEntry } from "./Definitions";
 export interface ISessionOptions {
     path?: string;
     /**

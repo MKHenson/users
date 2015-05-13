@@ -1,45 +1,4 @@
 import * as mongodb from "mongodb";
-export interface IResponse {
-    message: string;
-    error: boolean;
-}
-export interface IUserResponse extends IResponse {
-    authenticated: boolean;
-}
-export interface IGetArrayResponse<T> extends IResponse {
-    data: Array<T>;
-}
-export interface IGetSingleResponse<T> extends IResponse {
-    data: T;
-}
-export interface IMessage {
-    name: string;
-    email: string;
-    message: string;
-    phone?: string;
-    website?: string;
-}
-export interface IUserAPILogin {
-    username: string;
-    password: string;
-    rememberMe: boolean;
-}
-export interface IUserAPIRegister {
-    username: string;
-    password: string;
-    email: string;
-    captcha?: string;
-    challenge?: string;
-    privileges: number;
-}
-export interface IUserAPIActivationLink {
-    username: string;
-}
-export declare enum UserPrivileges {
-    SuperAdmin = 1,
-    Admin = 2,
-    Regular = 3,
-}
 export interface IUserEntry {
     _id?: mongodb.ObjectID;
     username?: string;
@@ -51,6 +10,43 @@ export interface IUserEntry {
     privileges?: UserPrivileges;
     passwordTag?: string;
     data?: any;
+}
+export interface ISessionEntry {
+    _id: mongodb.ObjectID;
+    sessionId: string;
+    data: any;
+    expiration: number;
+}
+export interface IResponse {
+    message: string;
+    error: boolean;
+}
+export interface IAuthenticationResponse extends IResponse {
+    authenticated: boolean;
+}
+export interface IGetArrayResponse<T> extends IResponse {
+    data: Array<T>;
+}
+export interface IGetResponse<T> extends IResponse {
+    data: T;
+}
+export interface ILoginToken {
+    username: string;
+    password: string;
+    rememberMe: boolean;
+}
+export interface IRegisterToken {
+    username: string;
+    password: string;
+    email: string;
+    captcha: string;
+    challenge: string;
+    privileges: number;
+}
+export declare enum UserPrivileges {
+    SuperAdmin = 1,
+    Admin = 2,
+    Regular = 3,
 }
 export interface IAdminUser {
     username: string;
@@ -67,13 +63,13 @@ export interface IConfig {
     */
     restURL: string;
     /**
-    * The base URL sent to users emails for when their password is reset
-    */
-    passwordResetURL: string;
-    /**
     * The URL to redirect to if the user attempts to activate their account
     */
     accountRedirectURL: string;
+    /**
+    * The base URL sent to users emails for when their password is reset
+    */
+    passwordResetURL: string;
     /**
     * The URL to redirect to when
     */
@@ -86,6 +82,10 @@ export interface IConfig {
     * The name of the collection for storing session details
     */
     sessionCollection: string;
+    /**
+    * An array of approved domains that can access this API. Eg ["webinate.net", "google.com"]
+    */
+    approvedDomains: Array<string>;
     /**
     * The port number to use for regular HTTP.
     */
@@ -172,4 +172,10 @@ export interface IConfig {
     * The administrative user
     */
     adminUser: IAdminUser;
+}
+export interface IGetUser extends IGetResponse<IUserEntry> {
+}
+export interface IGetUsers extends IGetArrayResponse<IUserEntry> {
+}
+export interface IGetSessions extends IGetArrayResponse<ISessionEntry> {
 }
