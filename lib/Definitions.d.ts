@@ -6,8 +6,11 @@ export interface IResponse {
 export interface IUserResponse extends IResponse {
     authenticated: boolean;
 }
-export interface IGetResponse<T> extends IResponse {
+export interface IGetArrayResponse<T> extends IResponse {
     data: Array<T>;
+}
+export interface IGetSingleResponse<T> extends IResponse {
+    data: T;
 }
 export interface IMessage {
     name: string;
@@ -46,6 +49,8 @@ export interface IUserEntry {
     sessionId?: string;
     lastLoggedIn?: number;
     privileges?: UserPrivileges;
+    passwordTag?: string;
+    data?: any;
 }
 export interface IAdminUser {
     username: string;
@@ -62,9 +67,17 @@ export interface IConfig {
     */
     restURL: string;
     /**
+    * The base URL sent to users emails for when their password is reset
+    */
+    passwordResetURL: string;
+    /**
     * The URL to redirect to if the user attempts to activate their account
     */
-    accountActivatedURL: string;
+    accountRedirectURL: string;
+    /**
+    * The URL to redirect to when
+    */
+    passwordRedirectURL: string;
     /**
     * The name of the collection for storing user details
     */

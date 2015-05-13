@@ -10,6 +10,12 @@ export declare class User {
     */
     constructor(dbEntry: def.IUserEntry);
     /**
+    * Generates an object that can be sent to clients.
+    * @param {boolean} showPrivate If true, sensitive database data will be sent (things like passwords will still be safe - but hashed)
+    * @returns {IUserEntry}
+    */
+    generateCleanedData(showPrivate?: boolean): def.IUserEntry;
+    /**
     * Generates the object to be stored in the database
     * @returns {IUserEntry}
     */
@@ -19,7 +25,7 @@ export declare class User {
     * @param {number} length The length of the password
     * @returns {string}
     */
-    generateRegistrationKey(length?: number): string;
+    generateKey(length?: number): string;
 }
 /**
 * Main class to use for managing users
@@ -56,9 +62,15 @@ export declare class UserManager {
     /**
     * Creates the link to send to the user for activation
     * @param {string} username The username of the user
-    * @returns {Promise<boolean>}
+    * @returns {string}
     */
     private createActivationLink(user);
+    /**
+    * Creates the link to send to the user for password reset
+    * @param {string} username The username of the user
+    * @returns {string}
+    */
+    private createResetLink(user);
     /**
     * Approves a user's activation code so they can login without email validation
     * @param {string} username The username or email of the user
@@ -71,6 +83,20 @@ export declare class UserManager {
     * @returns {Promise<boolean>}
     */
     resendActivation(username: string): Promise<boolean>;
+    /**
+    * Sends the user an email with instructions on how to reset their password
+    * @param {string} username The username of the user
+    * @returns {Promise<boolean>}
+    */
+    requestPasswordReset(username: string): Promise<boolean>;
+    /**
+    * Checks the users activation code to see if its valid
+    * @param {string} username The username of the user
+    * @param {string} code The password code
+    * @param {string} newPassword The new password
+    * @returns {Promise<boolean>}
+    */
+    resetPassword(username: string, code: string, newPassword: string): Promise<boolean>;
     /**
     * Checks the users activation code to see if its valid
     * @param {string} username The username of the user

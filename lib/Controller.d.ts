@@ -31,7 +31,22 @@ declare class Controller {
     */
     private requestHasPermission(level, req, res, existingUser?);
     /**
-    * Resends the activation link to the user
+    * Gets a specific user by username or email. Specify the verbose=true parameter in order to get all user data
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    private getUser(req, res, next);
+    /**
+    * Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
+    * Also specify the verbose=true parameter in order to get all user data
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    private getUsers(req, res, next);
+    /**
+    * Gets a list of active sessions. You can limit the haul by specifying the 'index' and 'limit' query parameters.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
@@ -58,6 +73,20 @@ declare class Controller {
     * @param {Function} next
     */
     private resendActivation(req, res, next);
+    /**
+    * Resends the activation link to the user
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    private requestPasswordReset(req, res, next);
+    /**
+    * resets the password if the user has a valid password token
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    private passwordReset(req, res, next);
     /**
     * Approves a user's activation code so they can login without email validation
     * @param {express.Request} req

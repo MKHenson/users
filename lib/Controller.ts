@@ -6,7 +6,7 @@ import * as entities from "entities";
 import * as def from "./Definitions";
 import * as mongodb from "mongodb";
 import {Session, ISessionEntry} from "./Session";
-import {UserManager} from "./Users";
+import {UserManager, User} from "./Users";
 
 /**
 * Main class to use for managing users
@@ -35,12 +35,16 @@ class Controller
 		router.use(bodyParser.json());
 		router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 		
-		
+        router.get("/users/:username", this.getUser.bind(this));
+        router.get("/users", this.getUsers.bind(this));
+
 		router.get("/authenticated", this.authenticated.bind(this));
 		router.get("/sessions", this.getSessions.bind(this));
 		router.get("/logout", this.logout.bind(this));
 		router.get("/resend-activation/:user", this.resendActivation.bind(this));		
-		router.get("/activate-account", this.activateAccount.bind(this));
+        router.get("/activate-account", this.activateAccount.bind(this));
+        router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
+        router.get("/password-reset", this.passwordReset.bind(this));
 
 		router.delete("/sessions/:id", this.deleteSession.bind(this));
 		router.delete("/remove-user/:user", this.removeUser.bind(this));
@@ -133,10 +137,91 @@ class Controller
 				resolve(true);
 			})
 		})
-	}
+    }
+
+    /**
+	* Gets a specific user by username or email. Specify the verbose=true parameter in order to get all user data
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private getUser(req: express.Request, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+
+        this.requestHasPermission(def.UserPrivileges.Admin, req, res, req.params.username).then(function()
+        {
+            return that._userManager.getUser(req.params.username);
+
+        }).then(function (user: User)
+        {
+            if (!user)
+                return Promise.reject(new Error("No user found"));
+
+            var token: def.IGetSingleResponse<def.IUserEntry> = {
+                error: false,
+                message: `Found ${user.dbEntry.username}`,
+                data: user.generateCleanedData(Boolean(req.query.verbose))
+            };
+
+            return res.end(JSON.stringify(token));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: error.message,
+                error: true
+            }));
+        });
+    }
+
+    /**
+	* Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
+    * Also specify the verbose=true parameter in order to get all user data
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private getUsers(req: express.Request, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+        
+        this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function (user)
+        {
+            return that._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit));
+
+        }).then(function (users)
+        {
+            var sanitizedData = [];
+
+            for (var i = 0, l = users.length; i < l; i++)
+                sanitizedData.push(users[i].generateCleanedData(Boolean(req.query.verbose)));
+
+            var token: def.IGetArrayResponse<def.IUserEntry> = {
+                error: false,
+                message: `Found ${users.length} users`,
+                data: sanitizedData
+            };
+
+            
+
+            return res.end(JSON.stringify(token));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: error.message,
+                error: true
+            }));
+        });
+    }
 
 	/**
-	* Resends the activation link to the user
+	* Gets a list of active sessions. You can limit the haul by specifying the 'index' and 'limit' query parameters.
 	* @param {express.Request} req
 	* @param {express.Response} res
 	* @param {Function} next
@@ -153,7 +238,7 @@ class Controller
 
 		}).then(function (sessions)
 		{
-            var token: def.IGetResponse<ISessionEntry> = {
+            var token: def.IGetArrayResponse<ISessionEntry> = {
 				error: false,
 				message: `Found ${sessions.length} active sessions`,
 				data: sessions
@@ -212,7 +297,7 @@ class Controller
 	*/
 	private activateAccount(req: express.Request, res: express.Response, next: Function): any
 	{
-		var redirectURL = this._config.accountActivatedURL;
+		var redirectURL = this._config.accountRedirectURL;
 
 		// Check the user's activation and forward them onto the admin message page
 		this._userManager.checkActivation(req.query.user, req.query.key).then(function (success: boolean)
@@ -252,7 +337,57 @@ class Controller
 				error: true
 			}));
 		});
-	}
+    }
+
+    /**
+	* Resends the activation link to the user
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private requestPasswordReset(req: express.Request, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+
+        this._userManager.requestPasswordReset(req.params.user).then(function (success)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: "Instructions have been sent to your email on how to change your password",
+                error: false
+            }));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: error.message,
+                error: true
+            }));
+        });
+    }
+
+    /**
+	* resets the password if the user has a valid password token
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private passwordReset(req: express.Request, res: express.Response, next: Function): any
+    {
+        var redirectURL = this._config.passwordRedirectURL;
+
+        // Check the user's activation and forward them onto the admin message page
+        this._userManager.resetPassword(req.query.user, req.query.key, req.query.password).then(function (success: boolean)
+        {
+            res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML("Your password has been reset!") }&status=success` });
+            res.end();
+
+        }).catch(function (error: Error)
+        {
+            res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML(error.message) }&status=error` });
+            res.end();
+        });
+    }
 
 	/**
 	* Approves a user's activation code so they can login without email validation

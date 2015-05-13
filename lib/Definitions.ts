@@ -11,9 +11,14 @@ export interface IUserResponse extends IResponse
 	authenticated: boolean;
 }
 
-export interface IGetResponse<T> extends IResponse
+export interface IGetArrayResponse<T> extends IResponse
 {
 	data: Array<T>;
+}
+
+export interface IGetSingleResponse<T> extends IResponse
+{
+    data: T;
 }
 
 export interface IMessage
@@ -69,7 +74,9 @@ export interface IUserEntry
 	registerKey?: string;
 	sessionId?: string;
 	lastLoggedIn?: number;
-	privileges?: UserPrivileges;
+    privileges?: UserPrivileges;
+    passwordTag?: string;
+    data?: any;
 }
 
 /*
@@ -95,12 +102,22 @@ export interface IConfig
 	/**
 	* The RESTful path of this service. Eg: "/api/users"
 	*/
-	restURL: string;
+    restURL: string;
+
+    /**
+	* The base URL sent to users emails for when their password is reset
+	*/
+    passwordResetURL: string;
 
 	/**
 	* The URL to redirect to if the user attempts to activate their account
 	*/
-	accountActivatedURL: string;
+    accountRedirectURL: string;
+
+    /**
+	* The URL to redirect to when
+	*/
+    passwordRedirectURL: string;
 
 	/**
 	* The name of the collection for storing user details

@@ -23,7 +23,28 @@ export class User
 	constructor(dbEntry: def.IUserEntry)
 	{
 		this.dbEntry = dbEntry;
-	}
+    }
+
+    /**
+	* Generates an object that can be sent to clients. 
+    * @param {boolean} showPrivate If true, sensitive database data will be sent (things like passwords will still be safe - but hashed)
+	* @returns {IUserEntry}
+	*/
+    generateCleanedData(showPrivate: boolean = false): def.IUserEntry
+    {
+        return {
+            _id: (showPrivate ? this.dbEntry._id : new mongodb.ObjectID("000000000000000000000000")),
+            email: this.dbEntry.email,
+            lastLoggedIn: this.dbEntry.lastLoggedIn,
+            password: showPrivate ? this.dbEntry.password : new Array(this.dbEntry.password.length).join("*"),
+            registerKey: showPrivate ? this.dbEntry.registerKey : new Array(this.dbEntry.registerKey.length).join("*"),
+            sessionId: showPrivate ? this.dbEntry.sessionId : new Array(this.dbEntry.sessionId.length).join("*"),
+            username: this.dbEntry.username,
+            privileges: this.dbEntry.privileges,
+            passwordTag: (showPrivate ? this.dbEntry.passwordTag : new Array(this.dbEntry.passwordTag.length).join("*")),
+            data: this.dbEntry.data
+        };
+    }
 
 	/**
 	* Generates the object to be stored in the database
@@ -35,10 +56,12 @@ export class User
 			email: this.dbEntry.email,
 			lastLoggedIn: Date.now(),
 			password: this.dbEntry.password,
-			registerKey: (this.dbEntry.privileges == def.UserPrivileges.SuperAdmin ? "" : this.generateRegistrationKey(10) ),
+			registerKey: (this.dbEntry.privileges == def.UserPrivileges.SuperAdmin ? "" : this.generateKey(10) ),
 			sessionId: this.dbEntry.sessionId,
 			username: this.dbEntry.username,
-			privileges: this.dbEntry.privileges
+            privileges: this.dbEntry.privileges,
+            passwordTag: this.dbEntry.passwordTag,
+            data: this.dbEntry.data
 		};
 	}
 
@@ -47,7 +70,7 @@ export class User
 	* @param {number} length The length of the password
 	* @returns {string}
 	*/
-	generateRegistrationKey(length: number = 10): string
+	generateKey(length: number = 10): string
 	{
 		var text = "";
 		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -222,12 +245,22 @@ export class UserManager
 	/** 
 	* Creates the link to send to the user for activation
 	* @param {string} username The username of the user
-	* @returns {Promise<boolean>}
+	* @returns {string}
 	*/
 	private createActivationLink( user : User ): string
 	{
 		return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP)}${this._config.restURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
 	}
+
+	/** 
+	* Creates the link to send to the user for password reset
+	* @param {string} username The username of the user
+	* @returns {string}
+	*/
+    private createResetLink(user: User): string
+    {
+        return `${this._config.passwordResetURL}?key=${user.dbEntry.passwordTag}&user=${user.dbEntry.username}`;
+    }
 
 	/** 
 	* Approves a user's activation code so they can login without email validation
@@ -257,8 +290,7 @@ export class UserManager
 			});
 		});
 	}
-
-
+    
 	/** 
 	* Attempts to resend the activation link
 	* @param {string} username The username of the user
@@ -279,7 +311,7 @@ export class UserManager
                 if (user.dbEntry.registerKey == "")
                     throw new Error("Account has already been activated");
 
-                var newKey = user.generateRegistrationKey();
+                var newKey = user.generateKey();
                 user.dbEntry.registerKey = newKey;
 
                 // Update the collection with a new key
@@ -320,7 +352,113 @@ export class UserManager
 
             });
         });
-	}
+    }
+
+    /** 
+	* Sends the user an email with instructions on how to reset their password
+	* @param {string} username The username of the user
+	* @returns {Promise<boolean>}
+	*/
+    requestPasswordReset(username: string): Promise<boolean>
+    {
+        var that = this;
+
+        return new Promise<boolean>(function (resolve, reject) 
+        {
+            // Get the user
+            that.getUser(username).then(function (user: User) 
+            {
+                if (!user)
+                    throw new Error("No user exists with the specified details");
+                
+                var newKey = user.generateKey();
+
+                // Password token
+                user.dbEntry.passwordTag = newKey;
+
+                // Update the collection with a new key
+                that._userCollection.update({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } }, function (error: Error, result: mongodb.WriteResult<any>)
+                {
+                    if (error)
+                        return reject(error);
+
+                    // Send a message to the user to say they are registered but need to activate their account
+                    var message: string = `A request has been made to reset your password.
+					To change your password please click the link below:
+
+					${that.createResetLink(user)}
+
+					Thanks
+					The Webinate Team`;
+
+                    // Setup e-mail data with unicode symbols
+                    var mailOptions: MailComposer = {
+                        from: that._config.emailFrom,
+                        to: user.dbEntry.email,
+                        subject: "Reset Password",
+                        text: message,
+                        html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+                    };
+
+                    that._transport.sendMail(mailOptions, function (error: Error, info: any)
+                    {
+                        if (error)
+                            reject(new Error(`Could not send email to user: ${error.message}`));
+
+                        return resolve(true);
+                    });
+                });
+
+            }).catch(function (error: Error)
+            {
+                reject(error);
+            });
+        });
+    }
+
+    /** 
+	* Checks the users activation code to see if its valid
+	* @param {string} username The username of the user
+    * @param {string} code The password code
+    * @param {string} newPassword The new password
+	* @returns {Promise<boolean>}
+	*/
+    resetPassword(username: string, code: string, newPassword: string): Promise<boolean>
+    {
+        var that = this;
+        return new Promise<boolean>(function (resolve, reject)
+        {
+            // Get the user
+            that.getUser(username).then(function (user)
+            {
+                // No user - so invalid
+                if (!user)
+                    return reject(new Error("No user exists with those credentials"));
+
+                // If key is the same
+                if (user.dbEntry.passwordTag != code)
+                    return reject(new Error("Password codes do not match. Please try resetting your password again"));
+
+                // Make sure password is valid
+                if (newPassword === undefined || newPassword == "" || validator.blacklist(newPassword, "@\'\"{}") != newPassword )
+                    return reject(new Error("Please enter a valid password"));
+                			
+                // Update the key to be blank
+                that._userCollection.update(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: bcrypt.hashSync(newPassword) } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
+                {
+                    if (error)
+                        return reject(error);
+
+                    // All done :)
+                    resolve(true);
+                });
+
+            }).catch(function (error: Error)
+            {
+                reject(error);
+            });
+        });
+    }
 
 	/** 
 	* Checks the users activation code to see if its valid
@@ -467,7 +605,9 @@ export class UserManager
 					username: user,
 					password: bcrypt.hashSync(password),
 					email: email,
-					privileges: privilege
+                    privileges: privilege,
+                    passwordTag: "",
+                    data: {}
 				});
 
 				// Update the database
@@ -519,8 +659,7 @@ export class UserManager
 			});
 		});
 	}
-
-
+    
 	/**
 	* Gets a user by a username or email
 	* @param {string} user The username or email of the user to get
