@@ -79,8 +79,8 @@ export interface IRegisterToken
 	username: string;
 	password: string;
 	email: string;
-	captcha: string;
-	challenge: string;
+	captcha?: string;
+	challenge?: string;
 	privileges: number;
 }
 
@@ -262,5 +262,5 @@ export interface IConfig
 }
 
 export interface IGetUser extends IGetResponse<IUserEntry> { }
-export interface IGetUsers extends IGetArrayResponse<IUserEntry> { }
+export interface IGetUsers extends IGetArrayResponse<IUserEntry> { count: number; }
 export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }

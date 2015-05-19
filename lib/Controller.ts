@@ -207,7 +207,8 @@ class Controller
 
     /**
 	* Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
-    * Also specify the verbose=true parameter in order to get all user data
+    * Also specify the verbose=true parameter in order to get all user data. You can also search with the
+    * search query
 	* @param {express.Request} req
 	* @param {express.Response} res
 	* @param {Function} next
@@ -217,12 +218,18 @@ class Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
+        var totalNumUsers: number = 0;
         
         this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function (user)
         {
-            return that._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit));
+            return that._userManager.numUsers(new RegExp(req.query.search));
 
-        }).then(function (users)
+        }).then(function(numUsers)
+        {
+            totalNumUsers = numUsers;
+            return that._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit), new RegExp(req.query.search));
+        })
+        .then(function (users)
         {
             var sanitizedData = [];
 
@@ -232,7 +239,8 @@ class Controller
             var token: def.IGetUsers = {
                 error: false,
                 message: `Found ${users.length} users`,
-                data: sanitizedData
+                data: sanitizedData,
+                count: totalNumUsers
             };
             
             return res.end(JSON.stringify(token));
@@ -498,9 +506,8 @@ class Controller
 
 		}).catch(function (error: Error)
 		{
-            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
+            return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
-				authenticated: false,
 				error: true
 			}));
 		});
@@ -600,10 +607,11 @@ class Controller
 			return that._userManager.createUser(token.username, token.email, token.password, token.privileges);
 
 		}).then(function(user)
-		{
-			var token: def.IResponse = {
+        {
+            var token: def.IGetUser = {
 				error: false,
-				message: `User ${user.dbEntry.username} has been created`
+                message: `User ${user.dbEntry.username} has been created`,
+                data: user.dbEntry
 			};
 
 			return res.end(JSON.stringify(token));
@@ -658,10 +666,10 @@ class Controller
 		{
 			db.createCollection(name, function (err: Error, collection: mongodb.Collection) 
 			{
-				if (err || !collection)
-					return reject(new Error("Error creating collection: " + err.message));
-				else
-					return resolve(collection);
+                if (err || !collection)
+                    return reject(new Error("Error creating collection: " + err.message));
+                else
+                    return resolve(collection);
 			});
 		});
 	}

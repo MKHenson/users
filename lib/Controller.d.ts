@@ -39,7 +39,8 @@ declare class Controller {
     private getUser(req, res, next);
     /**
     * Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
-    * Also specify the verbose=true parameter in order to get all user data
+    * Also specify the verbose=true parameter in order to get all user data. You can also search with the
+    * search query
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next

@@ -170,8 +170,8 @@ export class SessionManager
 					// Cant seem to find any session - so create a new one
 					if (err)
 						reject(err);
-					else if (!sessionDB)
-						reject(null);
+                    else if (!sessionDB)
+                        resolve(null);
 					else
 					{
 						// Create a new session

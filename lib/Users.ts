@@ -32,6 +32,12 @@ export class User
 	*/
     generateCleanedData(showPrivate: boolean = false): def.IUserEntry
     {
+        if (!this.dbEntry.passwordTag)
+            this.dbEntry.passwordTag = "";
+
+        if (!this.dbEntry.sessionId)
+            this.dbEntry.sessionId = "";
+
         return {
             _id: (showPrivate ? this.dbEntry._id : new mongodb.ObjectID("000000000000000000000000")),
             email: this.dbEntry.email,
@@ -134,26 +140,35 @@ export class UserManager
 		var config = this._config;
 
 		return new Promise<void>(function( resolve, reject )
-		{
-			that.getUser(config.adminUser.username).then(function(user)
-			{
-				// Admin user already exists
-				if (!user) return Promise.reject(new Error());
+        {
+            // Make sure the user collection has an index to search the username field
+            that._userCollection.ensureIndex(<def.IUserEntry>{ username: "text", email: "text" }, function (error: Error, indexName: string)
+            {
+                if (error)
+                    return reject(error);
 
-				resolve();
-				
-			}).catch(function(error: Error)
-			{
-				// No admin user exists, so lets try to create one
-				that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin ).then(function (newUser)
-				{
-					resolve();
+                that.getUser(config.adminUser.username).then(function (user)
+                {
+                    // Admin user already exists
+                    if (!user)
+                        return Promise.reject(new Error());
 
-				}).catch(function (error)
-				{
-					reject(error);
-				});
-			})
+                    resolve();
+
+                }).catch(function (error: Error)
+                {
+                    // No admin user exists, so lets try to create one
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin).then(function (newUser)
+                    {
+                        resolve();
+
+                    }).catch(function (error)
+                    {
+                        reject(error);
+                    });
+                })
+            });
+			
 		});
 	}
 
@@ -208,32 +223,7 @@ export class UserManager
 
             }).then(function (user)
             {
-                // Send a message to the user to say they are registered but need to activate their account
-                var message: string = `Thank you for registering with Webinate!
-				To activate your account please click the link below:
-
-				${that.createActivationLink(user) }
-
-				Thanks
-				The Webinate Team`;
-
-                // Setup e-mail data with unicode symbols
-                var mailOptions: MailComposer = {
-                    from: that._config.emailFrom,
-                    to: user.dbEntry.email,
-                    subject: "Activate your account",
-                    text: message,
-                    html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                };
-
-                // Send mail
-                that._transport.sendMail(mailOptions, function (error: Error, info: any)
-                {
-                    if (error)
-                        reject(new Error(`Could not send email to user: ${error.message}`));
-
-                    return resolve(user);
-                });
+                resolve(user);
 
             }).catch(function (error: Error)
             {
@@ -617,10 +607,34 @@ export class UserManager
 						return reject(error);
 
 					// Assing the ID and pass the user on
-					newUser.dbEntry = result.ops[0];
-					
-					// Return the user
-					return resolve(newUser);
+                    newUser.dbEntry = result.ops[0];
+
+                    // Send a message to the user to say they are registered but need to activate their account
+                    var message: string = `Thank you for registering with Webinate!
+                    To activate your account please click the link below:
+
+                    ${that.createActivationLink(newUser)}
+
+                    Thanks
+                    The Webinate Team`;
+
+                    // Setup e-mail data with unicode symbols
+                    var mailOptions: MailComposer = {
+                        from: that._config.emailFrom,
+                        to: newUser.dbEntry.email,
+                        subject: "Activate your account",
+                        text: message,
+                        html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+                    };
+
+                    // Send mail
+                    that._transport.sendMail(mailOptions, function (error: Error, info: any)
+                    {
+                        if (error)
+                            return reject(new Error(`Could not send email to user: ${error.message}`));
+
+                        return resolve(newUser);
+                    });
 				});
 			});
 		});
@@ -640,7 +654,10 @@ export class UserManager
 			that.getUser(user).then(function (existingUser)
 			{
 				if (!existingUser)
-					return resolve();
+                    return resolve();
+
+                if (existingUser.dbEntry.privileges == def.UserPrivileges.SuperAdmin)
+                    return reject(new Error("You cannot remove a super user"));
 
 				that._userCollection.remove(<def.IUserEntry>{ _id: existingUser.dbEntry._id }, function(error: Error, result: mongodb.WriteResult<def.IUserEntry>)
 				{
@@ -789,20 +806,46 @@ export class UserManager
 		});
     }
 
+    /** 
+	* Gets the total number of users 
+    * @param {RegExp} searchPhrases Search phrases 
+	* @returns {Promise<number>}
+	*/
+    numUsers(searchPhrases?: RegExp): Promise<number>
+    {
+        var that = this;
+        return new Promise<number>(function (resolve, reject)
+        {
+            var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+            
+            that._userCollection.count(findToken, function (error: Error, result: number)
+            {
+                if (error)
+                    return reject(error);
+
+                resolve(result);
+            });
+        });
+    }
+
 	/** 
 	* Prints user objects from the database
 	* @param {number} limit The number of users to fetch
 	* @param {number} startIndex The starting index from where we are fetching users from
+    * @param {RegExp} searchPhrases Search phrases 
 	* @returns {Promise<Array<User>>}
 	*/
-	getUsers(startIndex: number = 0, limit: number = 0): Promise<Array<User>>
+    getUsers(startIndex: number = 0, limit: number = 0, searchPhrases?: RegExp): Promise<Array<User>>
 	{
 		var that = this;
-		return new Promise < Array < User >>( function( resolve, reject )
-		{
-			that._userCollection.find({}, {}, startIndex, limit, function (error: Error, result: mongodb.Cursor)
+        return new Promise<Array<User>>(function (resolve, reject)
+        {
+            var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+
+            that._userCollection.find(findToken, {}, startIndex, limit, function (error: Error, result: mongodb.Cursor)
 			{
-				if (error) return reject(error);
+                if (error)
+                    return reject(error);
 
 				result.toArray(function (err: any, results: Array<def.IUserEntry>)
 				{

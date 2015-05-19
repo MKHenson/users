@@ -163,10 +163,17 @@ export declare class UserManager {
     */
     remove(username?: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>;
     /**
+    * Gets the total number of users
+    * @param {RegExp} searchPhrases Search phrases
+    * @returns {Promise<number>}
+    */
+    numUsers(searchPhrases?: RegExp): Promise<number>;
+    /**
     * Prints user objects from the database
     * @param {number} limit The number of users to fetch
     * @param {number} startIndex The starting index from where we are fetching users from
+    * @param {RegExp} searchPhrases Search phrases
     * @returns {Promise<Array<User>>}
     */
-    getUsers(startIndex?: number, limit?: number): Promise<Array<User>>;
+    getUsers(startIndex?: number, limit?: number, searchPhrases?: RegExp): Promise<Array<User>>;
 }
