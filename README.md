@@ -16,7 +16,7 @@ server with a RESTful API that allows you to interact with the underlying functi
 Below is a list of function calls you can make once the server is running
 
 
-### Get User
+### Get Specific User
 Gets a specific user's details. *You must be logged in to make this call*
 
     `/users/:username`
@@ -24,11 +24,13 @@ Gets a specific user's details. *You must be logged in to make this call*
 Parameters
 * **verbose** - If true, sensitive data will not be obscured. This will only work for admin users.
 
-Example calls
+Examples
 ```
 http://localhost:8000/api/users/test // Gets the user with the username test
 http://localhost:8000/api/users/test?verbose=true // Gets the user with the username test and does not obscure the sensitive data
-
+```
+Return data
+```
 {
 	error: false,
 	message: "Found user test",
@@ -67,7 +69,9 @@ http://localhost:8000/api/users?search=test // Gets all users with the username 
 http://localhost:8000/api/users?search=test&limit=4 // Gets up to 4 users with the username or email containing 'test'
 http://localhost:8000/api/users?search=test&limit=4&index=1 // Gets up to 4 users from index 1 whose username or email contains 'test'
 http://localhost:8000/api/users?verbose=true // If verbose, sensitive data will not be obscured
-
+```
+Return data
+```
 {
 	error: false,
 	message: "Found 4 users",
