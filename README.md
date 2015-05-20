@@ -7,7 +7,7 @@ server with a RESTful API that allows you to interact with the underlying functi
 * Version 0.0.29
 
 ## Startup
-To start the server, simply run the Main.js using node or IO. You must pass the location of the config file as the 
+To start the server, simply run the Main.js file using node or IO. You must pass the location of the config file as the 
 first argument.
 
     node Main.js "users.config"
@@ -165,7 +165,11 @@ Below is a breakdown of the config file. The file must be formatted as a valid J
 	/**
 	* The administrative user
 	*/
-	adminUser: IAdminUser;
+	adminUser: {
+		username: string;
+		email: string;
+		password: string;
+	}
 }
 ```
 
@@ -174,12 +178,63 @@ Below is a breakdown of the config file. The file must be formatted as a valid J
 Below is a list of function calls you can make once the server is running
 
 
+
+### Check if authenticated
+
+    `/authenticated`
+
+**Request Type: *GET* **
+
+**Parameters**
+* **None**
+
+**Examples**
+```
+http://localhost:8000/api/authenticated
+```
+**Return data**
+```
+{
+	message: "User is authenticated",
+	authenticated: true,
+	error: false
+}
+```
+
+
+
+### Login
+
+    `/login`
+
+**Request Type: *POST* **
+
+**Parameters**
+* **username** - The username of the user
+* **password** - The password of the user
+
+**Examples**
+```
+http://localhost:8000/api/login
+```
+**Return data**
+```
+{
+	message: "User is authenticated",
+	authenticated: true,
+	error: false
+}
+```
+
+
+
+
 ### Get Specific User
-Gets a specific user's details. *You must be logged in to make this call*
+*You must be logged in to make this call*
 
     `/users/:username`
 
-**Request Type: GET**
+**Request Type: *GET* **
 
 **Parameters**
 * **verbose** - If true, sensitive data will not be obscured. This will only work for admin users.
@@ -195,14 +250,14 @@ http://localhost:8000/api/users/test?verbose=true // Gets the user with the user
 	error: false,
 	message: "Found user test",
 	data: {
-		_id: "000000000000000000000000"
-		email: "test@test.net"
-		lastLoggedIn: 1432114922204
-		password: "***********************************************************"
-		registerKey: ""
-		sessionId: "**********"
-		username: "test"
-		privileges: 1
+		_id: "000000000000000000000000",
+		email: "test@test.net",
+		lastLoggedIn: 1432114922204,
+		password: "***********************************************************",
+		registerKey: "",
+		sessionId: "**********",
+		username: "test",
+		privileges: 1,
 		passwordTag: ""
 	}
 }
@@ -211,11 +266,11 @@ http://localhost:8000/api/users/test?verbose=true // Gets the user with the user
 
 
 ### Get Users
-Gets a list of user's details. *You must be logged in to make this call*
+*You must be logged in to make this call*
 
     `/users`
 
-**Request Type: GET**
+**Request Type: *GET* **
 
 **Parameters**
 * **index** - Specify the index to start the fetch from
@@ -239,14 +294,14 @@ http://localhost:8000/api/users?verbose=true // If verbose, sensitive data will 
 	message: "Found 4 users",
 	data: [ 
 		0: {
-			_id: "000000000000000000000000"
-			email: "test@test.net"
-			lastLoggedIn: 1432114922204
-			password: "***********************************************************"
-			registerKey: ""
-			sessionId: "**********"
-			username: "test"
-			privileges: 1
+			_id: "000000000000000000000000",
+			email: "test@test.net",
+			lastLoggedIn: 1432114922204,
+			password: "***********************************************************",
+			registerKey: "",
+			sessionId: "**********",
+			username: "test",
+			privileges: 1,
 			passwordTag: ""
 		}
 	]
