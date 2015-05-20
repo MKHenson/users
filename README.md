@@ -1,14 +1,14 @@
 Webinate Users
 ===============
 
-A small library providing utility methods for logging in and managing users accross. The application runs as a standalone 
+A small library providing utility methods for logging in and managing users. The application runs as a standalone 
 server with a RESTful API that allows you to interact with the underlying functions. 
 
 * Version 0.0.29
 
 ## Installation
 
-  npm install webinate-users
+  `npm install webinate-users`
 
 
 
@@ -17,11 +17,12 @@ Below is a list of function calls you can make once the server is running
 
 
 ### Get User
-Gets a specific user's details
-    /users/:username
+Gets a specific user's details. *You must be logged in to make this call*
+
+    `/users/:username`
 
 Parameters
-* **verbose** - If true, sensitive data will not be obscured
+* **verbose** - If true, sensitive data will not be obscured. This will only work for admin users.
 
 Example calls
 ```
@@ -30,7 +31,7 @@ http://localhost:8000/api/users/test?verbose=true // Gets the user with the user
 
 {
 	error: false,
-	message: "Found 4 users",
+	message: "Found user test",
 	data: {
 		_id: "000000000000000000000000"
 		email: "test@test.net"
@@ -48,8 +49,9 @@ http://localhost:8000/api/users/test?verbose=true // Gets the user with the user
 
 
 ### Get Users
-Gets a list of user's details
-    /users
+Gets a list of user's details. *You must be logged in to make this call*
+
+    `/users`
 
 Parameters
 * **index** - Specify the index to start the fetch from
