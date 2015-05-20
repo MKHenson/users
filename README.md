@@ -6,10 +6,168 @@ server with a RESTful API that allows you to interact with the underlying functi
 
 * Version 0.0.29
 
-## Installation
+## Startup
+To start the server, simply run the Main.js using node or IO. You must pass the location of the config file as the 
+first argument.
 
-  `npm install webinate-users`
+    node Main.js "users.config"
 
+Below is a breakdown of the config file. The file must be formatted as a valid JSON.
+
+```
+{
+	/**
+	* The domain or host of the site
+	*/
+	host: string;
+
+	/**
+	* The RESTful path of this service. Eg: "/api/users"
+	*/
+    restURL: string;
+
+    /**
+	* The URL to redirect to if the user attempts to activate their account
+	*/
+    accountRedirectURL: string;
+
+    /**
+	* The base URL sent to users emails for when their password is reset
+	*/
+    passwordResetURL: string;
+    
+    /**
+	* The URL to redirect to when
+	*/
+    passwordRedirectURL: string;
+
+	/**
+	* The name of the collection for storing user details
+	*/
+	userCollection: string;
+
+	/**
+	* The name of the collection for storing session details
+	*/
+    sessionCollection: string;
+
+    /**
+	* An array of approved domains that can access this API. Eg ["webinate.net", "google.com"]
+	*/
+    approvedDomains: Array<string>;
+
+	/**
+	* The port number to use for regular HTTP.
+	*/
+	portHTTP: number;
+
+	/**
+	* The port number to use for SSL
+	*/
+	portHTTPS: number;
+	
+	/**
+	* The port number to use for the database
+	*/
+	portDatabase: number;
+
+	/**
+	* If true, the API will try to secure its communications
+	*/
+	ssl: boolean;
+
+	/**
+	* The SSL key
+	*/
+	sslKey: string;
+
+	/**
+	* The SSL certificate authority
+	*/
+	sslCA: string;
+
+	/**
+	* The SSL certificate file path
+	*/
+	sslCert: string;
+
+	/**
+	* The SSL pass phrase (if in use)
+	*/
+	sslPassPhrase: string;
+
+	/**
+	* The name of the database to use
+	*/
+	databaseName: string;
+
+	/*
+	* If set, the session will be restricted to URLs underneath the given path.
+	* By default the path is "/", which means that the same sessions will be shared across the entire domain.
+	*/
+	sessionPath?: string;
+
+	/**  
+	* If present, the cookie (and hence the session) will apply to the given domain, including any subdomains.
+	* For example, on a request from foo.example.org, if the domain is set to '.example.org', then this session will persist across any subdomain of example.org.
+	* By default, the domain is not set, and the session will only be visible to other requests that exactly match the domain.
+	*/
+	sessionDomain?: string;
+
+	/**
+	* A persistent connection is one that will last after the user closes the window and visits the site again (true).
+	* A non-persistent that will forget the user once the window is closed (false)
+	*/
+	sessionPersistent?: boolean;
+	
+	/**
+	* The default length of user sessions in seconds
+	*/
+	sessionLifetime?: number;
+
+	/**
+	* The private key to use for Google captcha 
+	* Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
+	*/
+	captchaPrivateKey: string;
+
+	/**
+	* The public key to use for Google captcha 
+	* Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
+	*/
+	captchaPublicKey: string;
+	
+	/**
+	* The email of the admin account
+	*/
+	emailAdmin: string;
+
+	/**
+	* The 'from' email when notifying users
+	*/
+	emailFrom: string;
+
+	/**
+	* Email service we are using to send mail. For example 'Gmail'
+	*/
+	emailService: string;
+
+	/**
+	* The email address / username of the service
+	*/
+	emailServiceUser: string;
+
+	/**
+	* The password of the email service
+	*/
+	emailServicePassword: string;
+
+	/**
+	* The administrative user
+	*/
+	adminUser: IAdminUser;
+}
+```
 
 
 ## REST Functions
@@ -31,7 +189,7 @@ Gets a specific user's details. *You must be logged in to make this call*
 http://localhost:8000/api/users/test // Gets the user with the username test
 http://localhost:8000/api/users/test?verbose=true // Gets the user with the username test and does not obscure the sensitive data
 ```
-Return data
+**Return data**
 ```
 {
 	error: false,
@@ -74,7 +232,7 @@ http://localhost:8000/api/users?search=test&limit=4 // Gets up to 4 users with t
 http://localhost:8000/api/users?search=test&limit=4&index=1 // Gets up to 4 users from index 1 whose username or email contains 'test'
 http://localhost:8000/api/users?verbose=true // If verbose, sensitive data will not be obscured
 ```
-Return data
+**Return data**
 ```
 {
 	error: false,
