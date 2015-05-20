@@ -42,7 +42,8 @@ export interface IResponse
 */
 export interface IAuthenticationResponse extends IResponse
 {
-	authenticated: boolean;
+    authenticated: boolean;
+    user: IUserEntry;
 }
 
 /*

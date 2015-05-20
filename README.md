@@ -4,11 +4,11 @@ Webinate Users
 A small library providing utility methods for logging in and managing users. The application runs as a standalone 
 server with a RESTful API that allows you to interact with the underlying functions. 
 
-* Version 0.0.29
+* Version 0.0.30
 
 ## Startup
 To start the server, simply run the Main.js file using node or IO. You must pass the location of the config file as the 
-first argument.
+first argument. The server uses mongoDB as its database engine - make sure this is running before you start the server.
 
     node Main.js "users.config"
 
@@ -37,7 +37,7 @@ Below is a breakdown of the config file. The file must be formatted as a valid J
     passwordResetURL: string;
     
     /**
-	* The URL to redirect to when
+	* The URL to redirect to when the password has been reset
 	*/
     passwordRedirectURL: string;
 
@@ -194,7 +194,18 @@ http://localhost:8000/api/authenticated
 {
 	message: "User is authenticated",
 	authenticated: true,
-	error: false
+	error: false,
+	user: {
+		_id: "554b3d19bbdc18481100fe0f",
+		email: "test@test.net",
+		lastLoggedIn: 1432130298681,
+		password: "$2a$10$t9e1SDEUPLUyK3TnGV79Pes/GwIpHbSTShrbs77Kn5lVlCFk9p5nG",
+		registerKey: "",
+		sessionId: "",
+		username: "test",
+		privileges: 3,
+		passwordTag: ""
+	}
 }
 ```
 

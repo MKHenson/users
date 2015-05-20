@@ -43,6 +43,7 @@
     export interface IAuthenticationResponse extends IResponse
     {
         authenticated: boolean;
+        user: IUserEntry;
     }
 
     /*
@@ -131,7 +132,7 @@
         passwordResetURL: string;
     
         /**
-        * The URL to redirect to when
+        * The URL to redirect to when the password has been reset
         */
         passwordRedirectURL: string;
 

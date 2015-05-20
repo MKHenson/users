@@ -65,7 +65,7 @@ class Controller
 		
         router.get("/users/:username", this.getUser.bind(this));
         router.get("/users", this.getUsers.bind(this));
-
+        router.get("/who-am-i", this.authenticated.bind(this));
 		router.get("/authenticated", this.authenticated.bind(this));
 		router.get("/sessions", this.getSessions.bind(this));
 		router.get("/logout", this.logout.bind(this));
@@ -623,7 +623,7 @@ class Controller
 				error: true
 			}));
 		});
-	}
+    }
 
 	/**
 	* Checks to see if the current session is logged in
@@ -641,7 +641,8 @@ class Controller
 			return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "User is authenticated" : "User is not authenticated"),
 				authenticated: (user ? true : false),
-				error: false
+                error: false,
+                user: (user ? user.dbEntry : {})
 			}));
 
 		}).catch(function (error: Error)

@@ -23,6 +23,7 @@ export interface IResponse {
 }
 export interface IAuthenticationResponse extends IResponse {
     authenticated: boolean;
+    user: IUserEntry;
 }
 export interface IGetArrayResponse<T> extends IResponse {
     data: Array<T>;
