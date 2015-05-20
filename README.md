@@ -21,10 +21,12 @@ Gets a specific user's details. *You must be logged in to make this call*
 
     `/users/:username`
 
-Parameters
+**Request Type: GET**
+
+**Parameters**
 * **verbose** - If true, sensitive data will not be obscured. This will only work for admin users.
 
-Examples
+**Examples**
 ```
 http://localhost:8000/api/users/test // Gets the user with the username test
 http://localhost:8000/api/users/test?verbose=true // Gets the user with the username test and does not obscure the sensitive data
@@ -55,13 +57,15 @@ Gets a list of user's details. *You must be logged in to make this call*
 
     `/users`
 
-Parameters
+**Request Type: GET**
+
+**Parameters**
 * **index** - Specify the index to start the fetch from
 * **limit** - Specify the number of entries to fetch
 * **search** - Specify a term that either the email or username must contain
 * **verbose** - If true, sensitive data will not be obscured
 
-Example calls
+**Example calls**
 ```
 http://localhost:8000/api/users // Gets all users
 http://localhost:8000/api/users?index=0&limit=4 // Gets up to 4 users from index 0
