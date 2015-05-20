@@ -181,21 +181,16 @@ the caller to be authenticated.
 
 
 
-### #Check if authenticated
+### Check if authenticated
 
     `/authenticated`
 
 **Request Type: GET**
 
-**Parameters**
-* **None**
-
 **Examples**
 ```
 http://localhost:8000/api/authenticated
-```
-**Return data**
-```
+
 {
 	message: "User is authenticated",
 	authenticated: true,
@@ -218,9 +213,7 @@ http://localhost:8000/api/authenticated
 **Examples**
 ```
 http://localhost:8000/api/login
-```
-**Return data**
-```
+
 {
 	message: "User is authenticated",
 	authenticated: true,
@@ -245,9 +238,7 @@ http://localhost:8000/api/login
 ```
 http://localhost:8000/api/users/test // Gets the user with the username test
 http://localhost:8000/api/users/test?verbose=true // Gets the user with the username test and does not obscure the sensitive data
-```
-**Return data**
-```
+
 {
 	error: false,
 	message: "Found user test",
@@ -288,9 +279,7 @@ http://localhost:8000/api/users?search=test // Gets all users with the username 
 http://localhost:8000/api/users?search=test&limit=4 // Gets up to 4 users with the username or email containing 'test'
 http://localhost:8000/api/users?search=test&limit=4&index=1 // Gets up to 4 users from index 1 whose username or email contains 'test'
 http://localhost:8000/api/users?verbose=true // If verbose, sensitive data will not be obscured
-```
-**Return data**
-```
+
 {
 	error: false,
 	message: "Found 4 users",
