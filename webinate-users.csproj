@@ -22,32 +22,32 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="package.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="lib\Controller.ts" />
-    <TypeScriptCompile Include="lib\definitions\bcrypt.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\body-parser.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\entities.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\es6-promise.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\express.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\method-override.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\mongo-extras.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\mongodb.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\morgan.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\node.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\nodemailer.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\recaptcha-async.d.ts" />
-    <TypeScriptCompile Include="lib\definitions\validator.d.ts" />
-    <TypeScriptCompile Include="lib\Definitions.ts" />
-    <TypeScriptCompile Include="lib\Main.ts" />
-    <TypeScriptCompile Include="lib\Users.ts" />
-    <TypeScriptCompile Include="lib\Session.ts" />
+    <TypeScriptCompile Include="src\lib\Controller.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\bcrypt.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\body-parser.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\entities.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\es6-promise.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\express.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\method-override.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\mongo-extras.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\mongodb.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\morgan.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\node.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\nodemailer.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\recaptcha-async.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\validator.d.ts" />
+    <TypeScriptCompile Include="src\lib\Definitions.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\webinate-colors.d.ts" />
+    <TypeScriptCompile Include="src\lib\Main.ts" />
+    <TypeScriptCompile Include="src\lib\Users.ts" />
+    <TypeScriptCompile Include="src\lib\Session.ts" />
     <TypeScriptCompile Include="webinate-users.d.ts" />
-    <TypeScriptCompile Include="_references.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="server\package.json" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
@@ -81,8 +81,9 @@
     <TypeScriptSourceMap>False</TypeScriptSourceMap>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
-    <TypeScriptGeneratesDeclarations>True</TypeScriptGeneratesDeclarations>
+    <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
     <TypeScriptModuleKind>commonjs</TypeScriptModuleKind>
+    <TypeScriptOutDir>server</TypeScriptOutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <TypeScriptRemoveComments>true</TypeScriptRemoveComments>
