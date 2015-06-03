@@ -4,7 +4,7 @@ Webinate Users
 A small library providing utility methods for logging in and managing users. The application runs as a standalone 
 server with a RESTful API that allows you to interact with the underlying functions. 
 
-* Version 0.0.30
+* Version 0.0.31
 
 ## Startup
 To start the server, simply run the Main.js file using node or IO. You must pass the location of the config file as the 
