@@ -9,10 +9,6 @@ nvm_latest_version() {
   echo "v0.0.1"
 }
 
-RED='\e[0;31m' # '\e[1;32m' is too bright for white bg.
-GREEN='\e[0;32m' # '\e[1;32m' is too bright for white bg.
-NC='\e[0m'
-
 echo "Downloading latest version from github $(nvm_latest_version)"
 
 #download latest
@@ -23,7 +19,7 @@ if [ -d "node_modules" ]; then
 fi
 rm master.zip
 cp "example-config.json" "config.json"
-echo "${GREEN} Users successfully installed ${NC}"
-echo "${GREEN} Please run an NPM update and edit the config.json ${NC}"
+echo "Users successfully installed"
+echo "Please run an NPM update and edit the config.json"
 exit
 } # this ensures the entire script is downloaded #
