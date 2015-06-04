@@ -18,7 +18,11 @@ if [ -d "node_modules" ]; then
 	rm node_models -R
 fi
 rm master.zip
-cp "example-config.json" "config.json"
+
+if [ !-d "config.json" ]; then
+	cp "example-config.json" "config.json"
+fi
+
 echo "Users successfully installed"
 echo "Please run an NPM update and edit the config.json"
 exit
