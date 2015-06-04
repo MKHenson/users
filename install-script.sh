@@ -12,7 +12,6 @@ nvm_latest_version() {
 echo "Downloading latest version from github $(nvm_latest_version)"
 
 #download latest
-curl -O https://github.com/MKHenson/webinate-users/archive/master.zip
 wget https://github.com/MKHenson/webinate-users/archive/master.zip
 unzip -j “master.zip” “webinate-users-master/server/*”
 rm master.zip
