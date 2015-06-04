@@ -1,7 +1,10 @@
 #!/bin/bash -e
 { # this ensures the entire script is downloaded #
 
-# Prints the latest stable version
+# Stops the execution of a script if a command or pipeline has an error
+set -e
+
+# Functiom that prints the latest stable version
 nvm_latest_version() {
   echo "v0.0.1"
 }
@@ -9,6 +12,7 @@ nvm_latest_version() {
 echo "Downloading latest version from github $(nvm_latest_version)"
 
 #download latest
+curl -O https://github.com/MKHenson/webinate-users/archive/master.zip
 wget https://github.com/MKHenson/webinate-users/archive/master.zip
 unzip -j “master.zip” “webinate-users-master/server/*”
 rm master.zip
