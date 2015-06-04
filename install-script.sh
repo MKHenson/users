@@ -23,7 +23,7 @@ if [ -d "node_modules" ]; then
 fi
 rm master.zip
 cp "example-config.json" "config.json"
-echo "${GREEN}Users successfully installed ${NC}"
-echo "${GREEN}Please run an NPM update and edit the config.json ${NC}"
+echo "$GREEN Users successfully installed $NC"
+echo "$GREEN Please run an NPM update and edit the config.json $NC"
 exit
 } # this ensures the entire script is downloaded #
