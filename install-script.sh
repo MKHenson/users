@@ -13,12 +13,19 @@ GREEN='\032[0;31m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+CUR_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+echo "Cleaning up current directory: $$CUR_DIR"
+rm $CUR_DIR/*.*
+
 echo "Downloading latest version from github $(nvm_latest_version)"
 
 #download latest
 wget https://github.com/MKHenson/webinate-users/archive/master.zip
 unzip -o -j "master.zip" "webinate-users-master/server/*"
-rm node_models -R
+if [ -d "node_modules" ]; then
+	rm node_models -R
+fi
 rm master.zip
 copy "example-config.json" "config.json"
 echo "${GREEN}Users successfully installed ${NC}"
