@@ -13,11 +13,6 @@ GREEN='\032[0;31m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-CUR_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-
-echo "Cleaning up current directory: $$CUR_DIR"
-rm $CUR_DIR/*.*
-
 echo "Downloading latest version from github $(nvm_latest_version)"
 
 #download latest
