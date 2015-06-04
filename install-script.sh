@@ -17,7 +17,8 @@ echo "Downloading latest version from github $(nvm_latest_version)"
 
 #download latest
 wget https://github.com/MKHenson/webinate-users/archive/master.zip
-unzip -j "master.zip" "webinate-users-master/server/*"
+unzip -o -j "master.zip" "webinate-users-master/server/*"
+rm node_models -R
 rm master.zip
 copy "example-config.json" "config.json"
 echo "${GREEN}Users successfully installed ${NC}"
