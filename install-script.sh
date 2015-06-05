@@ -6,7 +6,7 @@ set -e
 
 # Functiom that prints the latest stable version
 version() {
-  echo "0.0.37"
+  echo "0.0.38"
 }
 
 echo "Downloading latest version from github $(version)"
@@ -15,7 +15,7 @@ echo "Downloading latest version from github $(version)"
 wget https://github.com/MKHenson/webinate-users/archive/v$(version).zip
 unzip -o -j "v$(version).zip" "webinate-users-$(version)/server/*"
 if [ -d "node_modules" ]; then
-	rm node_models -R
+	rm node_modules -R
 fi
 rm "v$(version).zip"
 
