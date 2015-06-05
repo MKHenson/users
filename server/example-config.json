@@ -1,15 +1,15 @@
 {
 	"host": "127.0.0.1",
-	"restURL": "/users",
+	"restURL": "",
 	"accountRedirectURL": "http://host.com/admin/message",
 	"passwordResetURL": "http://host.com/admin/password-reset-form",
 	"passwordRedirectURL" : "http://host.com/admin/message",
 	"userCollection": "users",
 	"sessionCollection": "sessions",
-	"approvedDomains": ["host\\.com"],
-	"portHTTP": 9000,
+	"approvedDomains": ["webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1"],
+	"portHTTP": 80,
 	"portHTTPS": 443,
-	"portDatabase": 1000,
+	"portDatabase": 27017,
 	"ssl": false,
 	"sslKey": "",
 	"sslCA": "",
@@ -20,16 +20,15 @@
 	"sessionDomain": "",
 	"sessionPersistent": true,
 	"sessionLifetime": 1800,
-	"captchaPrivateKey": "",
-	"captchaPublicKey": "",
-	"emailAdmin": "",
+	"captchaPrivateKey": "GOOGLE_CAPTHCA_PRIVATE_KEY",
+	"captchaPublicKey": "GOOGLE_CAPTHCA_PUBLIC_KEY",
 	"emailFrom": "Support",
 	"emailService": "Gmail",
-	"emailServiceUser": "",
-	"emailServicePassword": "",
+	"emailServiceUser": "provider@gmail.com",
+	"emailServicePassword": "provider_password",
 	"adminUser": {
-		"username": "",
-		"email": "",
-		"password": ""
+		"username": "root",
+		"email": "root_email@host.com",
+		"password": "CHANGE_THIS_PASSWORD"
 	}
 }

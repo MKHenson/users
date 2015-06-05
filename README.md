@@ -2,176 +2,33 @@ Webinate Users
 ===============
 
 A small library providing utility methods for logging in and managing users. The application runs as a standalone 
-server with a RESTful API that allows you to interact with the underlying functions. 
+server with a RESTful API that allows you to interact with the underlying functions. Users requires NodeJS v.0.12.0 (or IO.js),
+Node Package Manager (NPM) and a running instance of mongoDB
 
-* Version 0.0.31
+* Version 0.0.32
+
+## Ubuntu Installation
+
+Create a folder on your server with write permissions, then cd into that folder and run
+
+	sudo curl -o- https://raw.githubusercontent.com/MKHenson/webinate-users/master/install-script.sh | bash
+	
+This will download the latest version of users. Then call npm update to load the dependencies.
+
+	npm update
+
+That should be it for the installation
 
 ## Startup
-To start the server, simply run the Main.js file using node or IO. You must pass the location of the config file as the 
-first argument. The server uses mongoDB as its database engine - make sure this is running before you start the server.
+To start the server, simply run the Main.js file using node (at least v.0.12.0) or IO. 
+You must pass the location of the config file as the first argument. 
+The server uses mongoDB as its database engine - make sure this is running before you start the server.
 
-    node Main.js "users.config"
+    node Main.js "config.json"
 
-Below is a breakdown of the config file. The file must be formatted as a valid JSON.
-
-```
-{
-	/**
-	* The domain or host of the site
-	*/
-	host: string;
-
-	/**
-	* The RESTful path of this service. Eg: "/api/users"
-	*/
-    restURL: string;
-
-    /**
-	* The URL to redirect to if the user attempts to activate their account
-	*/
-    accountRedirectURL: string;
-
-    /**
-	* The base URL sent to users emails for when their password is reset
-	*/
-    passwordResetURL: string;
-    
-    /**
-	* The URL to redirect to when the password has been reset
-	*/
-    passwordRedirectURL: string;
-
-	/**
-	* The name of the collection for storing user details
-	*/
-	userCollection: string;
-
-	/**
-	* The name of the collection for storing session details
-	*/
-    sessionCollection: string;
-
-    /**
-	* An array of approved domains that can access this API. Eg ["webinate.net", "google.com"]
-	*/
-    approvedDomains: Array<string>;
-
-	/**
-	* The port number to use for regular HTTP.
-	*/
-	portHTTP: number;
-
-	/**
-	* The port number to use for SSL
-	*/
-	portHTTPS: number;
-	
-	/**
-	* The port number to use for the database
-	*/
-	portDatabase: number;
-
-	/**
-	* If true, the API will try to secure its communications
-	*/
-	ssl: boolean;
-
-	/**
-	* The SSL key
-	*/
-	sslKey: string;
-
-	/**
-	* The SSL certificate authority
-	*/
-	sslCA: string;
-
-	/**
-	* The SSL certificate file path
-	*/
-	sslCert: string;
-
-	/**
-	* The SSL pass phrase (if in use)
-	*/
-	sslPassPhrase: string;
-
-	/**
-	* The name of the database to use
-	*/
-	databaseName: string;
-
-	/*
-	* If set, the session will be restricted to URLs underneath the given path.
-	* By default the path is "/", which means that the same sessions will be shared across the entire domain.
-	*/
-	sessionPath?: string;
-
-	/**  
-	* If present, the cookie (and hence the session) will apply to the given domain, including any subdomains.
-	* For example, on a request from foo.example.org, if the domain is set to '.example.org', then this session will persist across any subdomain of example.org.
-	* By default, the domain is not set, and the session will only be visible to other requests that exactly match the domain.
-	*/
-	sessionDomain?: string;
-
-	/**
-	* A persistent connection is one that will last after the user closes the window and visits the site again (true).
-	* A non-persistent that will forget the user once the window is closed (false)
-	*/
-	sessionPersistent?: boolean;
-	
-	/**
-	* The default length of user sessions in seconds
-	*/
-	sessionLifetime?: number;
-
-	/**
-	* The private key to use for Google captcha 
-	* Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
-	*/
-	captchaPrivateKey: string;
-
-	/**
-	* The public key to use for Google captcha 
-	* Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
-	*/
-	captchaPublicKey: string;
-	
-	/**
-	* The email of the admin account
-	*/
-	emailAdmin: string;
-
-	/**
-	* The 'from' email when notifying users
-	*/
-	emailFrom: string;
-
-	/**
-	* Email service we are using to send mail. For example 'Gmail'
-	*/
-	emailService: string;
-
-	/**
-	* The email address / username of the service
-	*/
-	emailServiceUser: string;
-
-	/**
-	* The password of the email service
-	*/
-	emailServicePassword: string;
-
-	/**
-	* The administrative user
-	*/
-	adminUser: {
-		username: string;
-		email: string;
-		password: string;
-	}
-}
-```
+The file must be formatted as a valid JSON. 
+Please have a look at the (latest config definition)[https://github.com/MKHenson/webinate-users/blob/master/webinate-users.d.ts#L112] 
+for details of what each parameter does.
 
 
 ## REST Functions

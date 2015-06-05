@@ -6,7 +6,7 @@ set -e
 
 # Functiom that prints the latest stable version
 nvm_latest_version() {
-  echo "v0.0.1"
+  echo "v0.0.32"
 }
 
 echo "Downloading latest version from github $(nvm_latest_version)"

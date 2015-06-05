@@ -36,6 +36,8 @@ var Controller = (function () {
                         break;
                     }
             }
+            else
+                console.log(req.headers.origin + " Does not have permission. Add it to the allowed ");
             if (req.method === 'OPTIONS') {
                 res.status(200);
                 res.end();
@@ -476,7 +478,7 @@ var Controller = (function () {
                 message: (user ? "User is authenticated" : "User is not authenticated"),
                 authenticated: (user ? true : false),
                 error: false,
-                user: (user ? user.dbEntry : {})
+                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {})
             }));
         }).catch(function (error) {
             return res.end(JSON.stringify({
