@@ -75,8 +75,8 @@ http://localhost:8000/api/authenticated
 **Request Type: POST**
 
 **Parameters**
-* **username** - The username of the user
-* **password** - The password of the user
+* username - The username of the user
+* password - The password of the user
 
 **Examples**
 ```
