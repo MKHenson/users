@@ -5,15 +5,15 @@
 set -e
 
 # Functiom that prints the latest stable version
-nvm_latest_version() {
-  echo "v0.0.33"
+version() {
+  echo "0.0.34"
 }
 
-echo "Downloading latest version from github $(nvm_latest_version)"
+echo "Downloading latest version from github $(version)"
 
 #download latest
-wget https://github.com/MKHenson/webinate-users/archive/master.zip
-unzip -o -j "master.zip" "webinate-users-master/server/*"
+wget https://github.com/MKHenson/webinate-users/archive/v$(version).zip
+unzip -o -j "v$(version).zip" "webinate-users-$(version)/server/*"
 if [ -d "node_modules" ]; then
 	rm node_models -R
 fi
