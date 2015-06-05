@@ -5,7 +5,7 @@ A small library providing utility methods for logging in and managing users. The
 server with a RESTful API that allows you to interact with the underlying functions. Users requires NodeJS v.0.12.0 (or IO.js),
 Node Package Manager (NPM) and a running instance of mongoDB
 
-* Version 0.0.36
+* Version 0.0.37
 
 ## Ubuntu Installation
 
