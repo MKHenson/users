@@ -17,7 +17,7 @@ unzip -o -j "v$(version).zip" "webinate-users-$(version)/server/*"
 if [ -d "node_modules" ]; then
 	rm node_models -R
 fi
-rm master.zip
+rm "v$(version).zip""
 
 if [ !-d "config.json" ]; then
 	cp "example-config.json" "config.json"
