@@ -5,7 +5,7 @@ A small library providing utility methods for logging in and managing users. The
 server with a RESTful API that allows you to interact with the underlying functions. Users requires NodeJS v.0.12.0 (or IO.js),
 Node Package Manager (NPM) and a running instance of mongoDB
 
-* Version 0.0.32
+* Version 0.0.33
 
 ## Ubuntu Installation
 
@@ -38,11 +38,19 @@ the caller to be authenticated.
 
 
 
-### Check if authenticated
+### Authenticated
+
+Checks to see if a user is logged in. If the user is logged in, then their details will be sent back in the 'user' field.
+By default the information of the user that is returned is obscured. You can turn this off
+by adding the *verbose=true* query parameter. The verbose parameter will only be respected for admin users and if the
+user making the call is the same as the user's details being requested.
 
     `/authenticated`
 
 **Request Type: GET**
+
+**Parameters**
+* verbose - If true, sensitive data will not be obscured. This will only work for admin users.
 
 **Examples**
 ```
@@ -53,22 +61,22 @@ http://localhost:8000/api/authenticated
 	authenticated: true,
 	error: false,
 	user: {
-		_id: "554b3d19bbdc18481100fe0f",
+		_id: "000000000000000000000000",
 		email: "test@test.net",
-		lastLoggedIn: 1432130298681,
-		password: "$2a$10$t9e1SDEUPLUyK3TnGV79Pes/GwIpHbSTShrbs77Kn5lVlCFk9p5nG",
+		lastLoggedIn: 1432114922204,
+		password: "***********************************************************",
 		registerKey: "",
-		sessionId: "",
+		sessionId: "**********",
 		username: "test",
-		privileges: 3,
+		privileges: 1,
 		passwordTag: ""
 	}
 }
 ```
 
-
-
 ### Login
+
+Attempts to log the user in with the provided credentials
 
     `/login`
 
@@ -93,14 +101,18 @@ http://localhost:8000/api/login
 
 
 ### Get Specific User
-*You must be logged in to make this call*
+
+*You must be logged in to make this call.* 
+Fetches a specific user from the database. By default the information returned is obscured. You can turn this off
+by adding the *verbose=true* query parameter. The verbose parameter will only be respected for admin users and if the
+user making the call is the same as the user's details being requested.
 
     `/users/:username`
 
 **Request Type: GET**
 
 **Parameters**
-* **verbose** - If true, sensitive data will not be obscured. This will only work for admin users.
+* verbose - If true, sensitive data will not be obscured. This will only work for admin users.
 
 **Examples**
 ```
@@ -127,17 +139,19 @@ http://localhost:8000/api/users/test?verbose=true // Gets the user with the user
 
 
 ### Get Users
-*You must be logged in to make this call*
+*You must be logged in to make this call.* By default the information returned is obscured. You can turn this off
+by adding the *verbose=true* query parameter. The verbose parameter will only be respected for admin users. You
+also narrow down the results with the other parameters listed below.
 
     `/users`
 
 **Request Type: GET**
 
 **Parameters**
-* **index** - Specify the index to start the fetch from
-* **limit** - Specify the number of entries to fetch
-* **search** - Specify a term that either the email or username must contain
-* **verbose** - If true, sensitive data will not be obscured
+* index - Specify the index to start the fetch from
+* limit - Specify the number of entries to fetch
+* search - Specify a term that either the email or username must contain. eg 'mat' will return users with the username or email containing the term 'mat'
+* verbose - If true, sensitive data will not be obscured
 
 **Example calls**
 ```
