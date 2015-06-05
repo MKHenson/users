@@ -199,14 +199,19 @@
         ssl: boolean;
 
         /**
-        * The path to the SSL key
+        * The path to the SSL private key 
         */
         sslKey: string;
 
         /**
-        * The path to the SSL certificate authority
+        * The path to the SSL certificate authority root file
         */
-        sslCA: string;
+        sslRoot: string;
+
+        /**
+        * The path to the SSL certificate authority intermediate file
+        */
+        sslIntermediate: string;
 
         /**
         * The path to the SSL certificate file path

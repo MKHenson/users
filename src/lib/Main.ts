@@ -51,11 +51,42 @@ try
 
 		// If we use SSL then start listening for that as well
 		if (config.ssl)
-		{
-			console.log(`Attempting to start SSL server...`);
-			var httpsServer = https.createServer({ key: config.sslKey, cert: config.sslCert, passphrase: config.sslPassPhrase, ca: config.sslCA }, app);
-			httpsServer.listen(config.portHTTPS ? config.portHTTPS : 443);
-			console.log(`Listening on HTTPS port ${config.portHTTPS}`);
+        {
+            if (config.sslIntermediate != "" && !fs.existsSync(config.sslIntermediate))
+            {
+                colors.log(colors.red(`Could not find sslIntermediate: '${config.sslIntermediate}'`));
+                process.exit();
+            }
+
+            if (config.sslCert != "" && !fs.existsSync(config.sslCert))
+            {
+                colors.log(colors.red(`Could not find sslIntermediate: '${config.sslCert}'`));
+                process.exit();
+            }
+
+            if (config.sslRoot != "" && !fs.existsSync(config.sslRoot))
+            {
+                colors.log(colors.red(`Could not find sslIntermediate: '${config.sslRoot}'`));
+                process.exit();
+            }
+
+            if (config.sslKey != "" && !fs.existsSync(config.sslKey))
+            {
+                colors.log(colors.red(`Could not find sslIntermediate: '${config.sslKey}'`));
+                process.exit();
+            }
+
+            var caChain = [fs.readFileSync(config.sslIntermediate), fs.readFileSync(config.sslRoot)];
+            var privkey = config.sslKey ? fs.readFileSync(config.sslKey) : null;
+            var theCert = config.sslCert ? fs.readFileSync(config.sslCert) : null;
+            var port = config.portHTTPS ? config.portHTTPS : 443;
+
+            console.log(`Attempting to start SSL server...`);
+
+            var httpsServer = https.createServer({ key: privkey, cert: theCert, passphrase: config.sslPassPhrase, ca: caChain }, app);
+            httpsServer.listen(port);
+
+            console.log(`Listening on HTTPS port ${port}`);
 		}
 
 		// Done!
