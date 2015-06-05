@@ -98,6 +98,23 @@ http://localhost:8000/api/login
 ```
 
 
+### Logout
+
+Attempts to log out the current user. This removes the user's session and they will have to login again to be authenticated.
+
+    `/logout`
+
+**Request Type: GET**
+
+**Examples**
+```
+http://localhost:8000/api/logout
+
+{
+	message: "Successfully logged out",
+	error: false
+}
+```
 
 
 ### Get Specific User
