@@ -307,7 +307,7 @@ var UserManager = (function () {
         });
     };
     /**
-    * Checks the users activation code to see if its valid
+    * Attempts to reset a user's password.
     * @param {string} username The username of the user
     * @param {string} code The password code
     * @param {string} newPassword The new password

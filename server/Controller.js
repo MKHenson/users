@@ -121,7 +121,8 @@ var Controller = (function () {
         });
     };
     /**
-    * Gets a specific user by username or email. Specify the verbose=true parameter in order to get all user data
+    * Gets a specific user by username or email - the "username" parameter must be set. The user data will be obscured unless the verbose parameter
+    * is specified. Specify the verbose=true parameter in order to get all user data
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
@@ -237,7 +238,7 @@ var Controller = (function () {
         });
     };
     /**
-    * Forces the activation of the user's account
+    * Activates the user's account
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
@@ -337,7 +338,7 @@ var Controller = (function () {
         });
     };
     /**
-    * Attempts to log the user in
+    * Attempts to log the user in. Expects the username, password and rememberMe parameters be set.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
@@ -465,10 +466,11 @@ var Controller = (function () {
         });
     };
     /**
-    * Checks to see if the current session is logged in
+    * Checks to see if the current session is logged in. If the user is, it will be returned redacted. You can specify the 'verbose' query parameter.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
+    * @returns {IAuthenticationResponse}
     */
     Controller.prototype.authenticated = function (req, res, next) {
         // Set the content type
