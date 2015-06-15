@@ -185,11 +185,17 @@ export interface IConfig
 	*/
     sessionCollection: string;
 
+    /**
+	* The host the DB is listening on
+    * e.g. "127.0.0.1"
+	*/
+    databaseHost: string;
+
 	/**
 	* The port number mongodb is listening on
     * e.g. 27017
 	*/
-	portDatabase: number;
+    databasePort: number;
 
 	/**
 	* If true, the API will try to secure its communications

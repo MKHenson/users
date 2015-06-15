@@ -689,8 +689,8 @@ class Controller
 	{
 		var that = this;
 		return new Promise<mongodb.Db>(function (resolve, reject)
-		{
-			var mongoServer: mongodb.Server = new mongodb.Server(that._config.host, that._config.portDatabase, opts);
+        {
+            var mongoServer: mongodb.Server = new mongodb.Server(that._config.databaseHost, that._config.databasePort, opts);
 			var mongoDB: mongodb.Db = new mongodb.Db(that._config.databaseName, mongoServer, { w: 1 });
 			mongoDB.open(function (err: Error, db: mongodb.Db)
 			{

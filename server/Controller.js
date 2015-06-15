@@ -512,7 +512,7 @@ var Controller = (function () {
     Controller.prototype.openDB = function (opts) {
         var that = this;
         return new Promise(function (resolve, reject) {
-            var mongoServer = new mongodb.Server(that._config.host, that._config.portDatabase, opts);
+            var mongoServer = new mongodb.Server(that._config.databaseHost, that._config.databasePort, opts);
             var mongoDB = new mongodb.Db(that._config.databaseName, mongoServer, { w: 1 });
             mongoDB.open(function (err, db) {
                 if (err || !db)
