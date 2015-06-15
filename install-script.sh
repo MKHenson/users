@@ -14,9 +14,7 @@ echo "Downloading latest version from github $(version)"
 #download latest
 wget https://github.com/MKHenson/webinate-users/archive/v$(version).zip
 unzip -o -j "v$(version).zip" "webinate-users-$(version)/server/*"
-if [ -d "node_modules" ]; then
-	rm node_modules -R
-fi
+
 rm "v$(version).zip"
 
 if [ !-d "config.json" ]; then
