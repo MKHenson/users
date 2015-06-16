@@ -6,7 +6,7 @@ set -e
 
 # Functiom that prints the latest stable version
 version() {
-  echo "0.0.39"
+  echo "0.0.40"
 }
 
 echo "Downloading latest version from github $(version)"
@@ -17,7 +17,7 @@ unzip -o -j "v$(version).zip" "webinate-users-$(version)/server/*"
 
 rm "v$(version).zip"
 
-if [ !-d "config.json" ]; then
+if [ ! -d "config.json" ]; then
 	cp "example-config.json" "config.json"
 fi
 

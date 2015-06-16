@@ -12,7 +12,7 @@ unzip -o -j "dev.zip" "webinate-users-dev/server/*"
 
 rm "dev.zip"
 
-if [ !-d "config.json" ]; then
+if [ ! -d "config.json" ]; then
 	cp "example-config.json" "config.json"
 fi
 
