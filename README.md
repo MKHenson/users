@@ -5,19 +5,38 @@ A small library providing utility methods for logging in and managing users. The
 server with a RESTful API that allows you to interact with the underlying functions. Users requires NodeJS v.0.12.0 (or IO.js),
 Node Package Manager (NPM) and a running instance of mongoDB
 
-* Version 0.0.39
+## Current stable version
+* Version 0.0.40
 
-## Ubuntu Installation
+## Requirements
+* MongoDB v3
+* Node 0.0.12
+* **Tested Ubuntu v14**
 
-Create a folder on your server with write permissions, then cd into that folder and run
+## Installation
 
-	sudo curl -o- https://raw.githubusercontent.com/MKHenson/webinate-users/master/install-script.sh | bash
-	
-This will download the latest version of users. Then call npm update to load the dependencies.
+1) Create a folder on your server with write permissions, then cd into that folder and run
+
+```
+sudo mkdir users
+cd users
+```
+2) Download the version from gitgub
+
+If you want the latest stable release
+```
+sudo curl -o- https://raw.githubusercontent.com/MKHenson/webinate-users/master/install-script.sh | bash
+```
+If you want the latest dev release
+```
+sudo curl -o- https://raw.githubusercontent.com/MKHenson/webinate-users/dev/install-script-dev.sh | bash
+```
+
+3) Call npm update to load the dependencies.
 
 	npm update
 
-That should be it for the installation
+4) That should be it for the installation
 
 ## Startup
 To start the server, simply run the Main.js file using node (at least v.0.12.0) or IO. 
