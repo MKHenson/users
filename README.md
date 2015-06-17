@@ -6,11 +6,11 @@ server with a RESTful API that allows you to interact with the underlying functi
 Node Package Manager (NPM) and a running instance of mongoDB
 
 ## Current stable version
-* Version 0.0.40
+* Version 0.0.41
 
 ## Requirements
 * MongoDB v3
-* Node 0.0.12
+* Node 0.12
 * **Tested Ubuntu v14**
 
 ## Installation
