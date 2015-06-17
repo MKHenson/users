@@ -39,6 +39,7 @@
     <TypeScriptCompile Include="src\lib\Definitions.ts" />
     <TypeScriptCompile Include="src\lib\definitions\webinate-colors.d.ts" />
     <TypeScriptCompile Include="src\lib\Main.ts" />
+    <TypeScriptCompile Include="src\lib\Startup.ts" />
     <TypeScriptCompile Include="src\lib\Users.ts" />
     <TypeScriptCompile Include="src\lib\Session.ts" />
     <TypeScriptCompile Include="webinate-users.d.ts" />
@@ -47,18 +48,14 @@
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="package.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="install-script.sh" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="example-config.json" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="install-script-dev.sh" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="server\example-config.json" />
+    <Content Include="server\package.json" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
