@@ -38,6 +38,7 @@
     <TypeScriptCompile Include="src\lib\definitions\validator.d.ts" />
     <TypeScriptCompile Include="src\lib\Definitions.ts" />
     <TypeScriptCompile Include="src\lib\definitions\winston.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\yargs.d.ts" />
     <TypeScriptCompile Include="src\lib\Main.ts" />
     <TypeScriptCompile Include="src\lib\Startup.ts" />
     <TypeScriptCompile Include="src\lib\Users.ts" />

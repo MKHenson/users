@@ -43,7 +43,7 @@ To start the server, simply run the Main.js file using node (at least v.0.12.0) 
 You must pass the location of the config file as the first argument. 
 The server uses mongoDB as its database engine - make sure this is running before you start the server.
 
-    node Main.js "config.json"
+    node Main.js --config="config.json" --logging="true" --logFile="logs.log" --numThreads="max"
 
 The file must be formatted as a valid JSON. 
 Please have a look at the (latest config definition)[https://github.com/MKHenson/webinate-users/blob/master/webinate-users.d.ts#L112] 

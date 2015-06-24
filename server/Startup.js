@@ -6,22 +6,30 @@ var morgan = require("morgan");
 var methodOverride = require("method-override");
 var winston = require("winston");
 var Controller_1 = require("./Controller");
+var yargs = require("yargs");
+var arguments = yargs.argv;
 // Saves logs to file
-winston.add(winston.transports.File, { filename: "logs.log", maxsize: 50000000, maxFiles: 1, tailable: true });
+if (arguments.logFile && arguments.logFile.trim() != "")
+    winston.add(winston.transports.File, { filename: arguments.logFile, maxsize: 50000000, maxFiles: 1, tailable: true });
+// If no logging - remove all transports
+if (arguments.logging && arguments.logging.toLowerCase().trim() == "false") {
+    winston.remove(winston.transports.File);
+    winston.remove(winston.transports.Console);
+}
 // Create the express app
 var app = express();
 // Make sure the argument is there
-if (process.argv.length < 3) {
-    winston.error("Error! No config file specified. Please start Users with the config file in the command line. Eg: node users.js ./config.js", { process: process.pid });
+if (!arguments.config || arguments.config.trim() == "") {
+    winston.error("Error! No config file specified. Please start Users with the config file in the command line. Eg: node users.js --config=\"./config.js\"", { process: process.pid });
     process.exit();
 }
 // Make sure the file exists
-if (!fs.existsSync(process.argv[2])) {
-    winston.error("Could not locate the config file at '" + process.argv[2] + "'", { process: process.pid });
+if (!fs.existsSync(arguments.config)) {
+    winston.error("Could not locate the config file at '" + arguments.config + "'", { process: process.pid });
     process.exit();
 }
 // Load the file
-var jsonConfig = fs.readFileSync(process.argv[2], "utf8");
+var jsonConfig = fs.readFileSync(arguments.config, "utf8");
 try {
     // Parse the config
     console.log("Parsing file config...");
