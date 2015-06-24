@@ -12,7 +12,8 @@ unzip -o -j "dev.zip" "webinate-users-dev/server/*"
 
 rm "dev.zip"
 
-if [ ! -d "config.json" ]; then
+# Copy the example config into config.json as long as it doesnt already exist
+if [ ! -f "config.json" ]; then
 	cp "example-config.json" "config.json"
 fi
 
