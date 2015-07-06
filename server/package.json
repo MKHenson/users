@@ -28,6 +28,7 @@
 		"mongodb": "~2.0.21",
 		"validator": "~3.39.0",
     "bcrypt-nodejs": "~0.0.3",
-    "yargs": "~3.12.0"
+    "yargs": "~3.12.0",
+    "gcloud": "~0.16.0"
 	}
 }

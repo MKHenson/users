@@ -1,4 +1,6 @@
 ﻿import * as mongodb from "mongodb";
+import * as express from "express";
+import {User} from "./Users";
 
 /*
 * An interface to describe the data stored in the database for users
@@ -17,6 +19,14 @@ export interface IUserEntry
     data?: any;
 }
 
+/**
+* Adds a logged in user to the request object
+*/
+export interface AuthRequest extends express.Request
+{
+    _user: User;
+}
+
 /*
 * An interface to describe the data stored in the database from the sessions
 */
@@ -29,12 +39,28 @@ export interface ISessionEntry
 }
 
 /*
+* Users stores data on an external cloud bucket with Google
+*/
+export interface IGoogleStorage
+{
+    /*
+    * Path to the key file
+    */
+    keyFile: string;
+
+    /*
+    * Project ID
+    */
+	projectId: string;
+}
+
+/*
 * The default response  format
 */
 export interface IResponse
 {
-	message: string;
-	error: boolean;
+    message: string;
+    error: boolean;
 }
 
 /*
@@ -303,7 +329,17 @@ export interface IConfig
 		    "password": "CHANGE_THIS_PASSWORD"
 	    }
 	*/
-	adminUser: IAdminUser;
+    adminUser: IAdminUser;
+
+    /**
+	* Information relating to the Google storage platform
+    *
+    "bucket": {
+            "keyFile": "",
+            "projectId": ""
+	    }
+	*/
+    bucket: IGoogleStorage;
 }
 
 export interface IGetUser extends IGetResponse<IUserEntry> { }

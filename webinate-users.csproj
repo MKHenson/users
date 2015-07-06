@@ -22,12 +22,14 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="src\lib\BucketManager.ts" />
     <TypeScriptCompile Include="src\lib\Controller.ts" />
     <TypeScriptCompile Include="src\lib\definitions\bcrypt.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\body-parser.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\entities.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\es6-promise.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\express.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\gcloud.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\method-override.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\mongo-extras.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\mongodb.d.ts" />
@@ -40,6 +42,7 @@
     <TypeScriptCompile Include="src\lib\definitions\winston.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\yargs.d.ts" />
     <TypeScriptCompile Include="src\lib\Main.ts" />
+    <TypeScriptCompile Include="src\lib\PermissionController.ts" />
     <TypeScriptCompile Include="src\lib\Startup.ts" />
     <TypeScriptCompile Include="src\lib\Users.ts" />
     <TypeScriptCompile Include="src\lib\Session.ts" />

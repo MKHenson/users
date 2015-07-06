@@ -86,6 +86,7 @@ var UserManager = (function () {
     function UserManager(userCollection, sessionCollection, config) {
         this._userCollection = userCollection;
         this._config = config;
+        UserManager._singleton = this;
         // Create the transport object which will be sending the emails
         if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
             this._transport = nodemailer.createTransport({
@@ -666,6 +667,22 @@ var UserManager = (function () {
             });
         });
     };
+    /**
+    * Creates the user manager singlton
+    */
+    UserManager.create = function (users, sessions, config) {
+        return new UserManager(users, sessions, config);
+    };
+    Object.defineProperty(UserManager, "get", {
+        /**
+        * Gets the user manager singlton
+        */
+        get: function () {
+            return UserManager._singleton;
+        },
+        enumerable: true,
+        configurable: true
+    });
     return UserManager;
 })();
 exports.UserManager = UserManager;

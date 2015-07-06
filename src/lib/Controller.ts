@@ -8,6 +8,7 @@ import * as def from "./Definitions";
 import * as mongodb from "mongodb";
 import {Session} from "./Session";
 import {UserManager, User} from "./Users";
+import {hasAdminRights} from "./PermissionController";
 
 /**
 * Main class to use for managing users
@@ -19,6 +20,7 @@ class Controller
 	private _adminEmail: string;
 	private _userManager: UserManager;
     private _config: def.IConfig;
+    
 
 	/**
 	* Creates an instance of the user manager
@@ -35,6 +37,8 @@ class Controller
 		router.use(bodyParser.urlencoded({ 'extended': true }));
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+
+        
 
         var matches: Array<RegExp> = [];
         for (var i = 0, l = config.approvedDomains.length; i < l; i++)
@@ -68,68 +72,46 @@ class Controller
                 next();
         });
 		
-        router.get("/users/:username", this.getUser.bind(this));
-        router.get("/users", this.getUsers.bind(this));
+        router.get("/users/:username", <any>[hasAdminRights, this.getUser.bind(this)]);
+        router.get("/users", <any>[hasAdminRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
 		router.get("/authenticated", this.authenticated.bind(this));
-		router.get("/sessions", this.getSessions.bind(this));
+        router.get("/sessions", <any>[hasAdminRights, this.getSessions.bind(this)]);
 		router.get("/logout", this.logout.bind(this));
 		router.get("/resend-activation/:user", this.resendActivation.bind(this));		
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
         router.get("/password-reset", this.passwordReset.bind(this));
 
-		router.delete("/sessions/:id", this.deleteSession.bind(this));
-		router.delete("/remove-user/:user", this.removeUser.bind(this));
+        router.delete("/sessions/:id", <any>[hasAdminRights, this.deleteSession.bind(this)]);
+        router.delete("/remove-user/:user", <any>[hasAdminRights, this.removeUser.bind(this)]);
 				
 		router.post("/login", this.login.bind(this));
 		router.post("/register", this.register.bind(this));
-        router.post("/create-user", this.createUser.bind(this));
+        router.post("/create-user", <any>[hasAdminRights, this.createUser.bind(this)]);
 
-        router.put("/approve-activation/:user", this.approveActivation.bind(this));
+        router.put("/approve-activation/:user", <any>[hasAdminRights, this.approveActivation.bind(this)]);
 		
 		
 		// Register the path
-		e.use(config.restURL, router);
-	}
+        e.use(config.restURL, router);
+    }
+
+    
 
 	/**
 	* Called to initialize this controller and its related database objects
-	* @returns {Promise<Controller>}
+    * @returns {Promise<Controller>}
 	*/
-	initialize(): Promise<void>
+    initialize(users: mongodb.Collection, sessions: mongodb.Collection ): Promise<void>
 	{
 		var that = this;
-		var database: mongodb.Db;
-		var userCollection: mongodb.Collection;
-		var sessionCollection: mongodb.Collection;
 
 		return new Promise<void>(function (resolve, reject)
-		{
-			// Open the DB
-			that.openDB().then(function (db)
-			{
-				database = db;
-				
-				// Get the users collection
-				return that.createCollection(that._config.userCollection, database)
-								
-			}).then(function (collection)
-			{
-				userCollection = collection;
-
-				// Get the session collection
-				return that.createCollection(that._config.sessionCollection, database)
-								
-			}).then(function (collection)
-			{
-				sessionCollection = collection;
-
-				// Create the user manager
-				that._userManager = new UserManager(userCollection, sessionCollection, that._config);
-				return that._userManager.initialize();
-
-			}).then(function (collection)
+        {
+            // Create the user manager
+            that._userManager = UserManager.create(users, sessions, that._config);
+            that._userManager.initialize().then(function ()
 			{
 				// Initialization is finished
 				resolve();
@@ -141,37 +123,6 @@ class Controller
 		});
 	}
 
-	/**
-	* Checks a user is logged in and has permission
-	* @param {def.UserPrivileges} level
-	* @param {express.Request} req
-	* @param {express.Response} res
-	* @param {string} existingUser [Optional] If specified this also checks if the authenticated user is the user making the request
-	* @param {Function} next
-	*/
-    private requestHasPermission(level: def.UserPrivileges, req: express.Request, res: express.Response, existingUser?: string): Promise<boolean>
-	{
-		var that = this;
-		return new Promise(function( resolve, reject )
-		{
-			that._userManager.loggedIn(req, res).then(function (user)
-			{
-				if (!user)
-					return reject(new Error("You must be logged in to make this request"));
-
-				if (existingUser !== undefined)
-                {
-                    if ((user.dbEntry.email != existingUser && user.dbEntry.username != existingUser) && user.dbEntry.privileges > level)
-                        return reject(new Error("You don't have permission to make this request"));
-                }
-				else if (user.dbEntry.privileges > level)
-					return reject(new Error("You don't have permission to make this request"));
-		
-				resolve(true);
-			})
-		})
-    }
-
     /**
 	* Gets a specific user by username or email - the "username" parameter must be set. The user data will be obscured unless the verbose parameter
     * is specified. Specify the verbose=true parameter in order to get all user data
@@ -179,36 +130,28 @@ class Controller
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-    private getUser(req: express.Request, res: express.Response, next: Function): any
+    private getUser(req: def.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
-
-        this.requestHasPermission(def.UserPrivileges.Admin, req, res, req.params.username).then(function()
-        {
-            return that._userManager.getUser(req.params.username);
-
-        }).then(function (user: User)
-        {
-            if (!user)
-                return Promise.reject(new Error("No user found"));
-
-            var token: def.IGetUser = {
-                error: false,
-                message: `Found ${user.dbEntry.username}`,
-                data: user.generateCleanedData(Boolean(req.query.verbose))
-            };
-
-            return res.end(JSON.stringify(token));
-
-        }).catch(function (error: Error)
-        {
+        var user = req._user;
+   
+        if (!user)
             return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
+                message: "No user found",
                 error: true
-            }));
-        });
+            })); 
+
+        var token: def.IGetUser = {
+            error: false,
+            message: `Found ${user.dbEntry.username}`,
+            data: user.generateCleanedData(Boolean(req.query.verbose))
+        };
+
+        return res.end(JSON.stringify(token));
+
+      
     }
 
     /**
@@ -226,11 +169,7 @@ class Controller
         var that = this;
         var totalNumUsers: number = 0;
         
-        this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function (user)
-        {
-            return that._userManager.numUsers(new RegExp(req.query.search));
-
-        }).then(function(numUsers)
+        that._userManager.numUsers(new RegExp(req.query.search)).then(function(numUsers)
         {
             totalNumUsers = numUsers;
             return that._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit), new RegExp(req.query.search));
@@ -272,11 +211,7 @@ class Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
-        this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function(user)
-		{
-			return that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit));
-
-		}).then(function (sessions)
+        that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit)).then(function (sessions)
         {
             var token: def.IGetSessions = {
 				error: false,
@@ -307,11 +242,7 @@ class Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 		
-        this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function (user)
-		{
-			return that._userManager.sessionManager.clearSession(req.params.id, req, res )
-
-		}).then(function (result)
+        that._userManager.sessionManager.clearSession(req.params.id, req, res ).then(function (result)
 		{
             var token: def.IResponse = {
 				error: false,
@@ -441,11 +372,7 @@ class Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
-        this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function (user)
-		{
-			return that._userManager.approveActivation(req.params.user);
-
-		}).then(function()
+        that._userManager.approveActivation(req.params.user).then(function()
 		{
             return res.end(JSON.stringify(<def.IResponse>{
 				message: "Activation code has been approved",
@@ -556,23 +483,21 @@ class Controller
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-	private removeUser(req: express.Request, res: express.Response, next: Function): any
+    private removeUser(req: def.AuthRequest, res: express.Response, next: Function): any
 	{
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
-		var username: string = req.params["user"];
-		
-		that.requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user)
-		{
-			return that._userManager.removeUser(username);
-
-		}).then(function (user)
+        var toRemove = req.params.user;
+        if (!toRemove)
+            return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
+        
+        that._userManager.removeUser(toRemove).then(function()
 		{
 			var token: def.IResponse = {
 				error: false,
-				message: `User ${username} has been removed`
+                message: `User ${toRemove} has been removed`
 			};
 
 			return res.end(JSON.stringify(token));
@@ -584,7 +509,9 @@ class Controller
 				error: true
 			}));
 		});
-	}
+    }
+
+    
 
 	/**
 	* Allows an admin to create a new user without registration
@@ -598,7 +525,7 @@ class Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
-		var token: def.IRegisterToken = req.body;
+        var token: def.IRegisterToken = req.body;
 
 		// Not allowed to create super users
 		if (token.privileges == def.UserPrivileges.SuperAdmin)
@@ -608,11 +535,7 @@ class Controller
 			}));
 			
 
-		this.requestHasPermission(def.UserPrivileges.Admin, req, res).then(function (user)
-		{
-			return that._userManager.createUser(token.username, token.email, token.password, token.privileges);
-
-		}).then(function(user)
+		that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function(user)
         {
             var token: def.IGetUser = {
 				error: false,
@@ -659,48 +582,6 @@ class Controller
 				authenticated: false,
 				error: true
 			}));
-		});
-	}
-
-	/**
-	* Creates a new mongodb collection
-	* @param {string} name The name of the collection to create
-	* @param {mongodb.Db} db The database to use
-	* @param {Promise<mongodb.Collection>}
-	*/
-	private createCollection(name: string, db: mongodb.Db): Promise<mongodb.Collection>
-	{
-		return new Promise<mongodb.Collection>(function (resolve, reject)
-		{
-			db.createCollection(name, function (err: Error, collection: mongodb.Collection) 
-			{
-                if (err || !collection)
-                    return reject(new Error("Error creating collection: " + err.message));
-                else
-                    return resolve(collection);
-			});
-		});
-	}
-
-	/**
-	* Connects this controller to a mongo database 
-	* @param {mongodb.ServerOptions} opts Any additional options
-	* @returns {Promise<mongodb.Db>}
-	*/
-	private openDB(opts?: mongodb.ServerOptions): Promise<mongodb.Db>
-	{
-		var that = this;
-		return new Promise<mongodb.Db>(function (resolve, reject)
-        {
-            var mongoServer: mongodb.Server = new mongodb.Server(that._config.databaseHost, that._config.databasePort, opts);
-			var mongoDB: mongodb.Db = new mongodb.Db(that._config.databaseName, mongoServer, { w: 1 });
-			mongoDB.open(function (err: Error, db: mongodb.Db)
-			{
-				if (err || !db)
-					reject(err);
-				else
-					resolve(db);
-			});
 		});
 	}
 }

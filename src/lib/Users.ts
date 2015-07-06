@@ -93,6 +93,8 @@ export class User
 */
 export class UserManager
 {
+    private static _singleton: UserManager;
+
 	public sessionManager: SessionManager;
 	private _userCollection: mongodb.Collection;
 	private _config: def.IConfig;
@@ -107,7 +109,8 @@ export class UserManager
 	constructor(userCollection: mongodb.Collection, sessionCollection: mongodb.Collection, config: def.IConfig)
 	{
 		this._userCollection = userCollection;
-		this._config = config;
+        this._config = config;
+        UserManager._singleton = this;
 
 		// Create the transport object which will be sending the emails
 		if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
@@ -857,5 +860,21 @@ export class UserManager
 				});
 			});
 		});
-	}
+    }
+
+    /**
+    * Creates the user manager singlton
+    */
+    static create(users: mongodb.Collection, sessions: mongodb.Collection, config: def.IConfig): UserManager
+    {
+        return new UserManager(users, sessions, config);
+    }
+
+    /**
+    * Gets the user manager singlton
+    */
+    static get get(): UserManager
+    {
+        return UserManager._singleton;
+    }
 }
