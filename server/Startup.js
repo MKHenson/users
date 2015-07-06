@@ -5,7 +5,8 @@ var express = require("express");
 var morgan = require("morgan");
 var methodOverride = require("method-override");
 var winston = require("winston");
-var Controller_1 = require("./Controller");
+var UserController_1 = require("./controllers/UserController");
+var CORSController_1 = require("./controllers/CORSController");
 var yargs = require("yargs");
 var mongodb = require("mongodb");
 var arguments = yargs.argv;
@@ -43,15 +44,11 @@ catch (exp) {
 }
 winston.info("Opening the database...", { process: process.pid });
 openDB(config).then(function (db) {
-    winston.info("Creating collections...", { process: process.pid });
+    winston.info("Initializing controllers...", { process: process.pid });
     return Promise.all([
-        createCollection(config.userCollection, db),
-        createCollection(config.sessionCollection, db)
+        new CORSController_1.CORSController(app, config).initialize(db),
+        new UserController_1.UserController(app, config).initialize(db)
     ]);
-}).then(function (collections) {
-    winston.info("Adding controllers...", { process: process.pid });
-    var ctrl = new Controller_1.default(app, config);
-    return ctrl.initialize(collections[0], collections[1]);
 }).then(function () {
     // Use middlewares
     app.use(morgan('dev'));
@@ -94,22 +91,6 @@ openDB(config).then(function (db) {
         process.exit();
     });
 });
-/**
-* Creates a new mongodb collection
-* @param {string} name The name of the collection to create
-* @param {mongodb.Db} db The database to use
-* @param {Promise<mongodb.Collection>}
-*/
-function createCollection(name, db) {
-    return new Promise(function (resolve, reject) {
-        db.createCollection(name, function (err, collection) {
-            if (err || !collection)
-                return reject(new Error("Error creating collection: " + err.message));
-            else
-                return resolve(collection);
-        });
-    });
-}
 /**
 * Connects to a mongo database
 * @param {IConfig} config

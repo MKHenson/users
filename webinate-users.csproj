@@ -23,7 +23,9 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="src\lib\BucketManager.ts" />
-    <TypeScriptCompile Include="src\lib\Controller.ts" />
+    <TypeScriptCompile Include="src\lib\controllers\Controller.ts" />
+    <TypeScriptCompile Include="src\lib\controllers\CORSController.ts" />
+    <TypeScriptCompile Include="src\lib\controllers\UserController.ts" />
     <TypeScriptCompile Include="src\lib\definitions\bcrypt.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\body-parser.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\entities.d.ts" />

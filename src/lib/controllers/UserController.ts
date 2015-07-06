@@ -4,16 +4,17 @@ import bodyParser = require('body-parser');
 // NEW ES6 METHOD
 import * as http from "http";
 import * as entities from "entities";
-import * as def from "./Definitions";
+import * as def from "../Definitions";
 import * as mongodb from "mongodb";
-import {Session} from "./Session";
-import {UserManager, User} from "./Users";
-import {hasAdminRights} from "./PermissionController";
+import {Session} from "../Session";
+import {UserManager, User} from "../Users";
+import {hasAdminRights} from "../PermissionController";
+import {Controller} from "./Controller"
 
 /**
 * Main class to use for managing users
 */
-class Controller
+export class UserController extends Controller
 {
 	private _transport: Transport;
 	private _from: string;
@@ -29,7 +30,9 @@ class Controller
 	* @param {def.IConfig} The config options of this manager
 	*/
     constructor(e: express.Express, config: def.IConfig)
-	{
+    {
+        super();
+
 		this._config = config;
 		
 		// Setup the rest calls
@@ -40,37 +43,37 @@ class Controller
 
         
 
-        var matches: Array<RegExp> = [];
-        for (var i = 0, l = config.approvedDomains.length; i < l; i++)
-            matches.push(new RegExp(config.approvedDomains[i]));
+        //var matches: Array<RegExp> = [];
+        //for (var i = 0, l = config.approvedDomains.length; i < l; i++)
+        //    matches.push(new RegExp(config.approvedDomains[i]));
 
-        // Approves the valid domains for CORS requests
-        router.all("*", function (req: express.Request, res: express.Response, next: Function)
-        {
-            if ((<http.ServerRequest>req).headers.origin)
-            {
-                for (var m = 0, l = matches.length; m < l; m++)
-                    if ((<http.ServerRequest>req).headers.origin.match(matches[m]))
-                    {
-                        res.setHeader('Access-Control-Allow-Origin', (<http.ServerRequest>req).headers.origin);
-                        res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-                        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Mime-Type, X-File-Name, Cache-Control');
-                        res.setHeader("Access-Control-Allow-Credentials", "true");
-                        break;
-                    }
-            }
-            else
-                console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
+        //// Approves the valid domains for CORS requests
+        //router.all("*", function (req: express.Request, res: express.Response, next: Function)
+        //{
+        //    if ((<http.ServerRequest>req).headers.origin)
+        //    {
+        //        for (var m = 0, l = matches.length; m < l; m++)
+        //            if ((<http.ServerRequest>req).headers.origin.match(matches[m]))
+        //            {
+        //                res.setHeader('Access-Control-Allow-Origin', (<http.ServerRequest>req).headers.origin);
+        //                res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        //                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Mime-Type, X-File-Name, Cache-Control');
+        //                res.setHeader("Access-Control-Allow-Credentials", "true");
+        //                break;
+        //            }
+        //    }
+        //    else
+        //        console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
 
 
-            if (req.method === 'OPTIONS')
-            {
-                res.status(200);
-                res.end();
-            }
-            else
-                next();
-        });
+        //    if (req.method === 'OPTIONS')
+        //    {
+        //        res.status(200);
+        //        res.end();
+        //    }
+        //    else
+        //        next();
+        //});
 		
         router.get("/users/:username", <any>[hasAdminRights, this.getUser.bind(this)]);
         router.get("/users", <any>[hasAdminRights, this.getUsers.bind(this)]);
@@ -103,23 +106,31 @@ class Controller
 	* Called to initialize this controller and its related database objects
     * @returns {Promise<Controller>}
 	*/
-    initialize(users: mongodb.Collection, sessions: mongodb.Collection ): Promise<void>
+    initialize(db: mongodb.Db): Promise<void>
 	{
-		var that = this;
-
+        var that = this;
+        
 		return new Promise<void>(function (resolve, reject)
         {
-            // Create the user manager
-            that._userManager = UserManager.create(users, sessions, that._config);
-            that._userManager.initialize().then(function ()
-			{
-				// Initialization is finished
-				resolve();
+            Promise.all([
+                that.createCollection(that._config.userCollection, db),
+                that.createCollection(that._config.sessionCollection, db)
 
-			}).catch(function (error: Error)
-			{
-				reject(error);
-			})
+            ]).then(function( collections )
+            {
+                // Create the user manager
+                that._userManager = UserManager.create(collections[0], collections[1], that._config);
+                that._userManager.initialize().then(function ()
+                {
+                    // Initialization is finished
+                    resolve();
+
+                })
+
+            }).catch(function (error: Error)
+            {
+                reject(error);
+            })
 		});
 	}
 
@@ -585,7 +596,3 @@ class Controller
 		});
 	}
 }
-
-
-//export = Controller;
-export default Controller;

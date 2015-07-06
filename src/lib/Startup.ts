@@ -7,7 +7,8 @@ import * as methodOverride from "method-override";
 
 import {IConfig} from "./Definitions";
 import * as winston from "winston";
-import Controller from "./Controller";
+import {UserController} from "./controllers/UserController";
+import {CORSController} from "./controllers/CORSController";
 import * as yargs from "yargs";
 import * as mongodb from "mongodb";
 
@@ -61,18 +62,11 @@ catch (exp)
 winston.info(`Opening the database...`, { process: process.pid });
 openDB(config).then(function (db)
 {
-
-    winston.info(`Creating collections...`, { process: process.pid });
+    winston.info(`Initializing controllers...`, { process: process.pid });
     return Promise.all([
-        createCollection(config.userCollection, db),
-        createCollection(config.sessionCollection, db)
+        new CORSController(app, config).initialize(db),
+        new UserController(app, config).initialize(db)
     ]);
-
-}).then(function (collections: Array<mongodb.Collection>)
-{
-    winston.info(`Adding controllers...`, { process: process.pid });
-    var ctrl = new Controller(app, config);
-    return ctrl.initialize(collections[0], collections[1]);
 
 }).then(function ()
 {
@@ -137,25 +131,7 @@ openDB(config).then(function (db)
 });
 
 
-/**
-* Creates a new mongodb collection
-* @param {string} name The name of the collection to create
-* @param {mongodb.Db} db The database to use
-* @param {Promise<mongodb.Collection>}
-*/
-function createCollection(name: string, db: mongodb.Db): Promise<mongodb.Collection>
-{
-    return new Promise<mongodb.Collection>(function (resolve, reject)
-    {
-        db.createCollection(name, function (err: Error, collection: mongodb.Collection) 
-        {
-            if (err || !collection)
-                return reject(new Error("Error creating collection: " + err.message));
-            else
-                return resolve(collection);
-        });
-    });
-}
+
 
 /**
 * Connects to a mongo database 
