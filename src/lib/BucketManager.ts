@@ -37,7 +37,7 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Attempt to create a new Google bucket
-            gcs.createBucket(bucketName, function (err: Error, bucket: gcloud.IBucket)
+            gcs.createBucket(bucketName, <gcloud.IMeta>{ location : "EU" }, function (err: Error, bucket: gcloud.IBucket)
             {
                 if (err)
                     return reject(new Error(`Could not connect to storage system: '${err.message}'`));
@@ -91,7 +91,12 @@ export class BucketManager
                         if (err)
                             return reject(new Error(`Could not remove bucket from storage system: '${err.message}'`));
                         else
-                            return resolve();
+                        {
+                            bucketCollection.remove(<def.IBucketEntry>{ user: user }, function (err, result)
+                            {
+                                return resolve();
+                            });
+                        }
                     });
                 }
             });

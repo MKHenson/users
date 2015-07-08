@@ -18,7 +18,7 @@ var BucketManager = (function () {
         var bucketCollection = this._buckets;
         return new Promise(function (resolve, reject) {
             // Attempt to create a new Google bucket
-            gcs.createBucket(bucketName, function (err, bucket) {
+            gcs.createBucket(bucketName, { location: "EU" }, function (err, bucket) {
                 if (err)
                     return reject(new Error("Could not connect to storage system: '" + err.message + "'"));
                 else {
@@ -60,8 +60,11 @@ var BucketManager = (function () {
                     bucket.delete(function (err, apiResponse) {
                         if (err)
                             return reject(new Error("Could not remove bucket from storage system: '" + err.message + "'"));
-                        else
-                            return resolve();
+                        else {
+                            bucketCollection.remove({ user: user }, function (err, result) {
+                                return resolve();
+                            });
+                        }
                     });
                 }
             });
