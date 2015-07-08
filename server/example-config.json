@@ -27,9 +27,16 @@
 	"emailService": "Gmail",
 	"emailServiceUser": "provider@gmail.com",
 	"emailServicePassword": "provider_password",
-	"adminUser": {
-		"username": "root",
-		"email": "root_email@host.com",
-		"password": "CHANGE_THIS_PASSWORD"
-	}
+  "adminUser": {
+    "username": "root",
+    "email": "root_email@host.com",
+    "password": "CHANGE_THIS_PASSWORD"
+  },
+
+  "bucket": {
+    "keyFile": "",
+    "projectId": "",
+    "bucketsCollection": "buckets",
+	  "filesCollection": "files"
+  }
 }

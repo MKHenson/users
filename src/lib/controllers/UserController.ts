@@ -10,6 +10,7 @@ import {Session} from "../Session";
 import {UserManager, User} from "../Users";
 import {hasAdminRights} from "../PermissionController";
 import {Controller} from "./Controller"
+import {BucketManager} from "../BucketManager";
 
 /**
 * Main class to use for managing users
@@ -41,40 +42,6 @@ export class UserController extends Controller
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
-        
-
-        //var matches: Array<RegExp> = [];
-        //for (var i = 0, l = config.approvedDomains.length; i < l; i++)
-        //    matches.push(new RegExp(config.approvedDomains[i]));
-
-        //// Approves the valid domains for CORS requests
-        //router.all("*", function (req: express.Request, res: express.Response, next: Function)
-        //{
-        //    if ((<http.ServerRequest>req).headers.origin)
-        //    {
-        //        for (var m = 0, l = matches.length; m < l; m++)
-        //            if ((<http.ServerRequest>req).headers.origin.match(matches[m]))
-        //            {
-        //                res.setHeader('Access-Control-Allow-Origin', (<http.ServerRequest>req).headers.origin);
-        //                res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        //                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Mime-Type, X-File-Name, Cache-Control');
-        //                res.setHeader("Access-Control-Allow-Credentials", "true");
-        //                break;
-        //            }
-        //    }
-        //    else
-        //        console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
-
-
-        //    if (req.method === 'OPTIONS')
-        //    {
-        //        res.status(200);
-        //        res.end();
-        //    }
-        //    else
-        //        next();
-        //});
-		
         router.get("/users/:username", <any>[hasAdminRights, this.getUser.bind(this)]);
         router.get("/users", <any>[hasAdminRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
@@ -85,16 +52,13 @@ export class UserController extends Controller
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
         router.get("/password-reset", this.passwordReset.bind(this));
-
         router.delete("/sessions/:id", <any>[hasAdminRights, this.deleteSession.bind(this)]);
-        router.delete("/remove-user/:user", <any>[hasAdminRights, this.removeUser.bind(this)]);
-				
+        router.delete("/remove-user/:user", <any>[hasAdminRights, this.removeUser.bind(this)]);	
 		router.post("/login", this.login.bind(this));
 		router.post("/register", this.register.bind(this));
         router.post("/create-user", <any>[hasAdminRights, this.createUser.bind(this)]);
 
         router.put("/approve-activation/:user", <any>[hasAdminRights, this.approveActivation.bind(this)]);
-		
 		
 		// Register the path
         e.use(config.restURL, router);
@@ -504,7 +468,11 @@ export class UserController extends Controller
         if (!toRemove)
             return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
         
-        that._userManager.removeUser(toRemove).then(function()
+        that._userManager.removeUser(toRemove).then(function ()
+        {
+            return BucketManager.get.removeBucket(toRemove);
+
+        }).then(function ()
 		{
 			var token: def.IResponse = {
 				error: false,
@@ -535,7 +503,7 @@ export class UserController extends Controller
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
-
+        var createdUser: User;
         var token: def.IRegisterToken = req.body;
 
 		// Not allowed to create super users
@@ -548,15 +516,21 @@ export class UserController extends Controller
 
 		that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function(user)
         {
+            createdUser = user;
+            return BucketManager.get.createUserBucket(user.dbEntry.username);
+            
+        }).then(function()
+        {
             var token: def.IGetUser = {
-				error: false,
-                message: `User ${user.dbEntry.username} has been created`,
-                data: user.dbEntry
-			};
+                error: false,
+                message: `User ${createdUser.dbEntry.username} has been created`,
+                data: createdUser.dbEntry
+            };
+            
+            return res.end(JSON.stringify(token));
 
-			return res.end(JSON.stringify(token));
-
-		}).catch(function (error: Error)
+        })
+        .catch(function (error: Error)
 		{
 			return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,

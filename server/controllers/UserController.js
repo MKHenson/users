@@ -11,6 +11,7 @@ var def = require("../Definitions");
 var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
+var BucketManager_1 = require("../BucketManager");
 /**
 * Main class to use for managing users
 */
@@ -30,34 +31,6 @@ var UserController = (function (_super) {
         router.use(bodyParser.urlencoded({ 'extended': true }));
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
-        //var matches: Array<RegExp> = [];
-        //for (var i = 0, l = config.approvedDomains.length; i < l; i++)
-        //    matches.push(new RegExp(config.approvedDomains[i]));
-        //// Approves the valid domains for CORS requests
-        //router.all("*", function (req: express.Request, res: express.Response, next: Function)
-        //{
-        //    if ((<http.ServerRequest>req).headers.origin)
-        //    {
-        //        for (var m = 0, l = matches.length; m < l; m++)
-        //            if ((<http.ServerRequest>req).headers.origin.match(matches[m]))
-        //            {
-        //                res.setHeader('Access-Control-Allow-Origin', (<http.ServerRequest>req).headers.origin);
-        //                res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        //                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Mime-Type, X-File-Name, Cache-Control');
-        //                res.setHeader("Access-Control-Allow-Credentials", "true");
-        //                break;
-        //            }
-        //    }
-        //    else
-        //        console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
-        //    if (req.method === 'OPTIONS')
-        //    {
-        //        res.status(200);
-        //        res.end();
-        //    }
-        //    else
-        //        next();
-        //});
         router.get("/users/:username", [PermissionController_1.hasAdminRights, this.getUser.bind(this)]);
         router.get("/users", [PermissionController_1.hasAdminRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
@@ -386,6 +359,8 @@ var UserController = (function (_super) {
         if (!toRemove)
             return res.end(JSON.stringify({ message: "No user found", error: true }));
         that._userManager.removeUser(toRemove).then(function () {
+            return BucketManager_1.BucketManager.get.removeBucket(toRemove);
+        }).then(function () {
             var token = {
                 error: false,
                 message: "User " + toRemove + " has been removed"
@@ -408,6 +383,7 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
+        var createdUser;
         var token = req.body;
         // Not allowed to create super users
         if (token.privileges == def.UserPrivileges.SuperAdmin)
@@ -416,13 +392,17 @@ var UserController = (function (_super) {
                 error: true
             }));
         that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function (user) {
+            createdUser = user;
+            return BucketManager_1.BucketManager.get.createUserBucket(user.dbEntry.username);
+        }).then(function () {
             var token = {
                 error: false,
-                message: "User " + user.dbEntry.username + " has been created",
-                data: user.dbEntry
+                message: "User " + createdUser.dbEntry.username + " has been created",
+                data: createdUser.dbEntry
             };
             return res.end(JSON.stringify(token));
-        }).catch(function (error) {
+        })
+            .catch(function (error) {
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true

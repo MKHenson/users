@@ -5,6 +5,7 @@ var express = require("express");
 var morgan = require("morgan");
 var methodOverride = require("method-override");
 var winston = require("winston");
+var BucketController_1 = require("./controllers/BucketController");
 var UserController_1 = require("./controllers/UserController");
 var CORSController_1 = require("./controllers/CORSController");
 var yargs = require("yargs");
@@ -46,6 +47,7 @@ winston.info("Opening the database...", { process: process.pid });
 openDB(config).then(function (db) {
     winston.info("Initializing controllers...", { process: process.pid });
     return Promise.all([
+        new BucketController_1.BucketController(app, config).initialize(db),
         new CORSController_1.CORSController(app, config).initialize(db),
         new UserController_1.UserController(app, config).initialize(db)
     ]);

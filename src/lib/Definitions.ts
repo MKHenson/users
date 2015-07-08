@@ -20,6 +20,21 @@ export interface IUserEntry
 }
 
 /**
+* The interface for describing each user's bucket
+*/
+export interface IBucketEntry
+{
+    _id?: mongodb.ObjectID;
+    name?: string;
+    user?: string;
+    created?: number;
+    memoryUsed?: number;
+    memoryAllocated?: number;
+    apiCallsUsed?: number;
+    apiCallsAllocated?: number;
+}
+
+/**
 * Adds a logged in user to the request object
 */
 export interface AuthRequest extends express.Request
@@ -51,7 +66,19 @@ export interface IGoogleStorage
     /*
     * Project ID
     */
-	projectId: string;
+    projectId: string;
+
+    /**
+    * The name of the mongodb collection for storing bucket details
+    * eg: "buckets"
+    */
+    bucketsCollection: string;
+
+    /**
+    * The name of the mongodb collection for storing file details
+    * eg: "files"
+    */
+    filesCollection: string;
 }
 
 /*
@@ -147,7 +174,7 @@ export interface IConfig
     * eg: If "/api", then the API url would be 127.0.0.1:80/api (or rather host:port/restURL)
 	*/
     restURL: string;
-
+    
     /**
 	* The URL to redirect to after the user attempts to activate their account. 
     * User's can activate their account via the "/activate-account" URL, and after its validation the server will redirect to this URL
@@ -210,7 +237,7 @@ export interface IConfig
     * eg: "sessions"
 	*/
     sessionCollection: string;
-
+    
     /**
 	* The host the DB is listening on
     * e.g. "127.0.0.1"
@@ -336,8 +363,10 @@ export interface IConfig
     *
     "bucket": {
             "keyFile": "",
-            "projectId": ""
-	    }
+            "projectId": "",
+            "bucketsCollection": "buckets",
+            "filesCollection": "files"
+        }
 	*/
     bucket: IGoogleStorage;
 }

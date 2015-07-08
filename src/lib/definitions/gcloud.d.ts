@@ -5,7 +5,25 @@ declare module "gcloud" {
 
     import * as fs from "fs";
 
-    
+    export interface IOWner
+    {
+        entity: string;
+    }
+
+    export interface IMeta
+    {
+        etag: string;
+        id: string;
+        kind: string;
+        location: string;
+        metageneration: string;
+        name: string;
+        owner: IOWner
+        projectNumber: string;
+        selfLink: string;
+        storageClass: string;
+        timeCreated: string;
+    }
 
     interface IACLUserController
     {
@@ -30,6 +48,8 @@ declare module "gcloud" {
         WRITER_ROLE: string;
 
         default: IACL;
+        pathPrefix: string;
+               
 
         /**
         * An object of convenience methods to add or delete owner ACL permissions for a
@@ -819,7 +839,9 @@ declare module "gcloud" {
     export interface IBucket
     {
         acl: IACL;
-        metadata: any;
+        metadata: IMeta
+        name: string;
+        storage: Storage
 
         /**
         * Create a File object. See {module:storage/file} to see how to handle

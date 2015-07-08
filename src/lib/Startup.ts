@@ -7,6 +7,7 @@ import * as methodOverride from "method-override";
 
 import {IConfig} from "./Definitions";
 import * as winston from "winston";
+import {BucketController} from "./controllers/BucketController";
 import {UserController} from "./controllers/UserController";
 import {CORSController} from "./controllers/CORSController";
 import * as yargs from "yargs";
@@ -64,6 +65,7 @@ openDB(config).then(function (db)
 {
     winston.info(`Initializing controllers...`, { process: process.pid });
     return Promise.all([
+        new BucketController(app, config).initialize(db),
         new CORSController(app, config).initialize(db),
         new UserController(app, config).initialize(db)
     ]);
