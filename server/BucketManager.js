@@ -34,6 +34,33 @@ var BucketManager = (function () {
         });
     };
     /**
+    * Fetches all file entries from the database for a given bucket
+    * @param {string} bucket [Optional] Specify the bucket from which he files belong to
+    * @returns {Promise<Array<def.IFileEntry>>}
+    */
+    BucketManager.prototype.getFileEntries = function (bucket) {
+        var that = this;
+        var gcs = this._gcs;
+        var files = this._files;
+        return new Promise(function (resolve, reject) {
+            var searchQuery = {};
+            if (bucket)
+                searchQuery.bucket = bucket;
+            // Save the new entry into the database
+            files.find(searchQuery, function (err, result) {
+                if (err)
+                    return reject(err);
+                else {
+                    result.toArray(function (err, files) {
+                        if (err)
+                            return reject(err);
+                        return resolve(files);
+                    });
+                }
+            });
+        });
+    };
+    /**
     * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
     * @param {string} user The user associated with this bucket
     * @returns {Promise<gcloud.IBucket>}
@@ -125,6 +152,55 @@ var BucketManager = (function () {
                         }
                     });
                 }
+            });
+        });
+    };
+    /**
+    * Attempts to remove files from the cloud and database
+    * @param {string} fileNames The files to remove
+    * @returns {Promise<gcloud.IBucket>}
+    */
+    BucketManager.prototype.removeFiles = function (fileNames) {
+        if (fileNames.length == 0)
+            return Promise.resolve();
+        var that = this;
+        var gcs = this._gcs;
+        var bucketCollection = this._buckets;
+        var files = this._files;
+        var stats = this._stats;
+        // Create the search query for each of the files
+        var searchQuery = { $or: [] };
+        for (var i = 0; i < fileNames.length; i++)
+            searchQuery.$or.push({ name: fileNames[i] });
+        return new Promise(function (resolve, reject) {
+            // Get the files
+            files.find(searchQuery, function (err, cursor) {
+                if (err)
+                    return reject(err);
+                var errorOccurred = false;
+                // For each file entry
+                cursor.each(function (err, fileEntry) {
+                    that.getIBucket(fileEntry.bucket).then(function (bucketEntry) {
+                        // Get the bucket and delete the file
+                        var bucket = gcs.bucket(bucketEntry.name);
+                        bucket.file(fileEntry.name).delete(function (err, apiResponse) {
+                            if (err || errorOccurred) {
+                                errorOccurred = true;
+                                return reject(new Error("Could not remove file '" + fileEntry.name + "' from storage system: '" + err.message + "'"));
+                            }
+                            // Update the bucket data usage
+                            bucketCollection.update({ name: bucketEntry.name }, { $inc: { memoryUsed: fileEntry.size } }, function (err, result) {
+                                // Remove the file entries
+                                files.remove({ _id: fileEntry._id }, function (err, result) {
+                                    // Update the stats usage
+                                    stats.update({ user: bucketEntry.user }, { $inc: { memoryUsed: bucketEntry.memoryUsed, apiCallsUsed: 1 } }, function (err, result) {
+                                        return resolve();
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
             });
         });
     };

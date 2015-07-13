@@ -61,6 +61,42 @@ export class BucketManager
     }
 
     /**
+    * Fetches all file entries from the database for a given bucket
+    * @param {string} bucket [Optional] Specify the bucket from which he files belong to
+    * @returns {Promise<Array<def.IFileEntry>>}
+    */
+    getFileEntries(bucket? : string): Promise<Array<def.IFileEntry>>
+    {
+        var that = this;
+        var gcs = this._gcs;
+        var files = this._files;
+        
+        return new Promise(function (resolve, reject)
+        {
+            var searchQuery: def.IFileEntry = {};
+            if (bucket)
+                searchQuery.bucket = bucket;
+
+            // Save the new entry into the database
+            files.find(searchQuery, function (err, result)
+            {
+                if (err)
+                    return reject(err);
+                else
+                {
+                    result.toArray(function (err, files: Array<def.IFileEntry>)
+                    {
+                        if (err)
+                            return reject(err);
+
+                        return resolve(files);
+                    });
+                }
+            });
+        });
+    }
+
+    /**
     * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
     * @param {string} user The user associated with this bucket
     * @returns {Promise<gcloud.IBucket>}
@@ -181,6 +217,72 @@ export class BucketManager
         });
     }
 
+   /**
+   * Attempts to remove files from the cloud and database
+   * @param {string} fileNames The files to remove
+   * @returns {Promise<gcloud.IBucket>}
+   */
+    removeFiles(fileNames: Array<string>): Promise<any>
+    {
+        if (fileNames.length == 0)
+            return Promise.resolve();
+
+        var that = this;
+        var gcs = this._gcs;
+        var bucketCollection = this._buckets;
+        var files = this._files;
+        var stats = this._stats;
+        
+        // Create the search query for each of the files
+        var searchQuery = { $or: [] };
+        for (var i = 0; i < fileNames.length; i++)
+            searchQuery.$or.push(<def.IFileEntry>{ name : fileNames[i] });
+
+        return new Promise(function (resolve, reject)
+        {
+            // Get the files
+            files.find(searchQuery, function (err, cursor)
+            {
+                if (err)
+                    return reject(err);
+
+                var errorOccurred = false;
+
+                // For each file entry
+                cursor.each(function (err, fileEntry: def.IFileEntry)
+                {
+                    that.getIBucket(fileEntry.bucket).then(function (bucketEntry)
+                    {
+                        // Get the bucket and delete the file
+                        var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.name);
+                        bucket.file(fileEntry.name).delete(function (err, apiResponse)
+                        {
+                            if (err || errorOccurred)
+                            {
+                                errorOccurred = true;
+                                return reject(new Error(`Could not remove file '${fileEntry.name}' from storage system: '${err.message}'`));
+                            }
+                         
+                            // Update the bucket data usage
+                            bucketCollection.update(<def.IBucketEntry>{ name: bucketEntry.name }, { $inc: <def.IBucketEntry>{ memoryUsed: fileEntry.size } }, function (err, result)
+                            {
+                                // Remove the file entries
+                                files.remove(<def.IFileEntry>{ _id: fileEntry._id }, function (err, result)
+                                {
+                                    // Update the stats usage
+                                    stats.update(<def.IStorageStats>{ user: bucketEntry.user }, { $inc: <def.IStorageStats>{ memoryUsed: bucketEntry.memoryUsed, apiCallsUsed: 1 } }, function (err, result)
+                                    {
+                                        return resolve();
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+
     /**
     * Gets a bucket entry
     * @param {string} user The username
@@ -245,7 +347,7 @@ export class BucketManager
     * @param {string} user The username
     * @returns {Promise<IFileEntry>}
     */
-    registerFile(filename: string, bucket: string, part: multiparty.Part, user: string): Promise<def.IFileEntry>
+    private registerFile(filename: string, bucket: string, part: multiparty.Part, user: string): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;

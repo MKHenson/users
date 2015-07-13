@@ -21,7 +21,6 @@ export class BucketController extends Controller
     private _bucketManager: BucketManager;
     private _config: def.IConfig;
     
-
 	/**
 	* Creates an instance of the user manager
 	* @param {mongodb.Collection} userCollection The mongo collection that stores the users
@@ -37,6 +36,7 @@ export class BucketController extends Controller
         // Setup the rest calls
         var router = express.Router();
 
+        router.get("/get-files/:bucket?", <any>[hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-buckets", <any>[hasAdminRights, this.getBuckets.bind(this)]);
         router.post("/user-upload", <any>[hasAdminRights, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:target", <any>[hasAdminRights, this.createBucket.bind(this)]);
@@ -44,6 +44,34 @@ export class BucketController extends Controller
 
         // Register the path
         e.use(`${config.mediaURL}`, router);
+    }
+
+   /**
+   * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private getFiles(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager.get;
+        manager.getFileEntries(req.params.bucket).then(function (files)
+        {
+            return res.end(JSON.stringify(<def.IGetFiles>{
+                message: `Found [${files.length}] files`,
+                error: false,
+                data: files
+            }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        });
     }
 
     /**
@@ -59,7 +87,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         manager.getBucketEntries().then(function (buckets)
         {
-            return res.end(JSON.stringify(<def.IGetArrayResponse<def.IBucketEntry>>{
+            return res.end(JSON.stringify(<def.IGetBuckets>{
                 message: `Found [${buckets.length}] buckets`,
                 error: false,
                 data: buckets

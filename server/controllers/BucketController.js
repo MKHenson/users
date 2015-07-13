@@ -25,6 +25,7 @@ var BucketController = (function (_super) {
         this._config = config;
         // Setup the rest calls
         var router = express.Router();
+        router.get("/get-files/:bucket?", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-buckets", [PermissionController_1.hasAdminRights, this.getBuckets.bind(this)]);
         router.post("/user-upload", [PermissionController_1.hasAdminRights, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:target", [PermissionController_1.hasAdminRights, this.createBucket.bind(this)]);
@@ -32,6 +33,29 @@ var BucketController = (function (_super) {
         // Register the path
         e.use("" + config.mediaURL, router);
     }
+    /**
+    * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    BucketController.prototype.getFiles = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager_1.BucketManager.get;
+        manager.getFileEntries(req.params.bucket).then(function (files) {
+            return res.end(JSON.stringify({
+                message: "Found [" + files.length + "] files",
+                error: false,
+                data: files
+            }));
+        }).catch(function (err) {
+            return res.end(JSON.stringify({
+                message: err.toString(),
+                error: true
+            }));
+        });
+    };
     /**
     * Fetches all bucket entries from the database
     * @param {express.Request} req

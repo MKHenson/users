@@ -428,3 +428,5 @@ export interface IConfig
 export interface IGetUser extends IGetResponse<IUserEntry> { }
 export interface IGetUsers extends IGetArrayResponse<IUserEntry> { count: number; }
 export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }
+export interface IGetBuckets extends IGetArrayResponse<IBucketEntry> { }
+export interface IGetFiles extends IGetArrayResponse<IFileEntry> { }
