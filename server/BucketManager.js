@@ -134,7 +134,7 @@ var BucketManager = (function () {
                 if (err)
                     return reject(err);
                 else {
-                    var bucket = gcs.bucket(result.name);
+                    var bucket = gcs.bucket(result.identifier);
                     bucket.delete(function (err, apiResponse) {
                         if (err)
                             return reject(new Error("Could not remove bucket from storage system: '" + err.message + "'"));
@@ -142,7 +142,7 @@ var BucketManager = (function () {
                             // Remove the bucket entry
                             bucketCollection.remove({ user: user }, function (err, result) {
                                 // Remove the file entries
-                                files.remove({ bucket: bucketEntry.name }, function (err, result) {
+                                files.remove({ bucket: bucketEntry.identifier }, function (err, result) {
                                     // Update the stats usage
                                     stats.update({ user: user }, { $inc: { memoryUsed: -bucketEntry.memoryUsed } }, function (err, result) {
                                         return resolve();
@@ -156,11 +156,45 @@ var BucketManager = (function () {
         });
     };
     /**
-    * Attempts to remove files from the cloud and database
-    * @param {string} fileNames The files to remove
-    * @returns {Promise<gcloud.IBucket>}
+    * Deletes the file from storage and updates the databases
     */
-    BucketManager.prototype.removeFiles = function (fileNames) {
+    BucketManager.prototype.deleteFile = function (bucketEntry, fileEntry) {
+        var that = this;
+        var gcs = this._gcs;
+        var bucketCollection = this._buckets;
+        var files = this._files;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            var bucket = gcs.bucket(bucketEntry.identifier);
+            // Get the bucket and delete the file
+            bucket.file(fileEntry.identifier).delete(function (err, apiResponse) {
+                if (err)
+                    return reject(new Error("Could not remove file '" + fileEntry.identifier + "' from storage system: '" + err.toString() + "'"));
+                // Update the bucket data usage
+                bucketCollection.update({ name: bucketEntry.identifier }, { $inc: { memoryUsed: fileEntry.size } }, function (err, result) {
+                    if (err)
+                        return reject("Could not remove file '" + fileEntry.identifier + "' from storage system: '" + err.toString() + "'");
+                    // Remove the file entries
+                    files.remove({ _id: fileEntry._id }, function (err, result) {
+                        if (err)
+                            return reject("Could not remove file '" + fileEntry.identifier + "' from storage system: '" + err.toString() + "'");
+                        // Update the stats usage
+                        stats.update({ user: bucketEntry.user }, { $inc: { memoryUsed: bucketEntry.memoryUsed, apiCallsUsed: 1 } }, function (err, result) {
+                            if (err)
+                                return reject("Could not remove file '" + fileEntry.identifier + "' from storage system: '" + err.toString() + "'");
+                            return resolve(fileEntry);
+                        });
+                    });
+                });
+            });
+        });
+    };
+    /**
+    * Attempts to remove files from the cloud and database
+    * @param {Array<string>} fileNames The files to remove
+    * @returns {Promise<string>} Returns the names of the files removed
+    */
+    BucketManager.prototype.removeFiles = function (fileNames, user) {
         if (fileNames.length == 0)
             return Promise.resolve();
         var that = this;
@@ -168,37 +202,31 @@ var BucketManager = (function () {
         var bucketCollection = this._buckets;
         var files = this._files;
         var stats = this._stats;
+        var numToRemove = fileNames.length;
+        var attempts = 0;
+        var filesRemoved = [];
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
-        for (var i = 0; i < fileNames.length; i++)
+        for (var i = 0; i < numToRemove; i++)
             searchQuery.$or.push({ name: fileNames[i] });
         return new Promise(function (resolve, reject) {
             // Get the files
             files.find(searchQuery, function (err, cursor) {
                 if (err)
                     return reject(err);
-                var errorOccurred = false;
                 // For each file entry
                 cursor.each(function (err, fileEntry) {
                     that.getIBucket(fileEntry.bucket).then(function (bucketEntry) {
-                        // Get the bucket and delete the file
-                        var bucket = gcs.bucket(bucketEntry.name);
-                        bucket.file(fileEntry.name).delete(function (err, apiResponse) {
-                            if (err || errorOccurred) {
-                                errorOccurred = true;
-                                return reject(new Error("Could not remove file '" + fileEntry.name + "' from storage system: '" + err.message + "'"));
-                            }
-                            // Update the bucket data usage
-                            bucketCollection.update({ name: bucketEntry.name }, { $inc: { memoryUsed: fileEntry.size } }, function (err, result) {
-                                // Remove the file entries
-                                files.remove({ _id: fileEntry._id }, function (err, result) {
-                                    // Update the stats usage
-                                    stats.update({ user: bucketEntry.user }, { $inc: { memoryUsed: bucketEntry.memoryUsed, apiCallsUsed: 1 } }, function (err, result) {
-                                        return resolve();
-                                    });
-                                });
-                            });
-                        });
+                        return that.deleteFile(bucketEntry, fileEntry);
+                    }).then(function (fileEntry) {
+                        attempts++;
+                        filesRemoved.push(fileEntry.identifier);
+                        if (attempts == numToRemove)
+                            resolve(filesRemoved);
+                    }).catch(function (err) {
+                        attempts++;
+                        if (attempts == numToRemove)
+                            resolve(filesRemoved);
                     });
                 });
             });
@@ -294,7 +322,7 @@ var BucketManager = (function () {
                 storageStats = stats;
                 return that.getIBucket(user);
             }).then(function (bucketEntry) {
-                var bucket = that._gcs.bucket(bucketEntry.name);
+                var bucket = that._gcs.bucket(bucketEntry.identifier);
                 var filename = Date.now() + "-" + part.filename;
                 var file = bucket.file(filename);
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
@@ -315,9 +343,9 @@ var BucketManager = (function () {
                     var apiCalls = storageStats.apiCallsUsed + 1;
                     var bucketMemory = bucketEntry.memoryUsed + part.byteCount;
                     var totalMemory = storageStats.memoryUsed + part.byteCount;
-                    bucketCollection.update({ name: bucketEntry.name }, { $set: { memoryUsed: bucketMemory } }, function (err, result) {
+                    bucketCollection.update({ name: bucketEntry.identifier }, { $set: { memoryUsed: bucketMemory } }, function (err, result) {
                         stats.update({ user: user }, { $set: { memoryUsed: totalMemory, apiCallsUsed: apiCalls } }, function (err, result) {
-                            that.registerFile(filename, bucketEntry.name, part, user).then(function (file) {
+                            that.registerFile(filename, bucketEntry.identifier, part, user).then(function (file) {
                                 return resolve(file);
                             }).catch(function (err) {
                                 return reject(err);

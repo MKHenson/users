@@ -27,12 +27,41 @@ var BucketController = (function (_super) {
         var router = express.Router();
         router.get("/get-files/:bucket?", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-buckets", [PermissionController_1.hasAdminRights, this.getBuckets.bind(this)]);
+        router.delete("/remove-files/:files", [PermissionController_1.identifyUser, this.removeFiles.bind(this)]);
         router.post("/user-upload", [PermissionController_1.hasAdminRights, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:target", [PermissionController_1.hasAdminRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", [PermissionController_1.hasAdminRights, this.createStats.bind(this)]);
         // Register the path
         e.use("" + config.mediaURL, router);
     }
+    /**
+    * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    BucketController.prototype.removeFiles = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager_1.BucketManager.get;
+        var files = null;
+        if (req.params.files && req.params.files.trim() != "")
+            files = req.params.files.split(",");
+        else
+            return res.end(JSON.stringify({ message: "Please specify the files to remove", error: true }));
+        manager.removeFiles(files, req._user).then(function (numRemoved) {
+            return res.end(JSON.stringify({
+                message: "Removed [" + numRemoved.length + "] files",
+                error: false,
+                data: numRemoved
+            }));
+        }).catch(function (err) {
+            return res.end(JSON.stringify({
+                message: err.toString(),
+                error: true
+            }));
+        });
+    };
     /**
     * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
     * @param {express.Request} req
@@ -158,7 +187,7 @@ var BucketController = (function (_super) {
                 manager.uploadStream(part, req._user.dbEntry.username).then(function (file) {
                     completedParts++;
                     successfulParts++;
-                    newUpload.file = file.name;
+                    newUpload.file = file.identifier;
                     part.resume();
                     checkIfComplete();
                 }).catch(function (err) {

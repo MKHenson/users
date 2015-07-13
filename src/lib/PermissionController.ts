@@ -31,6 +31,25 @@ export function hasAdminRights(req: def.AuthRequest, res: express.Response, next
 }
 
 /**
+* Checks for session data and fetches the user
+* @param {def.AuthRequest} req
+* @param {express.Response} res
+* @param {Function} next
+*/
+export function identifyUser(req: def.AuthRequest, res: express.Response, next: Function): any
+{
+    UserManager.get.loggedIn(req, res).then(function (user)
+    {
+        req._user = user;
+        next();
+
+    }).catch(function (error: Error)
+    {
+        next();
+    });
+}
+
+/**
 * Checks a user is logged in and has permission
 * @param {def.UserPrivileges} level
 * @param {def.AuthRequest} req
@@ -58,6 +77,7 @@ export function requestHasPermission(level: def.UserPrivileges, req: def.AuthReq
             req._user = user;
 
             resolve(true);
+
         })
     })
 }

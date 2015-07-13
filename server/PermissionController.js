@@ -20,6 +20,21 @@ function hasAdminRights(req, res, next) {
 }
 exports.hasAdminRights = hasAdminRights;
 /**
+* Checks for session data and fetches the user
+* @param {def.AuthRequest} req
+* @param {express.Response} res
+* @param {Function} next
+*/
+function identifyUser(req, res, next) {
+    Users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+        req._user = user;
+        next();
+    }).catch(function (error) {
+        next();
+    });
+}
+exports.identifyUser = identifyUser;
+/**
 * Checks a user is logged in and has permission
 * @param {def.UserPrivileges} level
 * @param {def.AuthRequest} req

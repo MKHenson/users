@@ -25,7 +25,7 @@ export interface IUserEntry
 export interface IBucketEntry
 {
     _id?: mongodb.ObjectID;
-    name?: string;
+    identifier?: string;
     user?: string;
     created?: number;
     memoryUsed?: number;
@@ -49,7 +49,7 @@ export interface IStorageStats
 export interface IFileEntry
 {
     _id?: mongodb.ObjectID;
-    name?: string;
+    identifier?: string;
     bucket?: string;
     created?: number;
     size?: number;
@@ -430,3 +430,4 @@ export interface IGetUsers extends IGetArrayResponse<IUserEntry> { count: number
 export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }
 export interface IGetBuckets extends IGetArrayResponse<IBucketEntry> { }
 export interface IGetFiles extends IGetArrayResponse<IFileEntry> { }
+export interface IRemoveFiles extends IGetArrayResponse<string> { }

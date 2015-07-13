@@ -8,7 +8,7 @@ import * as def from "../Definitions";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
 import {UserManager, User} from "../Users";
-import {hasAdminRights} from "../PermissionController";
+import {hasAdminRights, identifyUser} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
 import * as multiparty from "multiparty";
@@ -38,12 +38,47 @@ export class BucketController extends Controller
 
         router.get("/get-files/:bucket?", <any>[hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-buckets", <any>[hasAdminRights, this.getBuckets.bind(this)]);
+        router.delete("/remove-files/:files", <any>[identifyUser, this.removeFiles.bind(this)]);
         router.post("/user-upload", <any>[hasAdminRights, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:target", <any>[hasAdminRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", <any>[hasAdminRights, this.createStats.bind(this)]);
 
         // Register the path
         e.use(`${config.mediaURL}`, router);
+    }
+
+   /**
+   * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private removeFiles(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager.get;
+        var files: Array<string> = null;
+        if (req.params.files && req.params.files.trim() != "")
+            files = req.params.files.split(",");
+        else
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the files to remove", error: true }));
+
+        manager.removeFiles(files, req._user).then(function (numRemoved)
+        {
+            return res.end(JSON.stringify(<def.IRemoveFiles>{
+                message: `Removed [${numRemoved.length}] files`,
+                error: false,
+                data:numRemoved
+            }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        });
     }
 
    /**
@@ -200,7 +235,7 @@ export class BucketController extends Controller
                 {
                     completedParts++;
                     successfulParts++;
-                    newUpload.file = file.name;
+                    newUpload.file = file.identifier;
                     part.resume();
                     checkIfComplete();
 
