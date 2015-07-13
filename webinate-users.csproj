@@ -38,6 +38,7 @@
     <TypeScriptCompile Include="src\lib\definitions\mongo-extras.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\mongodb.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\morgan.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\multiparty.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\node.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\nodemailer.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\recaptcha-async.d.ts" />

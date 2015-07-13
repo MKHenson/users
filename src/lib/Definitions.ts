@@ -29,9 +29,31 @@ export interface IBucketEntry
     user?: string;
     created?: number;
     memoryUsed?: number;
+}
+
+/**
+* The interface for describing each user's bucket
+*/
+export interface IStorageStats
+{
+    user?: string;
+    memoryUsed?: number;
     memoryAllocated?: number;
     apiCallsUsed?: number;
     apiCallsAllocated?: number;
+}
+
+/**
+* The interface for describing each user's file
+*/
+export interface IFileEntry
+{
+    _id?: mongodb.ObjectID;
+    name?: string;
+    bucket?: string;
+    created?: number;
+    size?: number;
+    numDownloads?: number;
 }
 
 /**
@@ -79,6 +101,12 @@ export interface IGoogleStorage
     * eg: "files"
     */
     filesCollection: string;
+
+    /**
+    * The name of the mongodb collection for storing user stats
+    * eg: "storageAPI"
+    */
+    statsCollection: string;
 }
 
 /*
@@ -97,6 +125,26 @@ export interface IAuthenticationResponse extends IResponse
 {
     authenticated: boolean;
     user: IUserEntry;
+}
+
+/*
+* Token used to describe how the upload went
+*/
+export interface IUploadToken
+{
+    file: string;
+    field: string;
+    filename: string;
+    error: boolean;
+    errorMsg: string;
+}
+
+/*
+* A POST request that returns the details of a multipart form upload
+*/
+export interface IUploadResponse extends IResponse
+{
+    tokens: Array<IUploadToken>
 }
 
 /*
@@ -174,6 +222,12 @@ export interface IConfig
     * eg: If "/api", then the API url would be 127.0.0.1:80/api (or rather host:port/restURL)
 	*/
     restURL: string;
+
+    /**
+	* The RESTful path of the media API
+    * eg: If "/media", then the API url would be 127.0.0.1:80/media (or rather host:port/restURL)
+	*/
+    mediaURL: string;
     
     /**
 	* The URL to redirect to after the user attempts to activate their account. 

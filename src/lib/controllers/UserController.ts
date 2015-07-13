@@ -517,7 +517,11 @@ export class UserController extends Controller
 		that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function(user)
         {
             createdUser = user;
-            return BucketManager.get.createUserBucket(user.dbEntry.username);
+
+            return Promise.all<any>([
+                BucketManager.get.createUserStats(user.dbEntry.username),
+                BucketManager.get.createUserBucket(user.dbEntry.username)
+            ]);
             
         }).then(function()
         {

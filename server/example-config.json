@@ -1,11 +1,12 @@
 {
 	"host": "127.0.0.1",
-	"restURL": "",
+  "restURL": "",
+  "mediaURL":  "media",
 	"accountRedirectURL": "http://host.com/admin/message",
 	"passwordResetURL": "http://host.com/admin/password-reset-form",
 	"passwordRedirectURL" : "http://host.com/admin/message",
 	"userCollection": "users",
-	"sessionCollection": "sessions",
+  "sessionCollection": "sessions",
 	"approvedDomains": ["webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1"],
 	"portHTTP": 80,
 	"portHTTPS": 443,
@@ -37,6 +38,7 @@
     "keyFile": "",
     "projectId": "",
     "bucketsCollection": "buckets",
-	  "filesCollection": "files"
+    "filesCollection": "files",
+    "statsCollection": "storageAPI"
   }
 }

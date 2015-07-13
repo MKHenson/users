@@ -1,11 +1,62 @@
 var gcloud = require("gcloud");
+/**
+* Class responsible for managing buckets and uploads to Google storage
+*/
 var BucketManager = (function () {
-    function BucketManager(buckets, files, config) {
+    function BucketManager(buckets, files, stats, config) {
         BucketManager._singleton = this;
         this._gcs = gcloud.storage({ projectId: config.bucket.projectId, keyFilename: config.bucket.keyFile });
         this._buckets = buckets;
         this._files = files;
+        this._stats = stats;
     }
+    /**
+    * Fetches all bucket entries from the database
+    * @returns {Promise<Array<def.IBucketEntry>>}
+    */
+    BucketManager.prototype.getBucketEntries = function () {
+        var that = this;
+        var gcs = this._gcs;
+        var bucketCollection = this._buckets;
+        return new Promise(function (resolve, reject) {
+            // Save the new entry into the database
+            bucketCollection.find({}, function (err, result) {
+                if (err)
+                    return reject(err);
+                else {
+                    result.toArray(function (err, buckets) {
+                        if (err)
+                            return reject(err);
+                        return resolve(buckets);
+                    });
+                }
+            });
+        });
+    };
+    /**
+    * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
+    * @param {string} user The user associated with this bucket
+    * @returns {Promise<gcloud.IBucket>}
+    */
+    BucketManager.prototype.createUserStats = function (user) {
+        var that = this;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            var storage = {
+                user: user,
+                apiCallsAllocated: BucketManager.API_CALLS_ALLOCATED,
+                memoryAllocated: BucketManager.MEMORY_ALLOCATED,
+                apiCallsUsed: 0,
+                memoryUsed: 0
+            };
+            stats.save(storage, function (err, result) {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve(result);
+            });
+        });
+    };
     /**
     * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
     * @param {string} user The user associated with this bucket
@@ -26,9 +77,6 @@ var BucketManager = (function () {
                         name: bucketName,
                         created: Date.now(),
                         user: user,
-                        apiCallsAllocated: BucketManager.API_CALLS_ALLOCATED,
-                        memoryAllocated: BucketManager.MEMORY_ALLOCATED,
-                        apiCallsUsed: 0,
                         memoryUsed: 0
                     };
                     // Save the new entry into the database
@@ -44,15 +92,18 @@ var BucketManager = (function () {
     };
     /**
     * Attempts to remove a user bucket
-    * @param {def.IUserEntry} user The user associated with this bucket
+    * @param {string} user The user associated with this bucket
     * @returns {Promise<gcloud.IBucket>}
     */
     BucketManager.prototype.removeBucket = function (user) {
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
+        var files = this._files;
+        var stats = this._stats;
         return new Promise(function (resolve, reject) {
             bucketCollection.findOne({ user: user }, function (err, result) {
+                var bucketEntry = result;
                 if (err)
                     return reject(err);
                 else {
@@ -61,8 +112,15 @@ var BucketManager = (function () {
                         if (err)
                             return reject(new Error("Could not remove bucket from storage system: '" + err.message + "'"));
                         else {
+                            // Remove the bucket entry
                             bucketCollection.remove({ user: user }, function (err, result) {
-                                return resolve();
+                                // Remove the file entries
+                                files.remove({ bucket: bucketEntry.name }, function (err, result) {
+                                    // Update the stats usage
+                                    stats.update({ user: user }, { $inc: { memoryUsed: -bucketEntry.memoryUsed } }, function (err, result) {
+                                        return resolve();
+                                    });
+                                });
                             });
                         }
                     });
@@ -71,12 +129,165 @@ var BucketManager = (function () {
         });
     };
     /**
+    * Gets a bucket entry
+    * @param {string} user The username
+    * @returns {IBucketEntry}
+    */
+    BucketManager.prototype.getIBucket = function (user) {
+        var that = this;
+        var bucketCollection = this._buckets;
+        return new Promise(function (resolve, reject) {
+            bucketCollection.findOne({ user: user }, function (err, result) {
+                if (err)
+                    return reject(err);
+                else if (!result)
+                    return reject(new Error("Could not find bucket for user '" + user + "'"));
+                else
+                    return resolve(result);
+            });
+        });
+    };
+    /**
+    * Checks to see the user's storage limits to see if they are allowed to upload data
+    * @param {string} user The username
+    * @param {Part} part
+    * @returns {Promise<boolean>}
+    */
+    BucketManager.prototype.canUpload = function (user, part) {
+        var that = this;
+        var bucketCollection = this._buckets;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            stats.findOne({ user: user }, function (err, result) {
+                if (err)
+                    return reject(err);
+                if (result.memoryUsed + part.byteCount < result.memoryAllocated) {
+                    if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
+                        resolve(result);
+                    else
+                        return reject(new Error("You have reached your API call limit. Please upgrade your plan for more API calls"));
+                }
+                else
+                    return reject(new Error("You do not have enough memory allocated. Please upgrade your account for more memory"));
+            });
+        });
+    };
+    /**
+    * Registers an uploaded part as a new user file in the local dbs
+    * @param {string} filename The name of the file on the bucket
+    * @param {string} bucket The name of the bucket this file belongs to
+    * @param {multiparty.Part} part
+    * @param {string} user The username
+    * @returns {Promise<IFileEntry>}
+    */
+    BucketManager.prototype.registerFile = function (filename, bucket, part, user) {
+        var that = this;
+        var gcs = this._gcs;
+        var files = this._files;
+        return new Promise(function (resolve, reject) {
+            var entry = {
+                user: user,
+                name: filename,
+                bucket: bucket,
+                created: Date.now(),
+                numDownloads: 0,
+                size: part.byteCount
+            };
+            files.save(entry, function (err, result) {
+                if (err)
+                    return reject(new Error("Could not save user file entry: " + err.toString()));
+                else
+                    resolve(result.ops[0]);
+            });
+        });
+    };
+    /**
+    * Uploads a part stream as a new user file. This checks permissions, updates the local db and uploads the stream to the bucket
+    * @param {Part} part
+    * @param {string} user The username
+    * @returns {Promise<any>}
+    */
+    BucketManager.prototype.uploadStream = function (part, user) {
+        var that = this;
+        var gcs = this._gcs;
+        var bucketCollection = this._buckets;
+        var stats = this._stats;
+        var storageStats;
+        return new Promise(function (resolve, reject) {
+            that.canUpload(user, part).then(function (stats) {
+                storageStats = stats;
+                return that.getIBucket(user);
+            }).then(function (bucketEntry) {
+                var bucket = that._gcs.bucket(bucketEntry.name);
+                var filename = Date.now() + "-" + part.filename;
+                var file = bucket.file(filename);
+                // We look for part errors so that we can cleanup any faults with the upload if it cuts out
+                // on the user's side.
+                part.on('error', function (err) {
+                    // Delete the file on the bucket
+                    file.delete(function (bucketErr, apiResponse) {
+                        if (bucketErr)
+                            return reject(new Error("While uploading a user part an error occurred while cleaning the bucket: " + bucketErr.toString()));
+                        else
+                            return reject(new Error("Could not upload a user part: " + err.toString()));
+                    });
+                });
+                // Pipe the file to the bucket
+                part.pipe(file.createWriteStream()).on("error", function (err) {
+                    return reject(new Error("Could not upload the file '" + part.filename + "' to bucket: " + err.toString()));
+                }).on('complete', function () {
+                    var apiCalls = storageStats.apiCallsUsed + 1;
+                    var bucketMemory = bucketEntry.memoryUsed + part.byteCount;
+                    var totalMemory = storageStats.memoryUsed + part.byteCount;
+                    bucketCollection.update({ name: bucketEntry.name }, { $set: { memoryUsed: bucketMemory } }, function (err, result) {
+                        stats.update({ user: user }, { $set: { memoryUsed: totalMemory, apiCallsUsed: apiCalls } }, function (err, result) {
+                            that.registerFile(filename, bucketEntry.name, part, user).then(function (file) {
+                                return resolve(file);
+                            }).catch(function (err) {
+                                return reject(err);
+                            });
+                        });
+                    });
+                });
+            }).catch(function (err) {
+                return reject(err);
+            });
+        });
+    };
+    /**
+    * Finds and downloads a file
+    * @param {string} filename The name of the file on the bucket
+    * @returns {Promise<fs.ReadStream>}
+    */
+    BucketManager.prototype.downloadFile = function (filename) {
+        var that = this;
+        var gcs = this._gcs;
+        var buckets = this._buckets;
+        var files = this._files;
+        return new Promise(function (resolve, reject) {
+            files.findOne({ name: filename }, function (err, result) {
+                if (err)
+                    return reject(err);
+                else if (!result)
+                    return reject("File '" + filename + "' does not exist");
+                else {
+                    var iBucket = that._gcs.bucket(result.bucket);
+                    var iFile = iBucket.file(name);
+                    resolve(iFile.createReadStream());
+                }
+            });
+        });
+    };
+    /**
     * Creates the bucket manager singleton
     */
-    BucketManager.create = function (buckets, files, config) {
-        return new BucketManager(buckets, files, config);
+    BucketManager.create = function (buckets, files, stats, config) {
+        return new BucketManager(buckets, files, stats, config);
     };
     Object.defineProperty(BucketManager, "get", {
+        /**
+        * Gets the bucket singleton
+        */
         get: function () {
             return BucketManager._singleton;
         },
