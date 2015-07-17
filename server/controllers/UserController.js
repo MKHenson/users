@@ -359,7 +359,7 @@ var UserController = (function (_super) {
         if (!toRemove)
             return res.end(JSON.stringify({ message: "No user found", error: true }));
         that._userManager.removeUser(toRemove).then(function () {
-            return BucketManager_1.BucketManager.get.removeBucket(toRemove);
+            return BucketManager_1.BucketManager.get.removeBucketsByUser(toRemove);
         }).then(function () {
             var token = {
                 error: false,
@@ -394,8 +394,7 @@ var UserController = (function (_super) {
         that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function (user) {
             createdUser = user;
             return Promise.all([
-                BucketManager_1.BucketManager.get.createUserStats(user.dbEntry.username),
-                BucketManager_1.BucketManager.get.createUserBucket(user.dbEntry.username)
+                BucketManager_1.BucketManager.get.createUserStats(user.dbEntry.username)
             ]);
         }).then(function () {
             var token = {

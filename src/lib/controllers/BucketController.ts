@@ -1,7 +1,5 @@
 ﻿import express = require("express");
 import bodyParser = require('body-parser');
-
-// NEW ES6 METHOD
 import * as http from "http";
 import * as entities from "entities";
 import * as def from "../Definitions";
@@ -12,6 +10,7 @@ import {hasAdminRights, identifyUser} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
 import * as multiparty from "multiparty";
+import * as validator from "validator";
 
 /**
 * Main class to use for managing users
@@ -37,18 +36,159 @@ export class BucketController extends Controller
         var router = express.Router();
 
         router.get("/get-files/:bucket?", <any>[hasAdminRights, this.getFiles.bind(this)]);
-        router.get("/get-buckets", <any>[hasAdminRights, this.getBuckets.bind(this)]);
+        router.get("/get-stats/:user?", <any>[hasAdminRights, this.getStats.bind(this)]);
+        router.get("/get-buckets/:user?", <any>[hasAdminRights, this.getBuckets.bind(this)]);
+        router.delete("/remove-buckets/:buckets", <any>[identifyUser, this.removeBuckets.bind(this)]);
         router.delete("/remove-files/:files", <any>[identifyUser, this.removeFiles.bind(this)]);
-        router.post("/user-upload", <any>[hasAdminRights, this.uploadUserFiles.bind(this)]);
-        router.post("/create-bucket/:target", <any>[hasAdminRights, this.createBucket.bind(this)]);
+        router.post("/upload/:bucket", <any>[hasAdminRights, this.uploadUserFiles.bind(this)]);
+        router.post("/create-bucket/:user/:name", <any>[hasAdminRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", <any>[hasAdminRights, this.createStats.bind(this)]);
+        router.put("/storage-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
+        router.put("/storage-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
+        router.put("/storage-allocated-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
+        router.put("/storage-allocated-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
 
         // Register the path
         e.use(`${config.mediaURL}`, router);
     }
 
+    /**
+   * Makes sure the target user exists and the numeric value specified is valid
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private verifyTargetValue(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        var value = parseInt(req.params.value);
+
+        if (!req.params.target || req.params.target.trim() == "")
+        {
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid user to target", error: true }));
+        }
+        if (!req.params.value || req.params.value.trim() == "" || isNaN(value))
+        {
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid value", error: true }));
+        }
+
+        // Make sure the user exists
+        UserManager.get.getUser(req.params.target).then(function (user)
+        {
+            if (!user)
+            {
+                res.setHeader('Content-Type', 'application/json');
+                return res.end(JSON.stringify(<def.IResponse>{ message: `Could not find the user '${req.params.target}'`, error: true }));
+            }
+            else
+            {
+                req._target = user;
+                next();
+            }
+
+        }).catch(function (err)
+        {
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+        });
+    }
+
+    /**
+   * Updates the target user's api calls
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private updateCalls(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var value = parseInt(req.params.value);
+        var manager = BucketManager.get;
+
+        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ apiCallsUsed: value }).then(function ()
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+        });
+    }
+
+    /**
+   * Updates the target user's memory usage
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private updateMemory(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var value = parseInt(req.params.value);        
+        var manager = BucketManager.get;
+
+        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ memoryUsed: value }).then(function ()
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+        });
+    }
+
+    /**
+   * Updates the target user's allocated api calls
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private updateAllocatedCalls(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var value = parseInt(req.params.value);
+        var manager = BucketManager.get;
+
+        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ apiCallsAllocated: value }).then(function ()
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+        });
+    }
+
+    /**
+   * Updates the target user's allocated memory
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private updateAllocatedMemory(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var value = parseInt(req.params.value);
+        var manager = BucketManager.get;
+
+        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ memoryAllocated: value }).then(function ()
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+        });
+    }
+
    /**
-   * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
+   * Removes files specified in the URL
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
@@ -59,17 +199,81 @@ export class BucketController extends Controller
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var files: Array<string> = null;
-        if (req.params.files && req.params.files.trim() != "")
-            files = req.params.files.split(",");
-        else
+        if (!req.params.files || req.params.files.trim() == "")
             return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the files to remove", error: true }));
 
-        manager.removeFiles(files, req._user).then(function (numRemoved)
+        files = req.params.files.split(",");
+
+        manager.removeFilesById(files).then(function (numRemoved)
         {
             return res.end(JSON.stringify(<def.IRemoveFiles>{
                 message: `Removed [${numRemoved.length}] files`,
                 error: false,
                 data:numRemoved
+            }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        });
+    }
+
+   /**
+   * Removes buckets specified in the URL
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private removeBuckets(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager.get;
+        var buckets: Array<string> = null;
+
+        if (!req.params.buckets || req.params.buckets.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the buckets to remove", error: true }));
+
+        buckets = req.params.buckets.split(",");
+
+        manager.removeBucketsByName(buckets, req._user.dbEntry.username).then(function (numRemoved)
+        {
+            return res.end(JSON.stringify(<def.IRemoveFiles>{
+                message: `Removed [${numRemoved.length}] buckets`,
+                error: false,
+                data: numRemoved
+            }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        });
+    }
+
+   /**
+   * Fetches the statistic information for the specified user
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private getStats(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager.get;
+
+        manager.getUserStats(req._user.dbEntry.username).then(function (stats)
+        {
+            return res.end(JSON.stringify(<def.IGetUserStorageData>{
+                message: `Successfully retrieved ${req._user.dbEntry.username}'s stats`,
+                error: false,
+                data: stats
             }));
 
         }).catch(function (err: Error)
@@ -117,10 +321,12 @@ export class BucketController extends Controller
 	*/
     private getBuckets(req: def.AuthRequest, res: express.Response, next: Function): any
     {
+        var user = req.params.user;
+
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
-        manager.getBucketEntries().then(function (buckets)
+        manager.getBucketEntries(user).then(function (buckets)
         {
             return res.end(JSON.stringify(<def.IGetBuckets>{
                 message: `Found [${buckets.length}] buckets`,
@@ -175,10 +381,27 @@ export class BucketController extends Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
-        manager.createUserBucket(req.params.target).then(function( bucket )
+        var username = req.params.user;
+        var bucketName = req.params.name;
+
+        if (!username || username.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid username", error: true }));
+        if (!bucketName || bucketName.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid name", error: true }));
+        if (!validator.isAlphanumeric(bucketName))
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Only use alphanumeric characters allowed", error: true }));
+
+        UserManager.get.getUser(username).then(function(user)
+        {
+            if (user)
+                return manager.createBucket(bucketName, username);
+            else
+                return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
+
+        }).then(function (bucket)
         {
             return res.end(JSON.stringify(<def.IResponse>{
-                message: `Bucket '${bucket.name}' created`,
+                message: `Bucket '${bucketName}' created`,
                 error: false
             }));
 
@@ -206,9 +429,14 @@ export class BucketController extends Controller
         var closed = false;
         var uploadedTokens: Array<def.IUploadToken> = [];
         var manager = BucketManager.get;
+        var that = this;
 
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
+
+        var bucketName = req.params.bucket;
+        if (!bucketName || bucketName.trim() == "")
+            return res.end(JSON.stringify(<def.IUploadResponse>{ message: `Please specify a bucket`, error: false, tokens: [] }));
         
         // Parts are emitted when parsing the form
         form.on('part', function (part: multiparty.Part)
@@ -231,7 +459,7 @@ export class BucketController extends Controller
                 numParts++;
 
                 // Upload the file part to the cloud
-                manager.uploadStream(part, req._user.dbEntry.username).then(function (file)
+                manager.uploadStream(part, bucketName, req._user.dbEntry.username).then(function (file)
                 {
                     completedParts++;
                     successfulParts++;
@@ -252,7 +480,7 @@ export class BucketController extends Controller
         });
 
         // Checks if the connection is closed and all the parts have been uploaded
-        var checkIfComplete = function()
+        var checkIfComplete = function ()
         {
             if (closed && completedParts == numParts)
             {

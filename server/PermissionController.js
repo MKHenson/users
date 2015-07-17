@@ -7,7 +7,7 @@ var Users_1 = require("./Users");
 * @param {Function} next
 */
 function hasAdminRights(req, res, next) {
-    var username = req.params.username || req.params["user"];
+    var username = req.params.username || req.params.user;
     requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user) {
         next();
     }).catch(function (error) {
@@ -27,6 +27,13 @@ exports.hasAdminRights = hasAdminRights;
 */
 function identifyUser(req, res, next) {
     Users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+        if (!user) {
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify({
+                message: "You must be logged in to make this request",
+                error: true
+            }));
+        }
         req._user = user;
         next();
     }).catch(function (error) {

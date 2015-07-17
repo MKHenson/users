@@ -916,7 +916,8 @@ declare module "gcloud" {
             maxResults?: number;
             pageToken?: string;
             versions?: boolean;
-        }, callback: (err?: Error, files?: Array<IFile>, nextQuery ?: any, response ?: any) => any): any;
+        }, callback: (err?: Error, files?: Array<IFile>, nextQuery?: any, response?: any) => any): any;
+        getFiles(callback: (err?: Error, files?: Array<IFile>, nextQuery?: any, response?: any) => any): any;
 
         /**
         * Get the bucket's metadata.

@@ -15,7 +15,7 @@ import {UserManager, User} from "./Users";
 */
 export function hasAdminRights(req: def.AuthRequest, res: express.Response, next: Function): any
 {
-    var username = req.params.username || req.params["user"];
+    var username = req.params.username || req.params.user;
     requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user)
     {
         next();
@@ -40,6 +40,15 @@ export function identifyUser(req: def.AuthRequest, res: express.Response, next: 
 {
     UserManager.get.loggedIn(req, res).then(function (user)
     {
+        if (!user)
+        {
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: "You must be logged in to make this request",
+                error: true
+            }));
+        }
+
         req._user = user;
         next();
 

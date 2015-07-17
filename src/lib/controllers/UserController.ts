@@ -470,9 +470,9 @@ export class UserController extends Controller
         
         that._userManager.removeUser(toRemove).then(function ()
         {
-            return BucketManager.get.removeBucket(toRemove);
+            return BucketManager.get.removeBucketsByUser(toRemove);
 
-        }).then(function ()
+        }).then(function()
 		{
 			var token: def.IResponse = {
 				error: false,
@@ -488,9 +488,7 @@ export class UserController extends Controller
 				error: true
 			}));
 		});
-    }
-
-    
+    }    
 
 	/**
 	* Allows an admin to create a new user without registration
@@ -519,8 +517,7 @@ export class UserController extends Controller
             createdUser = user;
 
             return Promise.all<any>([
-                BucketManager.get.createUserStats(user.dbEntry.username),
-                BucketManager.get.createUserBucket(user.dbEntry.username)
+                BucketManager.get.createUserStats(user.dbEntry.username)
             ]);
             
         }).then(function()

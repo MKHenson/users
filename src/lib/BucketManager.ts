@@ -32,9 +32,10 @@ export class BucketManager
     
     /**
     * Fetches all bucket entries from the database
+    * @param {string} user [Optional] Specify the user. If none provided, then all buckets are retrieved
     * @returns {Promise<Array<def.IBucketEntry>>}
     */
-    getBucketEntries(): Promise<Array<def.IBucketEntry>>
+    getBucketEntries(user? : string): Promise<Array<def.IBucketEntry>>
     {
         var that = this;
         var gcs = this._gcs;
@@ -42,8 +43,12 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
+            var search: def.IBucketEntry = {};
+            if (user)
+                search.user = user;
+
             // Save the new entry into the database
-            bucketCollection.find({}, function (err, result)
+            bucketCollection.find(search, function (err, result)
             {
                 if (err)
                     return reject(err);
@@ -74,10 +79,10 @@ export class BucketManager
         
         return new Promise(function (resolve, reject)
         {
-            var searchQuery: def.IFileEntry = {};
+            var searchQuery : any = {};
             if (bucket)
-                searchQuery.bucket = bucket;
-
+                searchQuery.$or = <Array<def.IFileEntry>>[{ bucketName: bucket }, { bucketId: bucket }];
+            
             // Save the new entry into the database
             files.find(searchQuery, function (err, result)
             {
@@ -93,6 +98,32 @@ export class BucketManager
                         return resolve(files);
                     });
                 }
+            });
+        });
+    }
+
+    /**
+    * Fetches the storage/api data for a given user
+    * @param {string} user The user whos data we are fetching
+    * @returns {Promise<def.IFileEntry>}
+    */
+    getUserStats(user?: string): Promise<def.IStorageStats>
+    {
+        var that = this;
+        var gcs = this._gcs;
+        var stats = this._stats;
+
+        return new Promise(function (resolve, reject)
+        {
+            // Save the new entry into the database
+            stats.findOne(<def.IStorageStats>{ user: user }, function (err, result: def.IStorageStats)
+            {
+                if (err)
+                    return reject(err);
+                if (!result)
+                    return reject(new Error(`Could not find storage data for the user '${user}'`));
+                else
+                    return resolve(result);
             });
         });
     }
@@ -129,51 +160,70 @@ export class BucketManager
 
     /**
     * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
+    * @param {string} name The name of the bucket
     * @param {string} user The user associated with this bucket
     * @returns {Promise<gcloud.IBucket>}
     */
-    createUserBucket(user: string): Promise<gcloud.IBucket>
+    createBucket(name: string, user: string): Promise<gcloud.IBucket>
     {
         var that = this;
         var gcs = this._gcs;
-        var bucketName = `webinate-user-${Date.now()}`;
+        var bucketID = `webinate-bucket-${Date.now()}`;
         var bucketCollection = this._buckets;
+        var stats = this._stats;
 
         return new Promise(function (resolve, reject)
         {
-            // Attempt to create a new Google bucket
-            gcs.createBucket(bucketName, <gcloud.IMeta>{ location : "EU" }, function (err: Error, bucket: gcloud.IBucket)
+            that.getIBucket(name, user).then(function (bucket)
             {
-                if (err)
-                    return reject(new Error(`Could not connect to storage system: '${err.message}'`));
-                else
-                {
-                    var newEntry: def.IBucketEntry = {
-                        name: bucketName,
-                        created: Date.now(),
-                        user: user,
-                        memoryUsed: 0
-                    }
+                if (bucket)
+                    return new Error(`A Bucket with the name '${name}' has already been registered`);
 
-                    // Save the new entry into the database
-                    bucketCollection.save(newEntry, function (err, result: def.IBucketEntry)
+                // Attempt to create a new Google bucket
+                gcs.createBucket(bucketID, <gcloud.IMeta>{ location: "EU" }, function (err: Error, bucket: gcloud.IBucket)
+                {
+                    if (err)
+                        return reject(new Error(`Could not connect to storage system: '${err.message}'`));
+                    else
                     {
-                        if (err)
-                            return reject(err);
-                        else
-                            return resolve(bucket);
-                    });
-                }
+                        var newEntry: def.IBucketEntry = {
+                            name: name,
+                            identifier: bucketID,
+                            created: Date.now(),
+                            user: user,
+                            memoryUsed: 0
+                        }
+
+                        // Save the new entry into the database
+                        bucketCollection.save(newEntry, function (err, result: def.IBucketEntry)
+                        {
+                            if (err)
+                                return reject(err);
+                            else
+                            {
+                                // Increments the API calls
+                                stats.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ apiCallsUsed: 1 } }, function (err, result)
+                                {
+                                    return resolve(bucket);
+                                });
+                            }
+                        });
+                    }
+                });
+
+            }).catch(function (err)
+            {
+                return reject(err);
             });
         });
     }
 
-    /**
-    * Attempts to remove a user bucket
-    * @param {string} user The user associated with this bucket
-    * @returns {Promise<gcloud.IBucket>}
-    */
-    removeBucket( user : string ): Promise<any>
+   /**
+   * Attempts to remove buckets of the given search result. This will also update the file and stats collection.
+   * @param {any} searchQuery A valid mongodb search query
+   * @returns {Promise<string>} An array of ID's of the buckets removed
+   */
+    private removeBuckets(searchQuery): Promise<Array<string>>
     {
         var that = this;
         var gcs = this._gcs;
@@ -183,45 +233,119 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            bucketCollection.findOne(<def.IBucketEntry>{ user: user }, function (err, result: def.IBucketEntry)
+            bucketCollection.find(searchQuery, function (err, cursor)
             {
-                var bucketEntry: def.IBucketEntry = result;
-
                 if (err)
                     return reject(err);
-                else
+
+                var toRemove = [];
+
+                cursor.toArray(function (err, buckets: Array<def.IBucketEntry>)
                 {
-                    var bucket: gcloud.IBucket = gcs.bucket(result.identifier);
-                    bucket.delete(function (err: Error, apiResponse: any)
+                    if (err)
+                        return reject(err);
+
+                    var attempts = 0;
+
+                    for (var i = 0, l = buckets.length; i < l; i++)
                     {
-                        if (err)
-                            return reject(new Error(`Could not remove bucket from storage system: '${err.message}'`));
-                        else
+                        that.deleteBucket(buckets[i]).then(function (bucket)
+                        {
+                            attempts++;
+                            toRemove.push(bucket.identifier);
+                            if (attempts == l)
+                                resolve(toRemove);
+
+                        }).catch(function (err)
+                        {
+                            attempts++;
+                            if (attempts == l)
+                                resolve(toRemove);
+                        });
+                    }
+
+                    // If no buckets
+                    if (buckets.length == 0)
+                        resolve(toRemove);
+                })
+            });
+        });
+    }
+
+    /**
+   * Attempts to remove buckets by id
+   * @param {Array<string>} buckets An array of bucket IDs to remove
+    * @param {string} user The user to whome these buckets belong
+   * @returns {Promise<string>} An array of ID's of the buckets removed
+   */
+    removeBucketsByName(buckets: Array<string>, user : string ): Promise<Array<string>>
+    {
+        if (buckets.length == 0)
+            return Promise.resolve();
+        
+        // Create the search query for each of the files
+        var searchQuery = { $or: [], user: user };
+        for (var i = 0, l = buckets.length; i < l; i++)
+            searchQuery.$or.push(<def.IBucketEntry>{ name: buckets[i] });
+
+        return this.removeBuckets(searchQuery);
+    }
+
+    /**
+    * Attempts to remove a user bucket
+    * @param {string} user The user associated with this bucket
+    * @returns {Promise<string>} An array of ID's of the buckets removed
+    */
+    removeBucketsByUser( user : string ): Promise<Array<string>>
+    {
+        return this.removeBuckets(<def.IBucketEntry>{ user: user });
+    }
+    
+    /**
+    * Deletes the bucket from storage and updates the databases
+    */
+    private deleteBucket(bucketEntry: def.IBucketEntry): Promise<def.IBucketEntry>
+    {
+        var that = this;
+        var gcs = this._gcs;
+        var bucketCollection = this._buckets;
+        var files = this._files;
+        var stats = this._stats;
+
+        return new Promise<def.IBucketEntry>(function (resolve, reject)
+        {
+            that.removeFilesByBucket(bucketEntry.identifier).then(function (files)
+            {
+                var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.identifier);
+                bucket.delete(function (err: Error, apiResponse: any)
+                {
+                    if (err)
+                        return reject(new Error(`Could not remove bucket from storage system: '${err.message}'`));
+                    else
+                    {
+                        // Remove the bucket entry
+                        bucketCollection.remove(<def.IBucketEntry>{ _id: bucketEntry._id }, function (err, result)
                         {
                             // Remove the bucket entry
-                            bucketCollection.remove(<def.IBucketEntry>{ user: user }, function (err, result)
+                            stats.update(<def.IStorageStats>{ user: bucketEntry.user }, { $inc: <def.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
                             {
-                                // Remove the file entries
-                                files.remove(<def.IFileEntry>{ bucket: bucketEntry.identifier }, function (err, result)
-                                {
-                                    // Update the stats usage
-                                    stats.update(<def.IStorageStats>{ user: user }, { $inc: { memoryUsed: -bucketEntry.memoryUsed } }, function(err, result)
-                                    {
-                                        return resolve();
-                                    });
-                                });
+                                return resolve(bucketEntry);
                             });
-                        }
-                    });
-                }
-            });
+                        });
+                    }
+                });
+
+            }).catch(function (err)
+            {
+                return reject(`Could not remove the bucket: '${err.toString()}'`);
+            })
         });
     }
 
     /**
     * Deletes the file from storage and updates the databases
     */
-    private deleteFile(bucketEntry: def.IBucketEntry, fileEntry: def.IFileEntry): Promise<def.IFileEntry>
+    private deleteFile(fileEntry: def.IFileEntry): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -231,64 +355,66 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.identifier);
-
-            // Get the bucket and delete the file
-            bucket.file(fileEntry.identifier).delete(function (err, apiResponse)
+            that.getIBucket(fileEntry.bucketId).then(function (bucketEntry)
             {
-                if (err)
-                    return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString()}'`));
-                                   
-                // Update the bucket data usage
-                bucketCollection.update(<def.IBucketEntry>{ name: bucketEntry.identifier }, { $inc: <def.IBucketEntry>{ memoryUsed: fileEntry.size } }, function (err, result)
+                if (!bucketEntry)
+                    return reject(new Error(`Could not find the bucket '${fileEntry.bucketName}'`));
+
+                var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.identifier);
+
+                // Get the bucket and delete the file
+                bucket.file(fileEntry.identifier).delete(function (err, apiResponse)
                 {
                     if (err)
-                        return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
-
-                    // Remove the file entries
-                    files.remove(<def.IFileEntry>{ _id: fileEntry._id }, function (err, result)
+                        return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`));
+                                   
+                    // Update the bucket data usage
+                    bucketCollection.update(<def.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <def.IBucketEntry>{ memoryUsed: -fileEntry.size } }, function (err, result)
                     {
                         if (err)
                             return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
 
-                        // Update the stats usage
-                        stats.update(<def.IStorageStats>{ user: bucketEntry.user }, { $inc: <def.IStorageStats>{ memoryUsed: bucketEntry.memoryUsed, apiCallsUsed: 1 } }, function (err, result)
+                        // Remove the file entries
+                        files.remove(<def.IFileEntry>{ _id: fileEntry._id }, function (err, result)
                         {
                             if (err)
                                 return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
 
-                            return resolve(fileEntry);
+                            // Update the stats usage
+                            stats.update(<def.IStorageStats>{ user: bucketEntry.user }, { $inc: <def.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } }, function (err, result)
+                            {
+                                if (err)
+                                    return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
+
+                                return resolve(fileEntry);
+                            });
                         });
                     });
                 });
-            });
+
+            }).catch(function (err)
+            {
+                if (err)
+                    return reject(err);
+            })           
         });
     }
 
    /**
-   * Attempts to remove files from the cloud and database
-   * @param {Array<string>} fileNames The files to remove
-   * @returns {Promise<string>} Returns the names of the files removed
+   * Attempts to remove files from the cloud and database by a query
+   * @param {any} searchQuery The query we use to select the files
+   * @returns {Promise<string>} Returns the file IDs of the files removed
    */
-    removeFiles(fileNames: Array<string>, user: User ): Promise<Array<string>>
+    removeFiles(searchQuery: any ): Promise<Array<string>>
     {
-        if (fileNames.length == 0)
-            return Promise.resolve();
-
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
         var files = this._files;
         var stats = this._stats;
-        var numToRemove = fileNames.length;
         var attempts: number = 0;
         var filesRemoved: Array<string> = [];
-
-        // Create the search query for each of the files
-        var searchQuery = { $or: [] };
-        for (var i = 0; i < numToRemove; i++)
-            searchQuery.$or.push(<def.IFileEntry>{ name : fileNames[i] });
-
+        
         return new Promise(function (resolve, reject)
         {
             // Get the files
@@ -298,50 +424,95 @@ export class BucketManager
                     return reject(err);
                 
                 // For each file entry
-                cursor.each(function (err, fileEntry: def.IFileEntry)
+                cursor.toArray(function (err, fileEntries: Array<def.IFileEntry>)
                 {
-                    that.getIBucket(fileEntry.bucket).then(function (bucketEntry)
+                    for (var i = 0, l = fileEntries.length; i < l; i++)
                     {
-                        return that.deleteFile(bucketEntry, fileEntry);
+                       that.deleteFile(fileEntries[i]).then(function(fileEntry)
+                       {
+                            attempts++;
+                            filesRemoved.push(fileEntry.identifier);
 
-                    }).then(function (fileEntry)
-                    {
-                        attempts++;
-                        filesRemoved.push(fileEntry.identifier);
+                            if (attempts == l)
+                                resolve(filesRemoved);
 
-                        if (attempts == numToRemove)
-                            resolve(filesRemoved);
+                        }).catch(function (err)
+                        {
+                            attempts++;
 
-                    }).catch(function (err)
-                    {
-                        attempts++;
+                            if (attempts == l)
+                                resolve(filesRemoved);
+                        });
+                    }
 
-                        if (attempts == numToRemove)
-                            resolve(filesRemoved);
-                    });
+                    if (fileEntries.length == 0)
+                        return resolve([]);
                 });
             });
         });
     }
 
     /**
-    * Gets a bucket entry
-    * @param {string} user The username
+   * Attempts to remove files from the cloud and database
+   * @param {Array<string>} fileIDs The file IDs to remove
+   * @returns {Promise<string>} Returns the file IDs of the files removed
+   */
+    removeFilesById(fileIDs: Array<string>): Promise<Array<string>>
+    {
+        if (fileIDs.length == 0)
+            return Promise.resolve();
+        
+        // Create the search query for each of the files
+        var searchQuery = { $or: [] };
+        for (var i = 0, l = fileIDs.length; i < l; i++)
+            searchQuery.$or.push(<def.IFileEntry>{ identifier: fileIDs[i] });
+
+        return this.removeFiles(searchQuery);
+    }
+
+    /**
+    * Attempts to remove files from the cloud and database that are in a given bucket
+    * @param {string} bucket The id or name of the bucket to remove
+    * @returns {Promise<string>} Returns the file IDs of the files removed
+    */
+    removeFilesByBucket(bucket: string): Promise<Array<string>>
+    {
+        if (!bucket || bucket.trim() == "")
+            return Promise.reject(new Error("Please specify a valid bucket"));
+        
+        // Create the search query for each of the files
+        var searchQuery = { $or: <Array<def.IFileEntry>>[{ bucketId: bucket }, { bucketName: bucket }] };
+        return this.removeFiles(searchQuery);
+    }
+
+    /**
+    * Gets a bucket entry by its name or ID
+    * @param {string} bucket The id of the bucket. You can also use the name if you provide the user
+    * @param {string} user The username associated with the bucket (Only applicable if bucket is a name and not an ID)
     * @returns {IBucketEntry}
     */
-    private getIBucket(user: string): Promise<def.IBucketEntry>
+    private getIBucket(bucket: string, user?: string): Promise<def.IBucketEntry>
     {
         var that = this;
         var bucketCollection = this._buckets;
+        var searchQuery: def.IBucketEntry = {};
+        
+        if (user)
+        {
+            searchQuery.user = user;
+            searchQuery.name = bucket;
+        }
+        else
+            searchQuery.identifier = bucket;
 
         return new Promise<def.IBucketEntry>(function (resolve, reject)
         {
-            bucketCollection.findOne(<def.IBucketEntry>{ user: user }, function (err, result: def.IBucketEntry)
+            bucketCollection.findOne(searchQuery, function (err, result: def.IBucketEntry)
             {
                 if (err)
                     return reject(err);
                 else if (!result)
-                    return reject(new Error(`Could not find bucket for user '${user}'`));
+                    return resolve(null);
                 else
                     return resolve(result);
             });
@@ -382,13 +553,13 @@ export class BucketManager
 
     /**
     * Registers an uploaded part as a new user file in the local dbs
-    * @param {string} filename The name of the file on the bucket
-    * @param {string} bucket The name of the bucket this file belongs to
+    * @param {string} fileID The id of the file on the bucket
+    * @param {string} bucketID The id of the bucket this file belongs to
     * @param {multiparty.Part} part
     * @param {string} user The username
     * @returns {Promise<IFileEntry>}
     */
-    private registerFile(filename: string, bucket: string, part: multiparty.Part, user: string): Promise<def.IFileEntry>
+    private registerFile(fileID: string, bucket: def.IBucketEntry, part: multiparty.Part, user: string): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -397,9 +568,11 @@ export class BucketManager
         return new Promise<def.IFileEntry>(function (resolve, reject)
         {
             var entry: def.IFileEntry = {
+                
                 user: user,
-                name: filename,
-                bucket: bucket,
+                identifier: fileID,
+                bucketId: bucket.identifier,
+                bucketName: bucket.name,
                 created: Date.now(),
                 numDownloads: 0,
                 size: part.byteCount
@@ -418,10 +591,11 @@ export class BucketManager
     /**
     * Uploads a part stream as a new user file. This checks permissions, updates the local db and uploads the stream to the bucket
     * @param {Part} part
+    * @param {string} bucket The bucket to which we are uploading to
     * @param {string} user The username
     * @returns {Promise<any>}
     */
-    uploadStream(part: multiparty.Part, user: string): Promise<def.IFileEntry>
+    uploadStream(part: multiparty.Part, bucket: string, user: string): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -434,13 +608,16 @@ export class BucketManager
             that.canUpload(user, part).then(function(stats)
             {
                 storageStats = stats;
-                return that.getIBucket(user);
+                return that.getIBucket(bucket, user);
 
             }).then(function (bucketEntry: def.IBucketEntry)
             {
+                if (!bucketEntry)
+                    return reject(`Could not find the file parent bucket`);
+
                 var bucket = that._gcs.bucket(bucketEntry.identifier);
-                var filename = Date.now() + "-" + part.filename;
-                var file = bucket.file(filename);
+                var fileID = Date.now() + "-" + part.filename;
+                var file = bucket.file(fileID);
 
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
                 // on the user's side.
@@ -467,11 +644,11 @@ export class BucketManager
                     var bucketMemory = bucketEntry.memoryUsed + part.byteCount;
                     var totalMemory = storageStats.memoryUsed + part.byteCount;
 
-                    bucketCollection.update(<def.IBucketEntry>{ name: bucketEntry.identifier }, { $set: <def.IBucketEntry>{ memoryUsed: bucketMemory } }, function (err, result)
+                    bucketCollection.update(<def.IBucketEntry>{ identifier: bucketEntry.identifier }, { $set: <def.IBucketEntry>{ memoryUsed: bucketMemory } }, function (err, result)
                     {
                         stats.update(<def.IStorageStats>{ user: user }, { $set: <def.IStorageStats>{ memoryUsed: totalMemory, apiCallsUsed: apiCalls } }, function (err, result)
                         {
-                            that.registerFile(filename, bucketEntry.identifier, part, user).then(function (file)
+                            that.registerFile(fileID, bucketEntry, part, user).then(function (file)
                             {
                                 return resolve(file);
 
@@ -492,10 +669,10 @@ export class BucketManager
 
     /**
     * Finds and downloads a file
-    * @param {string} filename The name of the file on the bucket
+    * @param {string} fileID The file ID of the file on the bucket
     * @returns {Promise<fs.ReadStream>}
     */
-    downloadFile(filename: string): Promise<fs.ReadStream>
+    downloadFile(fileID: string): Promise<fs.ReadStream>
     {
         var that = this;
         var gcs = this._gcs;
@@ -504,18 +681,42 @@ export class BucketManager
 
         return new Promise<fs.ReadStream>(function (resolve, reject)
         {
-            files.findOne(<def.IFileEntry>{ name: filename }, function (err, result: def.IFileEntry)
+            files.findOne(<def.IFileEntry>{ identifier: fileID }, function (err, result: def.IFileEntry)
             {
                 if (err)
                     return reject(err);
                 else if (!result)
-                    return reject(`File '${filename}' does not exist`);
+                    return reject(`File '${fileID}' does not exist`);
                 else
                 {
-                    var iBucket = that._gcs.bucket(result.bucket);
-                    var iFile = iBucket.file(name);
+                    var iBucket = that._gcs.bucket(result.bucketId);
+                    var iFile = iBucket.file(result.identifier);
                     resolve(iFile.createReadStream());
                 }
+            });
+        });
+    }
+
+    /**
+    * Finds and downloads a file
+    * @param {string} fileID The file ID of the file on the bucket
+    * @returns {Promise<number>} Returns the number of results affected
+    */
+    updateStorage(user: string, value: def.IStorageStats): Promise<number>
+    {
+        var that = this;
+        var stats = this._stats;
+
+        return new Promise<number>(function (resolve, reject)
+        {
+            stats.update(<def.IStorageStats>{ user: user }, { $set: value }, function (err, numAffected)
+            {
+                if (err)
+                    return reject(err);
+                else if (numAffected === 0)
+                    return reject(`Could not find user '${user}'`);
+                else
+                    return resolve(numAffected);
             });
         });
     }

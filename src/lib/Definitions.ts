@@ -25,6 +25,7 @@ export interface IUserEntry
 export interface IBucketEntry
 {
     _id?: mongodb.ObjectID;
+    name?: string;
     identifier?: string;
     user?: string;
     created?: number;
@@ -50,7 +51,8 @@ export interface IFileEntry
 {
     _id?: mongodb.ObjectID;
     identifier?: string;
-    bucket?: string;
+    bucketId?: string;
+    bucketName?: string;
     created?: number;
     size?: number;
     numDownloads?: number;
@@ -62,6 +64,7 @@ export interface IFileEntry
 export interface AuthRequest extends express.Request
 {
     _user: User;
+    _target: User;
 }
 
 /*
@@ -426,6 +429,7 @@ export interface IConfig
 }
 
 export interface IGetUser extends IGetResponse<IUserEntry> { }
+export interface IGetUserStorageData extends IGetResponse<IStorageStats> { }
 export interface IGetUsers extends IGetArrayResponse<IUserEntry> { count: number; }
 export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }
 export interface IGetBuckets extends IGetArrayResponse<IBucketEntry> { }
