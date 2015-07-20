@@ -27,6 +27,7 @@ var BucketController = (function (_super) {
         this._config = config;
         // Setup the rest calls
         var router = express.Router();
+        router.get("/download/:id", [PermissionController_1.hasAdminRights, this.getFile.bind(this)]);
         router.get("/get-files/:bucket?", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", [PermissionController_1.hasAdminRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", [PermissionController_1.hasAdminRights, this.getBuckets.bind(this)]);
@@ -220,6 +221,30 @@ var BucketController = (function (_super) {
         });
     };
     /**
+   * Attempts to download a file from the server
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    BucketController.prototype.getFile = function (req, res, next) {
+        var manager = BucketManager_1.BucketManager.get;
+        var fileID = req.params.id;
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
+        manager.getFile(fileID).then(function (iFile) {
+            res.setHeader('Content-Type', iFile.mimeType);
+            res.setHeader('Content-Length', iFile.size.toString());
+            var stream = manager.downloadFile(iFile);
+            stream.pipe(res);
+        }).catch(function (err) {
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify({
+                message: "An error occurred while downloading the file '" + fileID + "' : " + err.toString(),
+                error: true
+            }));
+        });
+    };
+    /**
     * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
     * @param {express.Request} req
     * @param {express.Response} res
@@ -308,9 +333,13 @@ var BucketController = (function (_super) {
             return res.end(JSON.stringify({ message: "Only use alphanumeric characters allowed", error: true }));
         Users_1.UserManager.get.getUser(username).then(function (user) {
             if (user)
-                return manager.createBucket(bucketName, username);
+                return manager.withinAPILimit(username);
             else
                 return Promise.reject(new Error("Could not find a user with the name '" + username + "'"));
+        }).then(function (inLimits) {
+            if (!inLimits)
+                return Promise.reject(new Error("You have run out of API calls, please contact one of our sales team or upgrade your account."));
+            return manager.createBucket(bucketName, username);
         }).then(function (bucket) {
             return res.end(JSON.stringify({
                 message: "Bucket '" + bucketName + "' created",
@@ -338,58 +367,66 @@ var BucketController = (function (_super) {
         var uploadedTokens = [];
         var manager = BucketManager_1.BucketManager.get;
         var that = this;
+        var username = req._user.dbEntry.username;
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var bucketName = req.params.bucket;
         if (!bucketName || bucketName.trim() == "")
-            return res.end(JSON.stringify({ message: "Please specify a bucket", error: false, tokens: [] }));
-        // Parts are emitted when parsing the form
-        form.on('part', function (part) {
-            // Create a new upload token
-            var newUpload = {
-                file: "",
-                field: part.name,
-                filename: part.filename,
-                error: false,
-                errorMsg: ""
-            };
-            // Add the token to the upload array we are sending back to the user
-            uploadedTokens.push(newUpload);
-            // This part is a file - so we act on it
-            if (!!part.filename) {
-                numParts++;
-                // Upload the file part to the cloud
-                manager.uploadStream(part, bucketName, req._user.dbEntry.username).then(function (file) {
-                    completedParts++;
-                    successfulParts++;
-                    newUpload.file = file.identifier;
-                    part.resume();
-                    checkIfComplete();
-                }).catch(function (err) {
-                    completedParts++;
-                    newUpload.error = true;
-                    newUpload.errorMsg = err.toString();
-                    part.resume();
-                    checkIfComplete();
-                });
-            }
-        });
-        // Checks if the connection is closed and all the parts have been uploaded
-        var checkIfComplete = function () {
-            if (closed && completedParts == numParts) {
-                return res.end(JSON.stringify({
-                    message: "Upload complete. [" + successfulParts + "] Files have been saved.",
+            return res.end(JSON.stringify({ message: "Please specify a bucket", error: true, tokens: [] }));
+        manager.getIBucket(bucketName, username).then(function (bucketEntry) {
+            if (!bucketEntry)
+                return res.end(JSON.stringify({ message: "No bucket exists with the name '" + bucketName + "'", error: true, tokens: [] }));
+            // Parts are emitted when parsing the form
+            form.on('part', function (part) {
+                // Create a new upload token
+                var newUpload = {
+                    file: "",
+                    field: part.name,
+                    filename: part.filename,
                     error: false,
-                    tokens: uploadedTokens
-                }));
-            }
-        };
-        // Close emitted after form parsed
-        form.on('close', function () {
-            closed = true;
+                    errorMsg: ""
+                };
+                // Add the token to the upload array we are sending back to the user
+                uploadedTokens.push(newUpload);
+                // This part is a file - so we act on it
+                if (!!part.filename) {
+                    numParts++;
+                    // Upload the file part to the cloud
+                    manager.uploadStream(part, bucketEntry, username).then(function (file) {
+                        completedParts++;
+                        successfulParts++;
+                        newUpload.file = file.identifier;
+                        part.resume();
+                        checkIfComplete();
+                    }).catch(function (err) {
+                        completedParts++;
+                        newUpload.error = true;
+                        newUpload.errorMsg = err.toString();
+                        part.resume();
+                        checkIfComplete();
+                    });
+                }
+            });
+            // Checks if the connection is closed and all the parts have been uploaded
+            var checkIfComplete = function () {
+                if (closed && completedParts == numParts) {
+                    return res.end(JSON.stringify({
+                        message: "Upload complete. [" + successfulParts + "] Files have been saved.",
+                        error: false,
+                        tokens: uploadedTokens
+                    }));
+                }
+            };
+            // Close emitted after form parsed
+            form.on('close', function () {
+                closed = true;
+                checkIfComplete();
+            });
+            // Parse req
+            form.parse(req);
+        }).catch(function (err) {
+            return res.end(JSON.stringify({ message: err.toString(), error: true, tokens: [] }));
         });
-        // Parse req
-        form.parse(req);
     };
     /**
     * Attempts to upload a file to the user's bucket

@@ -124,7 +124,7 @@ var BucketManager = (function () {
         return new Promise(function (resolve, reject) {
             that.getIBucket(name, user).then(function (bucket) {
                 if (bucket)
-                    return new Error("A Bucket with the name '" + name + "' has already been registered");
+                    return reject(new Error("A Bucket with the name '" + name + "' has already been registered"));
                 // Attempt to create a new Google bucket
                 gcs.createBucket(bucketID, { location: "EU" }, function (err, bucket) {
                     if (err)
@@ -383,7 +383,7 @@ var BucketManager = (function () {
     * Checks to see the user's storage limits to see if they are allowed to upload data
     * @param {string} user The username
     * @param {Part} part
-    * @returns {Promise<boolean>}
+    * @returns {Promise<def.IStorageStats>}
     */
     BucketManager.prototype.canUpload = function (user, part) {
         var that = this;
@@ -401,6 +401,28 @@ var BucketManager = (function () {
                 }
                 else
                     return reject(new Error("You do not have enough memory allocated. Please upgrade your account for more memory"));
+            });
+        });
+    };
+    /**
+   * Checks to see the user's api limit and make sure they can make calls
+   * @param {string} user The username
+   * @returns {Promise<boolean>}
+   */
+    BucketManager.prototype.withinAPILimit = function (user) {
+        var that = this;
+        var bucketCollection = this._buckets;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            stats.findOne({ user: user }, function (err, result) {
+                if (err)
+                    return reject(err);
+                else if (!result)
+                    return reject(new Error("Could not find the user " + user));
+                else if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
+                    resolve(true);
+                else
+                    return resolve(false);
             });
         });
     };
@@ -424,7 +446,8 @@ var BucketManager = (function () {
                 bucketName: bucket.name,
                 created: Date.now(),
                 numDownloads: 0,
-                size: part.byteCount
+                size: part.byteCount,
+                mimeType: part.headers["content-type"]
             };
             files.save(entry, function (err, result) {
                 if (err)
@@ -434,6 +457,13 @@ var BucketManager = (function () {
             });
         });
     };
+    BucketManager.prototype.generateRandString = function (len) {
+        var text = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for (var i = 0; i < len; i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        return text;
+    };
     /**
     * Uploads a part stream as a new user file. This checks permissions, updates the local db and uploads the stream to the bucket
     * @param {Part} part
@@ -441,21 +471,17 @@ var BucketManager = (function () {
     * @param {string} user The username
     * @returns {Promise<any>}
     */
-    BucketManager.prototype.uploadStream = function (part, bucket, user) {
+    BucketManager.prototype.uploadStream = function (part, bucketEntry, user) {
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
-        var stats = this._stats;
+        var statCollection = this._stats;
         var storageStats;
         return new Promise(function (resolve, reject) {
             that.canUpload(user, part).then(function (stats) {
                 storageStats = stats;
-                return that.getIBucket(bucket, user);
-            }).then(function (bucketEntry) {
-                if (!bucketEntry)
-                    return reject("Could not find the file parent bucket");
                 var bucket = that._gcs.bucket(bucketEntry.identifier);
-                var fileID = Date.now() + "-" + part.filename;
+                var fileID = that.generateRandString(12);
                 var file = bucket.file(fileID);
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
                 // on the user's side.
@@ -472,11 +498,8 @@ var BucketManager = (function () {
                 part.pipe(file.createWriteStream()).on("error", function (err) {
                     return reject(new Error("Could not upload the file '" + part.filename + "' to bucket: " + err.toString()));
                 }).on('complete', function () {
-                    var apiCalls = storageStats.apiCallsUsed + 1;
-                    var bucketMemory = bucketEntry.memoryUsed + part.byteCount;
-                    var totalMemory = storageStats.memoryUsed + part.byteCount;
-                    bucketCollection.update({ identifier: bucketEntry.identifier }, { $set: { memoryUsed: bucketMemory } }, function (err, result) {
-                        stats.update({ user: user }, { $set: { memoryUsed: totalMemory, apiCallsUsed: apiCalls } }, function (err, result) {
+                    bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: part.byteCount } }, function (err, result) {
+                        statCollection.update({ user: user }, { $inc: { memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result) {
                             that.registerFile(fileID, bucketEntry, part, user).then(function (file) {
                                 return resolve(file);
                             }).catch(function (err) {
@@ -491,14 +514,13 @@ var BucketManager = (function () {
         });
     };
     /**
-    * Finds and downloads a file
+    * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
     * @returns {Promise<fs.ReadStream>}
     */
-    BucketManager.prototype.downloadFile = function (fileID) {
+    BucketManager.prototype.getFile = function (fileID) {
         var that = this;
         var gcs = this._gcs;
-        var buckets = this._buckets;
         var files = this._files;
         return new Promise(function (resolve, reject) {
             files.findOne({ identifier: fileID }, function (err, result) {
@@ -506,13 +528,24 @@ var BucketManager = (function () {
                     return reject(err);
                 else if (!result)
                     return reject("File '" + fileID + "' does not exist");
-                else {
-                    var iBucket = that._gcs.bucket(result.bucketId);
-                    var iFile = iBucket.file(result.identifier);
-                    resolve(iFile.createReadStream());
-                }
+                else
+                    return resolve(result);
             });
         });
+    };
+    /**
+    * Creates a readstream to download a file
+    * @param {IFileEntry} file The file to download
+    * @returns {Promise<ReadStream>}
+    */
+    BucketManager.prototype.downloadFile = function (file) {
+        var that = this;
+        var gcs = this._gcs;
+        var buckets = this._buckets;
+        var files = this._files;
+        var iBucket = that._gcs.bucket(file.bucketId);
+        var iFile = iBucket.file(file.identifier);
+        return iFile.createReadStream();
     };
     /**
     * Finds and downloads a file

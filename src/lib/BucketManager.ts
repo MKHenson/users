@@ -177,7 +177,7 @@ export class BucketManager
             that.getIBucket(name, user).then(function (bucket)
             {
                 if (bucket)
-                    return new Error(`A Bucket with the name '${name}' has already been registered`);
+                    return reject(new Error(`A Bucket with the name '${name}' has already been registered`));
 
                 // Attempt to create a new Google bucket
                 gcs.createBucket(bucketID, <gcloud.IMeta>{ location: "EU" }, function (err: Error, bucket: gcloud.IBucket)
@@ -491,7 +491,7 @@ export class BucketManager
     * @param {string} user The username associated with the bucket (Only applicable if bucket is a name and not an ID)
     * @returns {IBucketEntry}
     */
-    private getIBucket(bucket: string, user?: string): Promise<def.IBucketEntry>
+    getIBucket(bucket: string, user?: string): Promise<def.IBucketEntry>
     {
         var that = this;
         var bucketCollection = this._buckets;
@@ -523,7 +523,7 @@ export class BucketManager
     * Checks to see the user's storage limits to see if they are allowed to upload data
     * @param {string} user The username
     * @param {Part} part 
-    * @returns {Promise<boolean>}
+    * @returns {Promise<def.IStorageStats>}
     */
     private canUpload(user: string, part: multiparty.Part): Promise<def.IStorageStats>
     {
@@ -552,6 +552,33 @@ export class BucketManager
     }
 
     /**
+   * Checks to see the user's api limit and make sure they can make calls
+   * @param {string} user The username
+   * @returns {Promise<boolean>}
+   */
+    withinAPILimit(user: string): Promise<boolean>
+    {
+        var that = this;
+        var bucketCollection = this._buckets;
+        var stats = this._stats;
+
+        return new Promise<def.IStorageStats>(function (resolve, reject)
+        {
+            stats.findOne(<def.IStorageStats>{ user: user }, function (err, result: def.IStorageStats)
+            {
+                if (err)
+                    return reject(err);
+                else if (!result)
+                    return reject(new Error(`Could not find the user ${user}`));
+                else if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
+                    resolve(true);
+                else
+                    return resolve(false);
+            });
+        })
+    }
+
+    /**
     * Registers an uploaded part as a new user file in the local dbs
     * @param {string} fileID The id of the file on the bucket
     * @param {string} bucketID The id of the bucket this file belongs to
@@ -568,14 +595,14 @@ export class BucketManager
         return new Promise<def.IFileEntry>(function (resolve, reject)
         {
             var entry: def.IFileEntry = {
-                
                 user: user,
                 identifier: fileID,
                 bucketId: bucket.identifier,
                 bucketName: bucket.name,
                 created: Date.now(),
                 numDownloads: 0,
-                size: part.byteCount
+                size: part.byteCount,
+                mimeType: part.headers["content-type"]
             };
 
             files.save(entry, function (err: Error, result: any)
@@ -588,6 +615,17 @@ export class BucketManager
         });
     }
 
+    generateRandString(len: number) : string
+    {
+        var text = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        for (var i = 0; i < len; i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
+    }
+
     /**
     * Uploads a part stream as a new user file. This checks permissions, updates the local db and uploads the stream to the bucket
     * @param {Part} part
@@ -595,12 +633,12 @@ export class BucketManager
     * @param {string} user The username
     * @returns {Promise<any>}
     */
-    uploadStream(part: multiparty.Part, bucket: string, user: string): Promise<def.IFileEntry>
+    uploadStream(part: multiparty.Part, bucketEntry: def.IBucketEntry, user: string): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
-        var stats = this._stats;
+        var statCollection = this._stats;
         var storageStats: def.IStorageStats;
 
         return new Promise<def.IFileEntry>(function (resolve, reject)
@@ -608,15 +646,8 @@ export class BucketManager
             that.canUpload(user, part).then(function(stats)
             {
                 storageStats = stats;
-                return that.getIBucket(bucket, user);
-
-            }).then(function (bucketEntry: def.IBucketEntry)
-            {
-                if (!bucketEntry)
-                    return reject(`Could not find the file parent bucket`);
-
                 var bucket = that._gcs.bucket(bucketEntry.identifier);
-                var fileID = Date.now() + "-" + part.filename;
+                var fileID = that.generateRandString(16);
                 var file = bucket.file(fileID);
 
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
@@ -640,13 +671,9 @@ export class BucketManager
 
                 }).on('complete', function ()
                 {
-                    var apiCalls = storageStats.apiCallsUsed + 1;
-                    var bucketMemory = bucketEntry.memoryUsed + part.byteCount;
-                    var totalMemory = storageStats.memoryUsed + part.byteCount;
-
-                    bucketCollection.update(<def.IBucketEntry>{ identifier: bucketEntry.identifier }, { $set: <def.IBucketEntry>{ memoryUsed: bucketMemory } }, function (err, result)
+                    bucketCollection.update(<def.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <def.IBucketEntry>{ memoryUsed: part.byteCount } }, function (err, result)
                     {
-                        stats.update(<def.IStorageStats>{ user: user }, { $set: <def.IStorageStats>{ memoryUsed: totalMemory, apiCallsUsed: apiCalls } }, function (err, result)
+                        statCollection.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
                         {
                             that.registerFile(fileID, bucketEntry, part, user).then(function (file)
                             {
@@ -668,18 +695,17 @@ export class BucketManager
     }
 
     /**
-    * Finds and downloads a file
+    * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
     * @returns {Promise<fs.ReadStream>}
     */
-    downloadFile(fileID: string): Promise<fs.ReadStream>
+    getFile(fileID: string): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
-        var buckets = this._buckets;
         var files = this._files;
 
-        return new Promise<fs.ReadStream>(function (resolve, reject)
+        return new Promise<def.IFileEntry>(function (resolve, reject)
         {
             files.findOne(<def.IFileEntry>{ identifier: fileID }, function (err, result: def.IFileEntry)
             {
@@ -688,13 +714,26 @@ export class BucketManager
                 else if (!result)
                     return reject(`File '${fileID}' does not exist`);
                 else
-                {
-                    var iBucket = that._gcs.bucket(result.bucketId);
-                    var iFile = iBucket.file(result.identifier);
-                    resolve(iFile.createReadStream());
-                }
+                    return resolve(result);
             });
         });
+    }
+
+    /**
+    * Creates a readstream to download a file
+    * @param {IFileEntry} file The file to download
+    * @returns {Promise<ReadStream>}
+    */
+    downloadFile(file: def.IFileEntry): fs.ReadStream
+    {
+        var that = this;
+        var gcs = this._gcs;
+        var buckets = this._buckets;
+        var files = this._files;
+
+        var iBucket = that._gcs.bucket(file.bucketId);
+        var iFile = iBucket.file(file.identifier);
+        return iFile.createReadStream();
     }
 
     /**
