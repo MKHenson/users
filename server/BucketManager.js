@@ -481,7 +481,7 @@ var BucketManager = (function () {
             that.canUpload(user, part).then(function (stats) {
                 storageStats = stats;
                 var bucket = that._gcs.bucket(bucketEntry.identifier);
-                var fileID = that.generateRandString(12);
+                var fileID = that.generateRandString(16);
                 var file = bucket.file(fileID);
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
                 // on the user's side.

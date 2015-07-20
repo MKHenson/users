@@ -311,9 +311,9 @@ export class BucketController extends Controller
             if (!valid)
                 res.send(404);
 
-            res.setHeader('Content-Type', iFile.mimeType);
-            res.setHeader('Content-Length', iFile.size.toString());
-            var stream = manager.downloadFile(iFile);
+            res.setHeader('Content-Type', file.mimeType);
+            res.setHeader('Content-Length', file.size.toString());
+            var stream = manager.downloadFile(file);
             stream.pipe(res);
 
         }).catch(function (err)

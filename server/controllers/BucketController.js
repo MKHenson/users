@@ -229,12 +229,18 @@ var BucketController = (function (_super) {
     BucketController.prototype.getFile = function (req, res, next) {
         var manager = BucketManager_1.BucketManager.get;
         var fileID = req.params.id;
+        var file = null;
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
         manager.getFile(fileID).then(function (iFile) {
-            res.setHeader('Content-Type', iFile.mimeType);
-            res.setHeader('Content-Length', iFile.size.toString());
-            var stream = manager.downloadFile(iFile);
+            file = iFile;
+            return manager.withinAPILimit(iFile.user);
+        }).then(function (valid) {
+            if (!valid)
+                res.send(404);
+            res.setHeader('Content-Type', file.mimeType);
+            res.setHeader('Content-Length', file.size.toString());
+            var stream = manager.downloadFile(file);
             stream.pipe(res);
         }).catch(function (err) {
             res.setHeader('Content-Type', 'application/json');
