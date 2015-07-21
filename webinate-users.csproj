@@ -26,6 +26,7 @@
     <TypeScriptCompile Include="src\lib\BucketManager.ts" />
     <TypeScriptCompile Include="src\lib\controllers\BucketController.ts" />
     <TypeScriptCompile Include="src\lib\controllers\Controller.ts" />
+    <TypeScriptCompile Include="src\lib\controllers\ErrorController.ts" />
     <TypeScriptCompile Include="src\lib\controllers\CORSController.ts" />
     <TypeScriptCompile Include="src\lib\controllers\UserController.ts" />
     <TypeScriptCompile Include="src\lib\definitions\bcrypt.d.ts" />

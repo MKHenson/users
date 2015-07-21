@@ -25,7 +25,7 @@ var CORSController = (function (_super) {
         for (var i = 0, l = config.approvedDomains.length; i < l; i++)
             matches.push(new RegExp(config.approvedDomains[i]));
         // Approves the valid domains for CORS requests
-        router.all("*", function (req, res, next) {
+        e.use(function (req, res, next) {
             if (req.headers.origin) {
                 for (var m = 0, l = matches.length; m < l; m++)
                     if (req.headers.origin.match(matches[m])) {
@@ -45,8 +45,6 @@ var CORSController = (function (_super) {
             else
                 next();
         });
-        // Register the path
-        e.use("*", router);
     }
     /**
      * All controllers must successfully return a promise for its initialization phase.

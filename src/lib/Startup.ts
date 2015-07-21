@@ -10,6 +10,7 @@ import * as winston from "winston";
 import {BucketController} from "./controllers/BucketController";
 import {UserController} from "./controllers/UserController";
 import {CORSController} from "./controllers/CORSController";
+import {ErrorController} from "./controllers/ErrorController";
 import * as yargs from "yargs";
 import * as mongodb from "mongodb";
 
@@ -67,7 +68,8 @@ openDB(config).then(function (db)
     return Promise.all([
         new CORSController(app, config).initialize(db),
         new BucketController(app, config).initialize(db),        
-        new UserController(app, config).initialize(db)
+        new UserController(app, config).initialize(db),
+        new ErrorController(app, config).initialize(db)
     ]);
 
 }).then(function ()
@@ -75,7 +77,7 @@ openDB(config).then(function (db)
     // Use middlewares
     app.use(morgan('dev'));
     app.use(methodOverride());
-        
+    
     // Start node server.js 
     var httpServer = http.createServer(app);
     httpServer.listen(config.portHTTP);

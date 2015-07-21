@@ -8,6 +8,7 @@ var winston = require("winston");
 var BucketController_1 = require("./controllers/BucketController");
 var UserController_1 = require("./controllers/UserController");
 var CORSController_1 = require("./controllers/CORSController");
+var ErrorController_1 = require("./controllers/ErrorController");
 var yargs = require("yargs");
 var mongodb = require("mongodb");
 var arguments = yargs.argv;
@@ -49,7 +50,8 @@ openDB(config).then(function (db) {
     return Promise.all([
         new CORSController_1.CORSController(app, config).initialize(db),
         new BucketController_1.BucketController(app, config).initialize(db),
-        new UserController_1.UserController(app, config).initialize(db)
+        new UserController_1.UserController(app, config).initialize(db),
+        new ErrorController_1.ErrorController(app, config).initialize(db)
     ]);
 }).then(function () {
     // Use middlewares

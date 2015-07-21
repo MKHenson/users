@@ -27,7 +27,7 @@ export class CORSController extends Controller
             matches.push(new RegExp(config.approvedDomains[i]));
 
         // Approves the valid domains for CORS requests
-        router.all("*", function (req: express.Request, res: express.Response, next: Function)
+        e.use(function (req: express.Request, res: express.Response, next: Function)
         {
             if ((<http.ServerRequest>req).headers.origin)
             {
@@ -53,9 +53,6 @@ export class CORSController extends Controller
             else
                 next();
         });
-		
-        // Register the path
-        e.use("*", router);
     }
 
     /**

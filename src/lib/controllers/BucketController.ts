@@ -48,11 +48,11 @@ export class BucketController extends Controller
         router.put("/storage-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
         router.put("/storage-allocated-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-
+        
         // Register the path
         e.use(`${config.mediaURL}`, router);
     }
-
+    
     /**
    * Makes sure the target user exists and the numeric value specified is valid
    * @param {express.Request} req
