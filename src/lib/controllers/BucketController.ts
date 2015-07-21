@@ -422,15 +422,15 @@ export class BucketController extends Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
-        var username = req.params.user;
-        var bucketName = req.params.name;
+        var username: string = req.params.user;
+        var bucketName: string = req.params.name;
 
         if (!username || username.trim() == "")
             return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid username", error: true }));
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid name", error: true }));
-        if (!validator.isAlphanumeric(bucketName))
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Only use alphanumeric characters allowed", error: true }));
+        if ( !bucketName.match(/^[0-9A-Z -]+$/i) )
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please only use safe characters", error: true }));
 
         UserManager.get.getUser(username).then(function(user)
         {

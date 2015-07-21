@@ -118,7 +118,7 @@ var BucketManager = (function () {
     BucketManager.prototype.createBucket = function (name, user) {
         var that = this;
         var gcs = this._gcs;
-        var bucketID = "webinate-bucket-" + Date.now();
+        var bucketID = "webinate-bucket-" + that.generateRandString(8);
         var bucketCollection = this._buckets;
         var stats = this._stats;
         return new Promise(function (resolve, reject) {

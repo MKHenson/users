@@ -10,7 +10,6 @@ var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
 var BucketManager_1 = require("../BucketManager");
 var multiparty = require("multiparty");
-var validator = require("validator");
 /**
 * Main class to use for managing users
 */
@@ -335,8 +334,8 @@ var BucketController = (function (_super) {
             return res.end(JSON.stringify({ message: "Please specify a valid username", error: true }));
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a valid name", error: true }));
-        if (!validator.isAlphanumeric(bucketName))
-            return res.end(JSON.stringify({ message: "Only use alphanumeric characters allowed", error: true }));
+        if (!bucketName.match(/^[0-9A-Z -]+$/i))
+            return res.end(JSON.stringify({ message: "Please only use safe characters", error: true }));
         Users_1.UserManager.get.getUser(username).then(function (user) {
             if (user)
                 return manager.withinAPILimit(username);
