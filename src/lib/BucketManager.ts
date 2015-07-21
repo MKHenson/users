@@ -168,7 +168,7 @@ export class BucketManager
     {
         var that = this;
         var gcs = this._gcs;
-        var bucketID = `webinate-bucket-${that.generateRandString(8)}`;
+        var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
         var bucketCollection = this._buckets;
         var stats = this._stats;
 
