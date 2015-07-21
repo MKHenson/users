@@ -27,7 +27,7 @@ var BucketController = (function (_super) {
         // Setup the rest calls
         var router = express.Router();
         router.get("/download/:id", [PermissionController_1.hasAdminRights, this.getFile.bind(this)]);
-        router.get("/get-files/:bucket?", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
+        router.get("/get-files/:user/:bucket", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", [PermissionController_1.hasAdminRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", [PermissionController_1.hasAdminRights, this.getBuckets.bind(this)]);
         router.delete("/remove-buckets/:buckets", [PermissionController_1.identifyUser, this.removeBuckets.bind(this)]);
@@ -259,11 +259,24 @@ var BucketController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager_1.BucketManager.get;
-        manager.getFileEntries(req.params.bucket).then(function (files) {
+        var numFiles = 0;
+        var index = parseInt(req.query.index);
+        var limit = parseInt(req.query.limit);
+        var bucketEntry;
+        manager.getIBucket(req._user.dbEntry.username, req.params.bucket).then(function (bucket) {
+            if (!bucket)
+                return Promise.reject(new Error("Could not find the bucket '" + req.params.bucket + "'"));
+            bucketEntry = bucket;
+            return manager.numFiles({ bucketId: bucket.identifier });
+        }).then(function (count) {
+            numFiles = count;
+            return manager.getFilesByBucket(bucketEntry, index, limit);
+        }).then(function (files) {
             return res.end(JSON.stringify({
-                message: "Found [" + files.length + "] files",
+                message: "Found [" + numFiles + "] files",
                 error: false,
-                data: files
+                data: files,
+                count: numFiles
             }));
         }).catch(function (err) {
             return res.end(JSON.stringify({
@@ -283,11 +296,13 @@ var BucketController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager_1.BucketManager.get;
+        var numBuckets = 1;
         manager.getBucketEntries(user).then(function (buckets) {
             return res.end(JSON.stringify({
                 message: "Found [" + buckets.length + "] buckets",
                 error: false,
-                data: buckets
+                data: buckets,
+                count: buckets.length
             }));
         }).catch(function (err) {
             return res.end(JSON.stringify({

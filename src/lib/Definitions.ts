@@ -157,7 +157,8 @@ export interface IUploadResponse extends IResponse
 */
 export interface IGetArrayResponse<T> extends IResponse
 {
-	data: Array<T>;
+    data: Array<T>;
+    count: number;
 }
 
 /*

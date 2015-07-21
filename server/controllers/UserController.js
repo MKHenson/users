@@ -141,11 +141,16 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
-        that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit)).then(function (sessions) {
+        var numSessions = 1;
+        that._userManager.sessionManager.numActiveSessions().then(function (count) {
+            numSessions = count;
+            return that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit));
+        }).then(function (sessions) {
             var token = {
                 error: false,
                 message: "Found " + sessions.length + " active sessions",
-                data: sessions
+                data: sessions,
+                count: numSessions
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {

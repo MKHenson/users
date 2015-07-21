@@ -67,24 +67,41 @@ export class BucketManager
     }
 
     /**
-    * Fetches all file entries from the database for a given bucket
-    * @param {string} bucket [Optional] Specify the bucket from which he files belong to
+    * Fetches the file count based on the given query
+    * @param {IFileEntry} searchQuery The search query to idenfify files
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    getFileEntries(bucket? : string): Promise<Array<def.IFileEntry>>
+    numFiles(searchQuery: def.IFileEntry): Promise<number>
+    {
+        var files = this._files;
+        return new Promise(function (resolve, reject)
+        {
+            // Save the new entry into the database
+            files.count(searchQuery, function (err, count)
+            {
+                if (err)
+                    return reject(err);
+              
+                return resolve(count);
+            });
+        });
+    }
+
+    /**
+    * Fetches all file entries by a given query
+    * @param {any} searchQuery The search query to idenfify files
+    * @returns {Promise<Array<def.IFileEntry>>}
+    */
+    getFiles(searchQuery: any, startIndex?: number, limit?: number): Promise<Array<def.IFileEntry>>
     {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
-        
+
         return new Promise(function (resolve, reject)
         {
-            var searchQuery : any = {};
-            if (bucket)
-                searchQuery.$or = <Array<def.IFileEntry>>[{ bucketName: bucket }, { bucketId: bucket }];
-            
             // Save the new entry into the database
-            files.find(searchQuery, function (err, result)
+            files.find(searchQuery, startIndex, limit, function (err, result)
             {
                 if (err)
                     return reject(err);
@@ -100,6 +117,17 @@ export class BucketManager
                 }
             });
         });
+    }
+
+    /**
+    * Fetches all file entries from the database for a given bucket
+    * @param {IBucketEntry} bucket Specify the bucket from which he files belong to
+    * @returns {Promise<Array<def.IFileEntry>>}
+    */
+    getFilesByBucket(bucket: def.IBucketEntry, startIndex?: number, limit?: number): Promise<Array<def.IFileEntry>>
+    {
+        var searchQuery: def.IFileEntry = { bucketId: bucket.identifier };
+        return this.getFiles(searchQuery, startIndex, limit);
     }
 
     /**

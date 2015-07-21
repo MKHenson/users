@@ -66,7 +66,27 @@ export class SessionManager
 		this._options.lifetime = options.lifetime || 60 * 30; //30 minutes
 		this._options.persistent = options.persistent || true;
 		this._options.secure = options.secure || false;
-	}
+    }
+
+    /**
+	* Gets an array of all active sessions
+	* @param {number} startIndex
+	* @param {number} limit
+	*/
+    numActiveSessions(startIndex?: number, limit?: number): Promise<number>
+    {
+        var that = this;
+        return new Promise<number>(function (resolve, reject)
+        {
+            that._dbCollection.count({}, function (error: Error, count: number)
+            {
+                if (error)
+                    return reject(error);
+
+               resolve(count);
+            })
+        });
+    }
 
 	/**
 	* Gets an array of all active sessions

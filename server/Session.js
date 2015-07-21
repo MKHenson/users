@@ -22,6 +22,21 @@ var SessionManager = (function () {
     * @param {number} startIndex
     * @param {number} limit
     */
+    SessionManager.prototype.numActiveSessions = function (startIndex, limit) {
+        var that = this;
+        return new Promise(function (resolve, reject) {
+            that._dbCollection.count({}, function (error, count) {
+                if (error)
+                    return reject(error);
+                resolve(count);
+            });
+        });
+    };
+    /**
+    * Gets an array of all active sessions
+    * @param {number} startIndex
+    * @param {number} limit
+    */
     SessionManager.prototype.getActiveSessions = function (startIndex, limit) {
         var that = this;
         return new Promise(function (resolve, reject) {

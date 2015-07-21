@@ -36,7 +36,7 @@ export class BucketController extends Controller
         var router = express.Router();
 
         router.get("/download/:id", <any>[hasAdminRights, this.getFile.bind(this)]);
-        router.get("/get-files/:bucket?", <any>[hasAdminRights, this.getFiles.bind(this)]);
+        router.get("/get-files/:user/:bucket", <any>[hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", <any>[hasAdminRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", <any>[hasAdminRights, this.getBuckets.bind(this)]);
         router.delete("/remove-buckets/:buckets", <any>[identifyUser, this.removeBuckets.bind(this)]);
@@ -337,12 +337,31 @@ export class BucketController extends Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
-        manager.getFileEntries(req.params.bucket).then(function (files)
+        var numFiles = 0;
+        var index = parseInt(req.query.index);
+        var limit = parseInt(req.query.limit);
+        var bucketEntry: def.IBucketEntry;
+
+        manager.getIBucket(req._user.dbEntry.username, req.params.bucket).then(function(bucket)
+        {
+            if (!bucket)
+                return Promise.reject(new Error(`Could not find the bucket '${req.params.bucket}'`));
+
+            bucketEntry = bucket;
+            return manager.numFiles({ bucketId: bucket.identifier });
+            
+        }).then(function (count)
+        {
+            numFiles = count;
+            return manager.getFilesByBucket(bucketEntry, index, limit);
+
+        }).then(function (files)
         {
             return res.end(JSON.stringify(<def.IGetFiles>{
-                message: `Found [${files.length}] files`,
+                message: `Found [${numFiles}] files`,
                 error: false,
-                data: files
+                data: files,
+                count: numFiles
             }));
 
         }).catch(function (err: Error)
@@ -367,12 +386,15 @@ export class BucketController extends Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
+        var numBuckets = 1;
+
         manager.getBucketEntries(user).then(function (buckets)
         {
             return res.end(JSON.stringify(<def.IGetBuckets>{
                 message: `Found [${buckets.length}] buckets`,
                 error: false,
-                data: buckets
+                data: buckets,
+                count: buckets.length
             }));
 
         }).catch(function (err: Error)

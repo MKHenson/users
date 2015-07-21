@@ -38,20 +38,33 @@ var BucketManager = (function () {
         });
     };
     /**
-    * Fetches all file entries from the database for a given bucket
-    * @param {string} bucket [Optional] Specify the bucket from which he files belong to
+    * Fetches the file count based on the given query
+    * @param {IFileEntry} searchQuery The search query to idenfify files
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    BucketManager.prototype.getFileEntries = function (bucket) {
+    BucketManager.prototype.numFiles = function (searchQuery) {
+        var files = this._files;
+        return new Promise(function (resolve, reject) {
+            // Save the new entry into the database
+            files.count(searchQuery, function (err, count) {
+                if (err)
+                    return reject(err);
+                return resolve(count);
+            });
+        });
+    };
+    /**
+    * Fetches all file entries by a given query
+    * @param {any} searchQuery The search query to idenfify files
+    * @returns {Promise<Array<def.IFileEntry>>}
+    */
+    BucketManager.prototype.getFiles = function (searchQuery, startIndex, limit) {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
         return new Promise(function (resolve, reject) {
-            var searchQuery = {};
-            if (bucket)
-                searchQuery.$or = [{ bucketName: bucket }, { bucketId: bucket }];
             // Save the new entry into the database
-            files.find(searchQuery, function (err, result) {
+            files.find(searchQuery, startIndex, limit, function (err, result) {
                 if (err)
                     return reject(err);
                 else {
@@ -63,6 +76,15 @@ var BucketManager = (function () {
                 }
             });
         });
+    };
+    /**
+    * Fetches all file entries from the database for a given bucket
+    * @param {IBucketEntry} bucket Specify the bucket from which he files belong to
+    * @returns {Promise<Array<def.IFileEntry>>}
+    */
+    BucketManager.prototype.getFilesByBucket = function (bucket, startIndex, limit) {
+        var searchQuery = { bucketId: bucket.identifier };
+        return this.getFiles(searchQuery, startIndex, limit);
     };
     /**
     * Fetches the storage/api data for a given user
