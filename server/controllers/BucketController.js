@@ -263,7 +263,9 @@ var BucketController = (function (_super) {
         var index = parseInt(req.query.index);
         var limit = parseInt(req.query.limit);
         var bucketEntry;
-        manager.getIBucket(req._user.dbEntry.username, req.params.bucket).then(function (bucket) {
+        if (!req.params.bucket || req.params.bucket.trim() == "")
+            return res.end(JSON.stringify({ message: "Please specify a valid bucket name", error: true }));
+        manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function (bucket) {
             if (!bucket)
                 return Promise.reject(new Error("Could not find the bucket '" + req.params.bucket + "'"));
             bucketEntry = bucket;

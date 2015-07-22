@@ -342,7 +342,10 @@ export class BucketController extends Controller
         var limit = parseInt(req.query.limit);
         var bucketEntry: def.IBucketEntry;
 
-        manager.getIBucket(req._user.dbEntry.username, req.params.bucket).then(function(bucket)
+        if (!req.params.bucket || req.params.bucket.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid bucket name", error: true }));
+
+        manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket)
         {
             if (!bucket)
                 return Promise.reject(new Error(`Could not find the bucket '${req.params.bucket}'`));
