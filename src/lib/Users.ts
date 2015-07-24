@@ -8,6 +8,7 @@ import * as bodyParser from "body-parser";
 
 import * as def from "./Definitions";
 import {SessionManager, Session} from "./Session";
+import {BucketManager} from "./BucketManager";
 
 /*
 * Class that represents a user and its database entry
@@ -212,12 +213,22 @@ export class UserManager
                     var remoteIP: string = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
                     var privatekey: string = that._config.captchaPrivateKey;
                     var captchaChecker = new recaptcha.reCaptcha();
+                    var newUser: User = null;
                     captchaChecker.on("data", function (captchaResult)
                     {
                         if (!captchaResult.is_valid)
                             throw new Error("Your captcha code seems to be wrong. Please try another.");
 
-                        return resolve(that.createUser(username, email, pass));
+                        return that.createUser(username, email, pass);
+                        
+                    }).then(function(user)
+                    {
+                        newUser = user;
+                        return resolve(newUser);
+
+                    }).catch(function (err)
+                    {
+                        return reject(err);
                     });
 
                     // Check for valid captcha
@@ -226,11 +237,11 @@ export class UserManager
 
             }).then(function (user)
             {
-                resolve(user);
+                return resolve(user);
 
             }).catch(function (error: Error)
             {
-                return Promise.reject(error);
+                return reject(error);
             });
         });
 	}
@@ -582,6 +593,7 @@ export class UserManager
 			if (!validator.isEmail(email)) return reject(new Error("Email must be valid"));
 			if (!password || validator.trim(password) == "") return reject(new Error("Password cannot be empty"));
 			if (privilege > 3) return reject(new Error("Privilege type is unrecognised"));
+            if (privilege == def.UserPrivileges.SuperAdmin) return reject(new Error("You cannot create a super user"));
 
 			// Check if the user already exists
 			that.getUser(user, email).then(function (existingUser)
@@ -636,7 +648,14 @@ export class UserManager
                         if (error)
                             return reject(new Error(`Could not send email to user: ${error.message}`));
 
-                        return resolve(newUser);
+                        BucketManager.get.createUserStats(newUser.dbEntry.username).then(function ()
+                        {
+                            return resolve(newUser);
+
+                        }).catch(function (err)
+                        {
+                            return reject(err);
+                        });
                     });
 				});
 			});
@@ -653,27 +672,35 @@ export class UserManager
 		var that = this;
 
 		return new Promise<void>(function (resolve, reject)
-		{
-			that.getUser(user).then(function (existingUser)
-			{
-				if (!existingUser)
+        {
+            var existingUser: User;
+
+			that.getUser(user).then(function (user)
+            {
+                existingUser = user;
+
+                if (!user)
+                    return Promise.reject(new Error("Could not find any users with those credentials"));
+
+                if (user.dbEntry.privileges == def.UserPrivileges.SuperAdmin)
+                    return Promise.reject(new Error("You cannot remove a super user"));
+
+                return BucketManager.get.removeUser(user.dbEntry.username);
+
+            }).then(function (numDeleted)
+            {
+                that._userCollection.remove(<def.IUserEntry>{ _id: existingUser.dbEntry._id }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
+                {
+                    if (error)
+                        return reject(error);
+
+                    if (result.result.n == 0)
+                        return reject(new Error("Could not remove the user from the database"));
+
                     return resolve();
+                });
 
-                if (existingUser.dbEntry.privileges == def.UserPrivileges.SuperAdmin)
-                    return reject(new Error("You cannot remove a super user"));
-
-				that._userCollection.remove(<def.IUserEntry>{ _id: existingUser.dbEntry._id }, function(error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-				{
-					if (error)
-						return reject(error);
-
-					if (result.result.n == 0)
-						return reject(new Error("Could not remove the user from the database"));
-
-					return resolve();
-				});
-
-			}).catch(function (error: Error)
+            }).catch(function (error: Error)
 			{
 				reject(error);
 			});

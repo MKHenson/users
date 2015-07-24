@@ -157,9 +157,9 @@ export class BucketManager
     }
 
     /**
-    * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
+    * Attempts to create a user usage statistics
     * @param {string} user The user associated with this bucket
-    * @returns {Promise<gcloud.IBucket>}
+    * @returns {Promise<IStorageStats>}
     */
     createUserStats(user: string): Promise<def.IStorageStats>
     {
@@ -182,6 +182,57 @@ export class BucketManager
                     return reject(err);
                 else
                     return resolve(result);
+            });
+        });
+    }
+
+    /**
+    * Attempts to remove the usage stats of a given user
+    * @param {string} user The user associated with this bucket
+    * @returns {Promise<number>} A promise of the number of stats removed
+    */
+    removeUserStats(user: string): Promise<number>
+    {
+        var that = this;
+        var stats = this._stats;
+
+        return new Promise(function (resolve, reject)
+        {
+            var storage: def.IStorageStats = { user: user };
+            stats.remove(storage, function (err, result: number)
+            {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve(result);
+            });
+        });
+    }
+
+    /**
+    * Attempts to remove all data associated with a user
+    * @param {string} user The user we are removing
+    * @returns {Promise<any>}
+    */
+    removeUser(user: string): Promise<any>
+    {
+        var that = this;
+        var stats = this._stats;
+
+        return new Promise(function (resolve, reject)
+        {
+            Promise.all<any>([
+
+                that.removeUserStats(user),
+                that.removeBucketsByUser(user)
+
+            ]).then(function(data)
+            {
+                return resolve();
+
+            }).catch(function (err)
+            {
+                return reject(err);
             });
         });
     }
@@ -483,9 +534,10 @@ export class BucketManager
     /**
    * Attempts to remove files from the cloud and database
    * @param {Array<string>} fileIDs The file IDs to remove
+    * @param {string} user Optionally pass in the user to refine the search
    * @returns {Promise<string>} Returns the file IDs of the files removed
    */
-    removeFilesById(fileIDs: Array<string>): Promise<Array<string>>
+    removeFilesById(fileIDs: Array<string>, user? : string): Promise<Array<string>>
     {
         if (fileIDs.length == 0)
             return Promise.resolve();
@@ -494,6 +546,9 @@ export class BucketManager
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)
             searchQuery.$or.push(<def.IFileEntry>{ identifier: fileIDs[i] });
+
+        if (user)
+            (<def.IFileEntry>searchQuery).user = user;
 
         return this.removeFiles(searchQuery);
     }
@@ -587,7 +642,6 @@ export class BucketManager
     withinAPILimit(user: string): Promise<boolean>
     {
         var that = this;
-        var bucketCollection = this._buckets;
         var stats = this._stats;
 
         return new Promise<def.IStorageStats>(function (resolve, reject)
@@ -602,6 +656,28 @@ export class BucketManager
                     resolve(true);
                 else
                     return resolve(false);
+            });
+        })
+    }
+
+    /**
+    * Adds an API call to a user
+    * @param {string} user The username
+    * @returns {Promise<boolean>}
+    */
+    incrementAPI(user: string): Promise<boolean>
+    {
+        var that = this;
+        var stats = this._stats;
+
+        return new Promise<def.IStorageStats>(function (resolve, reject)
+        {
+            stats.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
+            {
+                if (err)
+                    return reject(err);
+                else
+                    resolve(true);
             });
         })
     }

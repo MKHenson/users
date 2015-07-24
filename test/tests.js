@@ -19,11 +19,13 @@ catch (exp)
 
 var agent = test.httpAgent("http://"+ config.host +":" + config.portHTTP);
 var sessionCookie = "";
+var sessionCookie2 = "";
 var activation = "";
+var fileId = "";
 
 describe('Testing user API functions', function(){
 	
-	describe('Checking authentication', function(){	
+	describe('Checking basic authentication', function(){	
 		it('should not be logged in', function(done){
 			agent
 				.get('/users/authenticated').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -37,7 +39,7 @@ describe('Testing user API functions', function(){
 		})
 	})
 	
-	describe('Calling login', function(){	
+	describe('Checking login with admin user', function(){	
 	
 		it('did not log in with empty credentials', function(done){
 			agent
@@ -106,7 +108,7 @@ describe('Testing user API functions', function(){
 		})
 	})
 	
-	describe('Checking authentication with Cookie!', function(){	
+	describe('Checking authentication with cookie', function(){	
 		it('should be logged in with hidden user details', function(done){
 			agent
 				.get('/users/authenticated').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -117,7 +119,7 @@ describe('Testing user API functions', function(){
 					test.bool(res.body.authenticated).isTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("user")
-					test.string(res.body.user._id).is("000000000000000000000000")
+					test.string(res.body.user._id).contains("00000000")
 					test.string(res.body.user.email).is(config.adminUser.email)
 					test.number(res.body.user.lastLoggedIn).isNotNaN()
 					test.string(res.body.user.password).is("***********************************************************")
@@ -154,7 +156,7 @@ describe('Testing user API functions', function(){
 		})
 	})
 	
-	describe('Getting user data with a Cookie!', function(){	
+	describe('Getting user data with admin cookie', function(){	
 		it('should get admin user without details', function(done){
 			agent
 				.get('/users/users/' + config.adminUser.username).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -164,7 +166,7 @@ describe('Testing user API functions', function(){
 					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("data")
-					test.string(res.body.data._id).is("000000000000000000000000")
+					test.string(res.body.data._id).contains("00000000")
 					test.string(res.body.data.email).is(config.adminUser.email)
 					test.number(res.body.data.lastLoggedIn).isNotNaN()
 					test.string(res.body.data.password).is("***********************************************************")
@@ -208,7 +210,7 @@ describe('Testing user API functions', function(){
 					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("data")
-					test.string(res.body.data._id).is("000000000000000000000000")
+					test.string(res.body.data._id).contains("00000000")
 					test.string(res.body.data.email).is(config.adminUser.email)
 					test.number(res.body.data.lastLoggedIn).isNotNaN()
 					test.string(res.body.data.password).is("***********************************************************")
@@ -455,7 +457,17 @@ describe('Testing user API functions', function(){
 					if (err) return done(err);
 					done();
 				});
-		})
+		}).timeout(25000)
+		
+		it('did remove any users called george2', function(done){
+			agent
+				.delete('/users/remove-user/george2').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					done();
+				});
+		}).timeout(25000)
 		
 		it('did not create a new user without a username', function(done){
 			agent
@@ -583,7 +595,7 @@ describe('Testing user API functions', function(){
 				});
 		})
 		
-		it('did create user regular george with valid details', function(done){
+		it('did create regular user george with valid details', function(done){
 			agent
 				.post('/users/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password", email: "test@test.com", privileges: 3 })
@@ -596,14 +608,38 @@ describe('Testing user API functions', function(){
 				});
 		}).timeout(16000)
 		
-		it('did create an activation key', function(done){
+		it('did create another regular user george2 with valid details', function(done){
 			agent
-				.get('/users/george?verbose=true').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send({username: "george2", password: "password", email: "test2@test.com", privileges: 3 })
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isFalse()
+					test.object(res.body).hasProperty("message")
+					done();
+				});
+		}).timeout(16000)
+		
+		it('did create an activation key for george', function(done){
+			agent
+				.get('/users/users/george?verbose=true').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', sessionCookie)
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body.data).hasProperty("registerKey")
 					activation = res.body.data.registerKey
+					done();
+				});
+		})
+		
+		it('did active george2 through the admin', function(done){
+			agent
+				.put('/users/approve-activation/george2').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isFalse()
 					done();
 				});
 		})
@@ -618,7 +654,7 @@ describe('Testing user API functions', function(){
 		})
 	})
 	
-	describe('Checking regular user login', function(){	
+	describe('Checking user login with activation code present', function(){	
 				
 		it('did not log in with an activation code present', function(done){
 			agent
@@ -656,16 +692,846 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("An activation link has been sent, please check your email for further instructions")
 					done();
 				});
-		})
+		}).timeout(16000)
 		
 		it('did not activate with an invalid username', function(done){
 			agent
-				.get('/users/activate-account?username=NONUSER').set('Accept', 'application/json').expect(302)
+				.get('/users/activate-account?user=NONUSER').set('Accept', 'application/json').expect(302)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.string(res.headers["Location"]).contains("error")
+					test.string(res.headers["location"]).contains("error")
 					done();
 				});
 		})
+		
+		it('did not activate with an valid username and no key', function(done){
+			agent
+				.get('/users/activate-account?user=george').set('Accept', 'application/json').expect(302)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.string(res.headers["location"]).contains("error")
+					done();
+				});
+		})
+		
+		it('did not activate with an valid username and invalid key', function(done){
+			agent
+				.get('/users/activate-account?user=george&key=123').set('Accept', 'application/json').expect(302)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.string(res.headers["location"]).contains("error")
+					
+					// We need to get the new key - so we log in as admin, get the user details and then log out again
+					// Login as admin
+					agent
+						.post('/users/login').set('Accept', 'application/json')
+						.send({username: config.adminUser.username, password: config.adminUser.password })
+						.end(function(err, res){
+							if (err) return done(err);
+							sessionCookie = res.headers["set-cookie"][0].split(";")[0];
+							
+							// Get the new user register key
+							agent
+								.get('/users/users/george?verbose=true').set('Accept', 'application/json')
+								.set('Cookie', sessionCookie)
+								.end(function(err, res){
+									if (err) return done(err);
+									activation = res.body.data.registerKey
+									
+									// Logout again
+									agent
+										.get('/users/logout').set('Accept', 'application/json')
+										.end(function(err, res){
+											if (err) return done(err);
+											
+											// Finished
+											done();
+										});
+								});
+							
+						});
+				});
+				
+		}).timeout(30000)
+		
+		it('did activate with a valid username and key', function(done){
+			agent
+				.get('/users/activate-account?user=george&key=' + activation).set('Accept', 'application/json').expect(302)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.string(res.headers["location"]).contains("success")
+					done();
+				});
+		})
+		
+		it('did log in with valid details and an activated account', function(done){
+			agent
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send({username: "george", password: "password" })
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.bool(res.body.authenticated).isNotFalse()
+					test.object(res.body).hasProperty("message")
+					sessionCookie = res.headers["set-cookie"][0].split(";")[0];
+					done();
+				});
+		})
+	})
+	
+	describe('Getting/Setting data when a regular user', function(){	
+	
+		it('did not get details of the admin user (no permission)', function(done){
+			agent
+				.get("/users/users/"+ config.adminUser.username +"?verbose=true").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not get details other users (no permission)', function(done){
+			agent
+				.get("/users/users"+"?verbose=true").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not get sessions (no permission)', function(done){
+			agent
+				.get("/users/sessions").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not remove the admin user (no permission)', function(done){
+			agent
+				.delete("/users/remove-user/" + config.adminUser.username ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not approve activation (no permission)', function(done){
+			agent
+				.put("/users/approve-activation/" + config.adminUser.username ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create a new user (no permission)', function(done){
+			agent
+				.post("/users/create-user/").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did get user data of myself', function(done){
+			agent
+				.get("/users/users/george?verbose=true").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("data")
+					test.string(res.body.data._id).isNot("000000000000000000000000")
+					test.string(res.body.data.email).is("test@test.com")
+					test.number(res.body.data.lastLoggedIn).isNotNaN()
+					test.string(res.body.data.password).isNot("***********************************************************")
+					test.string(res.body.data.registerKey).is("")
+					test.string(res.body.data.sessionId).isNot("**********")
+					test.string(res.body.data.username).is("george")
+					test.number(res.body.data.privileges).is(3)
+					test.object(res.body.data).hasProperty("passwordTag")					
+					done();
+				});	
+		})
+	})
+})
+
+describe('Checking media API', function(){
+	
+	describe('Getting/Setting data when a Regular user', function(){
+		
+		it('did not get all stats', function(done){
+			agent
+				.get("/media/get-stats").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not get stats for admin', function(done){
+			agent
+				.get("/media/get-stats/" + config.adminUser.username).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not get buckets for admin', function(done){
+			agent
+				.get("/media/get-buckets/" + config.adminUser.username).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not get buckets for all users', function(done){
+			agent
+				.get("/media/get-buckets/").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create stats for admin', function(done){
+			agent
+				.post("/media/create-stats/" + config.adminUser.username).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage calls for admin', function(done){
+			agent
+				.put("/media/storage-calls/" + config.adminUser.username + "/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage memory for admin', function(done){
+			agent
+				.put("/media/storage-memory/" + config.adminUser.username + "/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage allocated calls for admin', function(done){
+			agent
+				.put("/media/storage-allocated-calls/" + config.adminUser.username + "/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage allocated memory for admin', function(done){
+			agent
+				.put("/media/storage-allocated-memory/" + config.adminUser.username + "/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage calls for itself', function(done){
+			agent
+				.put("/media/storage-calls/george/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage memory for itself', function(done){
+			agent
+				.put("/media/storage-memory/george/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage allocated calls for itself', function(done){
+			agent
+				.put("/media/storage-allocated-calls/george/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did not create storage allocated memory for itself', function(done){
+			agent
+				.put("/media/storage-allocated-memory/george/90000").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done();
+				});	
+		})
+		
+		it('did get stats for itself', function(done){
+			agent
+				.get("/media/get-stats/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("data")
+					test.object(res.body.data).hasProperty("_id")
+					test.string(res.body.data.user).is("george")
+					test.number(res.body.data.apiCallsAllocated).is(20000)
+					test.number(res.body.data.memoryAllocated).is(500000000)
+					test.number(res.body.data.apiCallsUsed).is(0)
+					test.number(res.body.data.memoryUsed).is(0)
+					done();
+				});	
+		})
+		
+		it('did get buckets for itself', function(done){
+			agent
+				.get("/media/get-buckets/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("count")
+					test.object(res.body).hasProperty("data")
+					test.number(res.body.count).is(0)
+					done();
+				});	
+		})
+		
+		it('did not get files for another user\'s bucket', function(done){
+			agent
+				.get("/media/get-files/"+ config.adminUser.username +"/BAD_ENTRY").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done()
+				});	
+		})
+		
+		it('did not get files for a non existant bucket', function(done){
+			agent
+				.get("/media/get-files/george/test").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Error: Could not find the bucket 'test'")
+					done()
+				});	
+		})
+		
+		it('did not create a bucket for another user', function(done){
+			agent
+				.post("/media/create-bucket/" + config.adminUser.username + "/test").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("You don't have permission to make this request")
+					done()
+				});	
+		})
+		
+		it('did not create a bucket with bad characters', function(done){
+			agent
+				.post("/media/create-bucket/george/__BAD__CHARS").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Please only use safe characters")
+					done()
+				});	
+		})
+		
+		it('did create a new bucket called dinosaurs', function(done){
+			agent
+				.post("/media/create-bucket/george/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Bucket 'dinosaurs' created")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did not create a bucket with the same name as an existing one', function(done){
+			agent
+				.post("/media/create-bucket/george/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Error: A Bucket with the name 'dinosaurs' has already been registered")
+					done()
+				});	
+		})
+		
+		it('did create a bucket with a different name', function(done){
+			agent
+				.post("/media/create-bucket/george/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Bucket 'dinosaurs2' created")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did not delete any buckets when the name is wrong', function(done){
+			agent
+				.delete("/media/remove-buckets/dinosaurs3,dinosaurs4").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Removed [0] buckets")
+					test.array(res.body.data).isEmpty()
+					done()
+				});	
+		})
+		
+		it('did get the 2 buckets for george', function(done){
+			agent
+				.get("/media/get-buckets/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Found [2] buckets")
+					test.array(res.body.data).hasLength(2)
+					done()
+				});	
+		})
+		
+		it('did not upload a file to a bucket that does not exist', function(done){
+			agent
+				.post("/media/upload/dinosaurs3").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('"£$^&&', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("tokens")
+					test.string(res.body.message).is("No bucket exists with the name 'dinosaurs3'")
+					test.array(res.body.tokens).hasLength(0)
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did not upload a file to dinosaurs with unsafe characters', function(done){
+			agent
+				.post("/media/upload/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('"£$^&&', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("tokens")
+					test.string(res.body.message).is("Upload complete. [0] Files have been saved.")
+					test.array(res.body.tokens).hasLength(1)
+					test.string(res.body.tokens[0].field).is("")
+					test.string(res.body.tokens[0].filename).is("file.png")
+					test.bool(res.body.tokens[0].error).isTrue()
+					test.string(res.body.tokens[0].errorMsg).is("Please use safe characters")
+					test.string(res.body.tokens[0].file).is("")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did upload a file to dinosaurs', function(done){
+			agent
+				.post("/media/upload/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('small-image', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("tokens")
+					test.string(res.body.message).is("Upload complete. [1] Files have been saved.")
+					test.array(res.body.tokens).hasLength(1)
+					test.string(res.body.tokens[0].field).is("small-image")
+					test.string(res.body.tokens[0].filename).is("file.png")
+					test.bool(res.body.tokens[0].error).isNotTrue()
+					test.string(res.body.tokens[0].errorMsg).is("")
+					test.object(res.body.tokens[0]).hasProperty("file")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('fetched the files of the dinosaur bucket', function(done){
+			agent
+				.get("/media/get-files/george/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('small-image', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("data")
+					test.string(res.body.message).is("Found [1] files")
+					test.array(res.body.data).hasLength(1)
+					test.number(res.body.data[0].numDownloads).is(0)
+					test.number(res.body.data[0].size).is(226)
+					test.string(res.body.data[0].mimeType).is("image/png")
+					test.string(res.body.data[0].user).is("george")
+					test.object(res.body.data[0]).hasProperty("identifier")
+					test.object(res.body.data[0]).hasProperty("bucketId")
+					test.object(res.body.data[0]).hasProperty("created")
+					test.string(res.body.data[0].bucketName).is("dinosaurs")
+					test.object(res.body.data[0]).hasProperty("_id")
+					
+					fileId = res.body.data[0].identifier
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('updated its stats accordingly', function(done){
+			agent
+				.get("/media/get-stats/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.number(res.body.data.apiCallsUsed).is(3)
+					test.number(res.body.data.memoryUsed).is(226)
+					done();
+				});	
+		})
+		
+		it('did upload another file to dinosaurs2', function(done){
+			agent
+				.post("/media/upload/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('small-image', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("tokens")
+					test.string(res.body.message).is("Upload complete. [1] Files have been saved.")
+					test.array(res.body.tokens).hasLength(1)
+					test.string(res.body.tokens[0].field).is("small-image")
+					test.string(res.body.tokens[0].filename).is("file.png")
+					test.bool(res.body.tokens[0].error).isNotTrue()
+					test.string(res.body.tokens[0].errorMsg).is("")
+					test.object(res.body.tokens[0]).hasProperty("file")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('updated its stats with the 2nd upload accordingly', function(done){
+			agent
+				.get("/media/get-stats/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.number(res.body.data.apiCallsUsed).is(4)
+					test.number(res.body.data.memoryUsed).is(226 * 2)
+					done();
+				});	
+		})
+		
+		it('did not download a file with an invalid id anonomously', function(done){
+			agent
+				.get("/media/download/123").set('Accept', 'application/json').expect(404)
+				.end(function(err, res){
+					if (err) return done(err);
+					done();
+				});	
+		})
+		
+		it('did download an image file with a valid id anonomously', function(done){
+			agent
+				.get("/media/download/" + fileId).expect(200).expect('Content-Type', /image/).expect('Content-Length', "226")
+				.end(function(err, res){
+					//if (err) return done(err);
+					done();
+				});	
+		})
+		
+		it('did update the api calls to 5', function(done){
+			agent
+				.get("/media/get-stats/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.number(res.body.data.apiCallsUsed).is(5)
+					done();
+				});	
+		})
+		
+		it('did upload another file to dinosaurs2', function(done){
+			agent
+				.post("/media/upload/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('small-image', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("tokens")
+					test.string(res.body.message).is("Upload complete. [1] Files have been saved.")
+					test.array(res.body.tokens).hasLength(1)
+					test.string(res.body.tokens[0].field).is("small-image")
+					test.string(res.body.tokens[0].filename).is("file.png")
+					test.bool(res.body.tokens[0].error).isNotTrue()
+					test.string(res.body.tokens[0].errorMsg).is("")
+					test.object(res.body.tokens[0]).hasProperty("file")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('fetched the a file Id of the dinosaur2 bucket', function(done){
+			agent
+				.get("/media/get-files/george/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.attach('small-image', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					fileId = res.body.data[1].identifier
+					done()
+				});	
+		})
+		
+		it('did not remove a file from dinosaurs2 with a bad id', function(done){
+			agent
+				.delete("/media/remove-files/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Removed [0] files")
+					test.array(res.body.data).hasLength(0)
+					done();
+				});	
+		})
+		
+		it('did remove a file from dinosaurs2 with a valid id', function(done){
+			agent
+				.delete("/media/remove-files/" + fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Removed [1] files")
+					test.array(res.body.data).hasLength(1)
+					done();
+				});	
+		})
+		
+		it('updated its stats to reflect a file was deleted', function(done){
+			agent
+				.get("/media/get-stats/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.number(res.body.data.apiCallsUsed).is(7)
+					test.number(res.body.data.memoryUsed).is(226 * 2)
+					done();
+				});	
+		})
+		
+		it('did not remove a bucket with a bad name', function(done){
+			agent
+				.delete("/media/remove-buckets/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Removed [0] buckets")
+					test.array(res.body.data).hasLength(0)
+					done();
+				});	
+		})
+		
+		it('did not remove the bucket dinosaurs2', function(done){
+			agent
+				.delete("/media/remove-buckets/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Removed [1] buckets")
+					test.array(res.body.data).hasLength(1)
+					done();
+				});	
+		}).timeout(20000)
+		
+		it('updated its stats that both a file and bucket were deleted', function(done){
+			agent
+				.get("/media/get-stats/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.number(res.body.data.apiCallsUsed).is(9)
+					test.number(res.body.data.memoryUsed).is(226)
+					done();
+				});	
+		})
+	})
+	
+	describe('Checking permission data for another regular user', function(){
+		
+		it('did log in with valid details for george2', function(done){
+			agent
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send({username: "george2", password: "password" })
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.bool(res.body.authenticated).isNotFalse()
+					test.object(res.body).hasProperty("message")
+					sessionCookie2 = res.headers["set-cookie"][0].split(";")[0];
+					done();
+				});
+		})
+	})
+})
+
+describe('Cleaning up', function(){
+	describe('Checking permission data for another regular user', function(){
+		
+		it('did remove user george', function(done){
+			agent
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send({username: "george2", password: "password" })
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					done();
+				});
+		}).timeout(20000)
+		
+		it('did remove user george2', function(done){
+			agent
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send({username: "george2", password: "password" })
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					done();
+				});
+		}).timeout(20000)
+		
 	})
 })

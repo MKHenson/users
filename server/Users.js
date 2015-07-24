@@ -5,6 +5,7 @@ var recaptcha = require("recaptcha-async");
 var nodemailer = require("nodemailer");
 var def = require("./Definitions");
 var Session_1 = require("./Session");
+var BucketManager_1 = require("./BucketManager");
 /*
 * Class that represents a user and its database entry
 */
@@ -174,18 +175,24 @@ var UserManager = (function () {
                     var remoteIP = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
                     var privatekey = that._config.captchaPrivateKey;
                     var captchaChecker = new recaptcha.reCaptcha();
+                    var newUser = null;
                     captchaChecker.on("data", function (captchaResult) {
                         if (!captchaResult.is_valid)
                             throw new Error("Your captcha code seems to be wrong. Please try another.");
-                        return resolve(that.createUser(username, email, pass));
+                        return that.createUser(username, email, pass);
+                    }).then(function (user) {
+                        newUser = user;
+                        return resolve(newUser);
+                    }).catch(function (err) {
+                        return reject(err);
                     });
                     // Check for valid captcha
                     captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
                 });
             }).then(function (user) {
-                resolve(user);
+                return resolve(user);
             }).catch(function (error) {
-                return Promise.reject(error);
+                return reject(error);
             });
         });
     };
@@ -446,6 +453,8 @@ var UserManager = (function () {
                 return reject(new Error("Password cannot be empty"));
             if (privilege > 3)
                 return reject(new Error("Privilege type is unrecognised"));
+            if (privilege == def.UserPrivileges.SuperAdmin)
+                return reject(new Error("You cannot create a super user"));
             // Check if the user already exists
             that.getUser(user, email).then(function (existingUser) {
                 if (existingUser)
@@ -481,7 +490,11 @@ var UserManager = (function () {
                     that._transport.sendMail(mailOptions, function (error, info) {
                         if (error)
                             return reject(new Error("Could not send email to user: " + error.message));
-                        return resolve(newUser);
+                        BucketManager_1.BucketManager.get.createUserStats(newUser.dbEntry.username).then(function () {
+                            return resolve(newUser);
+                        }).catch(function (err) {
+                            return reject(err);
+                        });
                     });
                 });
             });
@@ -495,11 +508,15 @@ var UserManager = (function () {
     UserManager.prototype.removeUser = function (user) {
         var that = this;
         return new Promise(function (resolve, reject) {
-            that.getUser(user).then(function (existingUser) {
-                if (!existingUser)
-                    return resolve();
-                if (existingUser.dbEntry.privileges == def.UserPrivileges.SuperAdmin)
-                    return reject(new Error("You cannot remove a super user"));
+            var existingUser;
+            that.getUser(user).then(function (user) {
+                existingUser = user;
+                if (!user)
+                    return Promise.reject(new Error("Could not find any users with those credentials"));
+                if (user.dbEntry.privileges == def.UserPrivileges.SuperAdmin)
+                    return Promise.reject(new Error("You cannot remove a super user"));
+                return BucketManager_1.BucketManager.get.removeUser(user.dbEntry.username);
+            }).then(function (numDeleted) {
                 that._userCollection.remove({ _id: existingUser.dbEntry._id }, function (error, result) {
                     if (error)
                         return reject(error);

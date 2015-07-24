@@ -108,9 +108,9 @@ var BucketManager = (function () {
         });
     };
     /**
-    * Attempts to create a new user bucket by first creating the storage on the cloud and then updating the internal DB
+    * Attempts to create a user usage statistics
     * @param {string} user The user associated with this bucket
-    * @returns {Promise<gcloud.IBucket>}
+    * @returns {Promise<IStorageStats>}
     */
     BucketManager.prototype.createUserStats = function (user) {
         var that = this;
@@ -128,6 +128,43 @@ var BucketManager = (function () {
                     return reject(err);
                 else
                     return resolve(result);
+            });
+        });
+    };
+    /**
+    * Attempts to remove the usage stats of a given user
+    * @param {string} user The user associated with this bucket
+    * @returns {Promise<number>} A promise of the number of stats removed
+    */
+    BucketManager.prototype.removeUserStats = function (user) {
+        var that = this;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            var storage = { user: user };
+            stats.remove(storage, function (err, result) {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve(result);
+            });
+        });
+    };
+    /**
+    * Attempts to remove all data associated with a user
+    * @param {string} user The user we are removing
+    * @returns {Promise<any>}
+    */
+    BucketManager.prototype.removeUser = function (user) {
+        var that = this;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            Promise.all([
+                that.removeUserStats(user),
+                that.removeBucketsByUser(user)
+            ]).then(function (data) {
+                return resolve();
+            }).catch(function (err) {
+                return reject(err);
             });
         });
     };
@@ -351,15 +388,18 @@ var BucketManager = (function () {
     /**
    * Attempts to remove files from the cloud and database
    * @param {Array<string>} fileIDs The file IDs to remove
+    * @param {string} user Optionally pass in the user to refine the search
    * @returns {Promise<string>} Returns the file IDs of the files removed
    */
-    BucketManager.prototype.removeFilesById = function (fileIDs) {
+    BucketManager.prototype.removeFilesById = function (fileIDs, user) {
         if (fileIDs.length == 0)
             return Promise.resolve();
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)
             searchQuery.$or.push({ identifier: fileIDs[i] });
+        if (user)
+            searchQuery.user = user;
         return this.removeFiles(searchQuery);
     };
     /**
@@ -433,7 +473,6 @@ var BucketManager = (function () {
    */
     BucketManager.prototype.withinAPILimit = function (user) {
         var that = this;
-        var bucketCollection = this._buckets;
         var stats = this._stats;
         return new Promise(function (resolve, reject) {
             stats.findOne({ user: user }, function (err, result) {
@@ -445,6 +484,23 @@ var BucketManager = (function () {
                     resolve(true);
                 else
                     return resolve(false);
+            });
+        });
+    };
+    /**
+    * Adds an API call to a user
+    * @param {string} user The username
+    * @returns {Promise<boolean>}
+    */
+    BucketManager.prototype.incrementAPI = function (user) {
+        var that = this;
+        var stats = this._stats;
+        return new Promise(function (resolve, reject) {
+            stats.update({ user: user }, { $inc: { apiCallsUsed: 1 } }, function (err, result) {
+                if (err)
+                    return reject(err);
+                else
+                    resolve(true);
             });
         });
     };

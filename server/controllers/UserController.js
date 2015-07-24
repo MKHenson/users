@@ -83,18 +83,18 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
-        var user = req._user;
-        if (!user)
-            return res.end(JSON.stringify({
-                message: "No user found",
-                error: true
-            }));
-        var token = {
-            error: false,
-            message: "Found " + user.dbEntry.username,
-            data: user.generateCleanedData(Boolean(req.query.verbose))
-        };
-        return res.end(JSON.stringify(token));
+        Users_1.UserManager.get.getUser(req.params.username).then(function (user) {
+            if (!user)
+                return res.end(JSON.stringify({ message: "No user found", error: true }));
+            var token = {
+                error: false,
+                message: "Found " + user.dbEntry.username,
+                data: user.generateCleanedData(Boolean(req.query.verbose))
+            };
+            return res.end(JSON.stringify(token));
+        }).catch(function (err) {
+            return res.end(JSON.stringify({ message: err.toString(), error: true }));
+        });
     };
     /**
     * Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
@@ -388,7 +388,6 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
-        var createdUser;
         var token = req.body;
         // Not allowed to create super users
         if (token.privileges == def.UserPrivileges.SuperAdmin)
@@ -397,15 +396,10 @@ var UserController = (function (_super) {
                 error: true
             }));
         that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function (user) {
-            createdUser = user;
-            return Promise.all([
-                BucketManager_1.BucketManager.get.createUserStats(user.dbEntry.username)
-            ]);
-        }).then(function () {
             var token = {
                 error: false,
-                message: "User " + createdUser.dbEntry.username + " has been created",
-                data: createdUser.dbEntry
+                message: "User " + user.dbEntry.username + " has been created",
+                data: user.dbEntry
             };
             return res.end(JSON.stringify(token));
         })

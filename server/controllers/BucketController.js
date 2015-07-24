@@ -26,13 +26,13 @@ var BucketController = (function (_super) {
         this._config = config;
         // Setup the rest calls
         var router = express.Router();
-        router.get("/download/:id", [PermissionController_1.hasAdminRights, this.getFile.bind(this)]);
+        router.get("/download/:id", [this.getFile.bind(this)]);
         router.get("/get-files/:user/:bucket", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", [PermissionController_1.hasAdminRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", [PermissionController_1.hasAdminRights, this.getBuckets.bind(this)]);
         router.delete("/remove-buckets/:buckets", [PermissionController_1.identifyUser, this.removeBuckets.bind(this)]);
         router.delete("/remove-files/:files", [PermissionController_1.identifyUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket", [PermissionController_1.hasAdminRights, this.uploadUserFiles.bind(this)]);
+        router.post("/upload/:bucket", [PermissionController_1.identifyUser, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:user/:name", [PermissionController_1.hasAdminRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", [PermissionController_1.hasAdminRights, this.createStats.bind(this)]);
         router.put("/storage-calls/:target/:value", [PermissionController_1.hasAdminRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
@@ -156,7 +156,7 @@ var BucketController = (function (_super) {
         if (!req.params.files || req.params.files.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify the files to remove", error: true }));
         files = req.params.files.split(",");
-        manager.removeFilesById(files).then(function (numRemoved) {
+        manager.removeFilesById(files, req._user.dbEntry.username).then(function (numRemoved) {
             return res.end(JSON.stringify({
                 message: "Removed [" + numRemoved.length + "] files",
                 error: false,
@@ -236,17 +236,15 @@ var BucketController = (function (_super) {
             return manager.withinAPILimit(iFile.user);
         }).then(function (valid) {
             if (!valid)
-                res.send(404);
+                return Promise.reject(new Error("API limit reached"));
+            return manager.incrementAPI(file.user);
+        }).then(function (data) {
             res.setHeader('Content-Type', file.mimeType);
             res.setHeader('Content-Length', file.size.toString());
             var stream = manager.downloadFile(file);
             stream.pipe(res);
         }).catch(function (err) {
-            res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify({
-                message: "An error occurred while downloading the file '" + fileID + "' : " + err.toString(),
-                error: true
-            }));
+            return res.status(404).send('File not found');
         });
     };
     /**
@@ -335,6 +333,12 @@ var BucketController = (function (_super) {
             }));
         });
     };
+    BucketController.prototype.alphaNumericDashSpace = function (str) {
+        if (!str.match(/^[0-9A-Z -]+$/i))
+            return false;
+        else
+            return true;
+    };
     /**
     * Creates a new user bucket based on the target provided
     * @param {express.Request} req
@@ -351,7 +355,7 @@ var BucketController = (function (_super) {
             return res.end(JSON.stringify({ message: "Please specify a valid username", error: true }));
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a valid name", error: true }));
-        if (!bucketName.match(/^[0-9A-Z -]+$/i))
+        if (!this.alphaNumericDashSpace(bucketName))
             return res.end(JSON.stringify({ message: "Please only use safe characters", error: true }));
         Users_1.UserManager.get.getUser(username).then(function (user) {
             if (user)
@@ -403,31 +407,42 @@ var BucketController = (function (_super) {
                 // Create a new upload token
                 var newUpload = {
                     file: "",
-                    field: part.name,
+                    field: (!part.name ? "" : part.name),
                     filename: part.filename,
                     error: false,
                     errorMsg: ""
                 };
-                // Add the token to the upload array we are sending back to the user
-                uploadedTokens.push(newUpload);
                 // This part is a file - so we act on it
                 if (!!part.filename) {
+                    // Add the token to the upload array we are sending back to the user
+                    uploadedTokens.push(newUpload);
                     numParts++;
-                    // Upload the file part to the cloud
-                    manager.uploadStream(part, bucketEntry, username).then(function (file) {
-                        completedParts++;
-                        successfulParts++;
-                        newUpload.file = file.identifier;
-                        part.resume();
-                        checkIfComplete();
-                    }).catch(function (err) {
+                    if (!that.alphaNumericDashSpace(newUpload.field)) {
                         completedParts++;
                         newUpload.error = true;
-                        newUpload.errorMsg = err.toString();
+                        newUpload.errorMsg = "Please use safe characters";
                         part.resume();
                         checkIfComplete();
-                    });
+                    }
+                    else {
+                        // Upload the file part to the cloud
+                        manager.uploadStream(part, bucketEntry, username).then(function (file) {
+                            completedParts++;
+                            successfulParts++;
+                            newUpload.file = file.identifier;
+                            part.resume();
+                            checkIfComplete();
+                        }).catch(function (err) {
+                            completedParts++;
+                            newUpload.error = true;
+                            newUpload.errorMsg = err.toString();
+                            part.resume();
+                            checkIfComplete();
+                        });
+                    }
                 }
+                else
+                    part.resume();
             });
             // Checks if the connection is closed and all the parts have been uploaded
             var checkIfComplete = function () {

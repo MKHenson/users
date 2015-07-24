@@ -110,23 +110,24 @@ export class UserController extends Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
-        var user = req._user;
-   
-        if (!user)
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: "No user found",
-                error: true
-            })); 
 
-        var token: def.IGetUser = {
-            error: false,
-            message: `Found ${user.dbEntry.username}`,
-            data: user.generateCleanedData(Boolean(req.query.verbose))
-        };
+        UserManager.get.getUser(req.params.username).then(function (user)
+        {
+            if (!user)
+                return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
 
-        return res.end(JSON.stringify(token));
+            var token: def.IGetUser = {
+                error: false,
+                message: `Found ${user.dbEntry.username}`,
+                data: user.generateCleanedData(Boolean(req.query.verbose))
+            };
 
-      
+            return res.end(JSON.stringify(token));
+
+        }).catch(function(err)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+        });
     }
 
     /**
@@ -508,7 +509,6 @@ export class UserController extends Controller
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
-        var createdUser: User;
         var token: def.IRegisterToken = req.body;
 
 		// Not allowed to create super users
@@ -521,18 +521,10 @@ export class UserController extends Controller
 
 		that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function(user)
         {
-            createdUser = user;
-
-            return Promise.all<any>([
-                BucketManager.get.createUserStats(user.dbEntry.username)
-            ]);
-            
-        }).then(function()
-        {
             var token: def.IGetUser = {
                 error: false,
-                message: `User ${createdUser.dbEntry.username} has been created`,
-                data: createdUser.dbEntry
+                message: `User ${user.dbEntry.username} has been created`,
+                data: user.dbEntry
             };
             
             return res.end(JSON.stringify(token));
