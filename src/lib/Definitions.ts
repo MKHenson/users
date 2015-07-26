@@ -50,6 +50,7 @@ export interface IStorageStats
 export interface IFileEntry
 {
     _id?: mongodb.ObjectID;
+    name?: string;
     user?: string;
     identifier?: string;
     bucketId?: string;

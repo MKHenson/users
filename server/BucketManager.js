@@ -518,6 +518,7 @@ var BucketManager = (function () {
         var files = this._files;
         return new Promise(function (resolve, reject) {
             var entry = {
+                name: part.filename,
                 user: user,
                 identifier: fileID,
                 bucketId: bucket.identifier,
