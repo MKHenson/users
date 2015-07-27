@@ -11,6 +11,7 @@ import {UserManager, User} from "../Users";
 import {hasAdminRights} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
+import * as compression from "compression";
 
 /**
 * Main class to use for managing users
@@ -37,7 +38,8 @@ export class UserController extends Controller
 		this._config = config;
 		
 		// Setup the rest calls
-		var router = express.Router();
+        var router = express.Router();
+        router.use(compression());
 		router.use(bodyParser.urlencoded({ 'extended': true }));
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));

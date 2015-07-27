@@ -11,6 +11,7 @@ import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
 import * as multiparty from "multiparty";
 import * as validator from "validator";
+import * as compression from "compression";
 
 /**
 * Main class to use for managing users
@@ -34,6 +35,7 @@ export class BucketController extends Controller
 		
         // Setup the rest calls
         var router = express.Router();
+        router.use(compression());
 
         router.get("/download/:id", <any>[this.getFile.bind(this)]);
         router.get("/get-files/:user/:bucket", <any>[hasAdminRights, this.getFiles.bind(this)]);

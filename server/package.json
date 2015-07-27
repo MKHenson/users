@@ -30,6 +30,7 @@
 		"bcrypt-nodejs": "~0.0.3",
 		"yargs": "~3.12.0",
 		"gcloud": "~0.16.0",
-		"multiparty": "~4.1.2"
+    "multiparty": "~4.1.2",
+    "compression": "~1.5.1"
 	}
 }

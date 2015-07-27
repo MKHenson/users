@@ -12,6 +12,7 @@ var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
 var BucketManager_1 = require("../BucketManager");
+var compression = require("compression");
 /**
 * Main class to use for managing users
 */
@@ -28,6 +29,7 @@ var UserController = (function (_super) {
         this._config = config;
         // Setup the rest calls
         var router = express.Router();
+        router.use(compression());
         router.use(bodyParser.urlencoded({ 'extended': true }));
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));

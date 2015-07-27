@@ -10,6 +10,7 @@ var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
 var BucketManager_1 = require("../BucketManager");
 var multiparty = require("multiparty");
+var compression = require("compression");
 /**
 * Main class to use for managing users
 */
@@ -26,6 +27,7 @@ var BucketController = (function (_super) {
         this._config = config;
         // Setup the rest calls
         var router = express.Router();
+        router.use(compression());
         router.get("/download/:id", [this.getFile.bind(this)]);
         router.get("/get-files/:user/:bucket", [PermissionController_1.hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", [PermissionController_1.hasAdminRights, this.getStats.bind(this)]);
