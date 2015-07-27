@@ -229,6 +229,7 @@ var BucketController = (function (_super) {
         var manager = BucketManager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
+        var cache = this._config.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
         manager.getFile(fileID).then(function (iFile) {
@@ -241,6 +242,8 @@ var BucketController = (function (_super) {
         }).then(function (data) {
             res.setHeader('Content-Type', file.mimeType);
             res.setHeader('Content-Length', file.size.toString());
+            if (cache)
+                res.setHeader("Cache-Control", "public, max-age=" + cache);
             var stream = manager.downloadFile(file);
             stream.pipe(res);
         }).catch(function (err) {

@@ -40,6 +40,7 @@
     "projectId": "",
     "bucketsCollection": "buckets",
     "filesCollection": "files",
-    "statsCollection": "storageAPI"
+    "statsCollection": "storageAPI",
+    "cacheLifetime": 2592000000
   }
 }

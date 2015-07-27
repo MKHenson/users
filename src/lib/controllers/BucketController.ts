@@ -298,6 +298,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         var fileID = req.params.id;
         var file: def.IFileEntry = null;
+        var cache = this._config.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
@@ -319,6 +320,8 @@ export class BucketController extends Controller
         {
             res.setHeader('Content-Type', file.mimeType);
             res.setHeader('Content-Length', file.size.toString());
+            if (cache)
+                res.setHeader("Cache-Control", "public, max-age=" + cache);
             var stream = manager.downloadFile(file);
             stream.pipe(res);
 

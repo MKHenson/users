@@ -101,7 +101,7 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Save the new entry into the database
-            files.find(searchQuery, startIndex, limit, function (err, result)
+            files.find(searchQuery, {}, startIndex, limit, function (err, result)
             {
                 if (err)
                     return reject(err);
