@@ -13,6 +13,7 @@ export interface IUserEntry
     password?: string;
     registerKey?: string;
     sessionId?: string;
+    createdOn?: number;
     lastLoggedIn?: number;
     privileges?: UserPrivileges;
     passwordTag?: string;

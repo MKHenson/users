@@ -246,8 +246,7 @@ var BucketController = (function (_super) {
             res.setHeader('Content-Length', file.size.toString());
             if (cache)
                 res.setHeader("Cache-Control", "public, max-age=" + cache);
-            var stream = manager.downloadFile(file);
-            stream.pipe(res);
+            manager.downloadFile(req, res, file);
         }).catch(function (err) {
             return res.status(404).send('File not found');
         });
@@ -524,13 +523,32 @@ var BucketController = (function (_super) {
     BucketController.prototype.initialize = function (db) {
         var that = this;
         return new Promise(function (resolve, reject) {
+            var bucketsCollection;
+            var filesCollection;
+            var statsCollection;
             Promise.all([
                 that.createCollection(that._config.bucket.bucketsCollection, db),
                 that.createCollection(that._config.bucket.filesCollection, db),
                 that.createCollection(that._config.bucket.statsCollection, db)
             ]).then(function (collections) {
+                bucketsCollection = collections[0];
+                filesCollection = collections[1];
+                statsCollection = collections[2];
+                return Promise.all([
+                    that.ensureIndex(bucketsCollection, "name"),
+                    that.ensureIndex(bucketsCollection, "user"),
+                    that.ensureIndex(bucketsCollection, "created"),
+                    that.ensureIndex(bucketsCollection, "memoryUsed"),
+                    that.ensureIndex(filesCollection, "name"),
+                    that.ensureIndex(filesCollection, "user"),
+                    that.ensureIndex(filesCollection, "created"),
+                    that.ensureIndex(filesCollection, "size"),
+                    that.ensureIndex(filesCollection, "mimeType"),
+                    that.ensureIndex(filesCollection, "numDownloads")
+                ]);
+            }).then(function () {
                 // Create the user manager
-                that._bucketManager = BucketManager_1.BucketManager.create(collections[0], collections[1], collections[2], that._config);
+                that._bucketManager = BucketManager_1.BucketManager.create(bucketsCollection, filesCollection, statsCollection, that._config);
                 // Initialization is finished
                 resolve();
             }).catch(function (error) {

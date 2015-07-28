@@ -5,6 +5,9 @@ import * as http from "http";
 import * as mongodb from "mongodb";
 import * as multiparty from "multiparty";
 import {User} from "./Users"
+import * as zlib from "zlib"
+import * as compressible from "compressible"
+import express = require("express");
 
 /**
 * Class responsible for managing buckets and uploads to Google storage
@@ -20,6 +23,9 @@ export class BucketManager
     private _buckets: mongodb.Collection;
     private _files: mongodb.Collection;
     private _stats: mongodb.Collection;
+    private _zipper: zlib.Gzip;
+    private _unzipper: zlib.Gunzip;
+    private _deflater: zlib.Deflate;
 
     constructor(buckets: mongodb.Collection, files: mongodb.Collection, stats: mongodb.Collection, config: def.IConfig)
     {
@@ -28,6 +34,9 @@ export class BucketManager
         this._buckets = buckets;
         this._files = files;
         this._stats = stats;
+        this._zipper = zlib.createGzip();
+        this._unzipper = zlib.createGunzip();
+        this._deflater = zlib.createDeflate();
     }
     
     /**
@@ -720,7 +729,7 @@ export class BucketManager
         });
     }
 
-    generateRandString(len: number) : string
+    private generateRandString(len: number) : string
     {
         var text = "";
         var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -769,8 +778,17 @@ export class BucketManager
                     });
                 });
 
+                var stream: fs.WriteStream;
+
+                // Check if the stream content type is something that can be compressed - if so, then compress it before sending it to
+                // Google and set the content encoding
+                if (compressible(part.headers["content-type"]))
+                    stream = part.pipe(that._zipper).pipe(file.createWriteStream({ metadata: { metadata: { encoded: true } } }));
+                else
+                    stream = part.pipe(file.createWriteStream());
+
                 // Pipe the file to the bucket
-                part.pipe(file.createWriteStream()).on("error", function (err: Error)
+                stream.on("error", function (err: Error)
                 {
                     return reject(new Error(`Could not upload the file '${part.filename}' to bucket: ${err.toString() }`))
 
@@ -825,20 +843,69 @@ export class BucketManager
     }
 
     /**
-    * Creates a readstream to download a file
+    * Downloads the data from the cloud and sends it to the requester. This checks the request for encoding and
+    * sets the appropriate headers if and when supported
+    * @param {Request} request The request being made
+    * @param {Response} response The response stream to return the data
     * @param {IFileEntry} file The file to download
-    * @returns {Promise<ReadStream>}
     */
-    downloadFile(file: def.IFileEntry): fs.ReadStream
+    downloadFile(request: express.Request, response: express.Response, file: def.IFileEntry)
     {
         var that = this;
         var gcs = this._gcs;
         var buckets = this._buckets;
         var files = this._files;
-
         var iBucket = that._gcs.bucket(file.bucketId);
         var iFile = iBucket.file(file.identifier);
-        return iFile.createReadStream();
+        
+        iFile.getMetadata(function(err, meta)
+        {
+            if (err)
+                return response.status(500).send(err.toString());
+                
+            // Get the client encoding support - if any
+            var acceptEncoding = request.headers['accept-encoding'];
+            if (!acceptEncoding)
+                acceptEncoding = '';
+
+            var stream: fs.ReadStream = iFile.createReadStream();
+            var encoded = false;
+            if (meta.metadata)
+                encoded = meta.metadata.encoded;
+                        
+            // Request is expecting a deflate
+            if (acceptEncoding.match(/\bgzip\b/))
+            {
+                // If already gzipped and expeting gzip
+                if (encoded)
+                {
+                    // Simply return the raw pipe
+                    response.setHeader('content-encoding', 'gzip');
+                    stream.pipe(response);
+                }
+                else
+                    stream.pipe(response);
+            }
+            else if (acceptEncoding.match(/\bdeflate\b/))
+            {
+                response.setHeader('content-encoding', 'deflate');
+
+                // If its encoded - then its encoded in gzip and needs to be
+                if (encoded)
+                    stream.pipe(that._unzipper).pipe(that._deflater).pipe(response);
+                else
+                    stream.pipe(that._deflater).pipe(response);
+            }
+            else
+            {
+                // No encoding supported 
+                // Unzip GZIP and send raw if already compressed
+                if (encoded)
+                    stream.pipe(that._unzipper).pipe(response);
+                else
+                    stream.pipe(response);
+            }
+        });
     }
 
     /**

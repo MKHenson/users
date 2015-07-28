@@ -31,6 +31,7 @@
     <TypeScriptCompile Include="src\lib\controllers\UserController.ts" />
     <TypeScriptCompile Include="src\lib\definitions\bcrypt.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\body-parser.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\compressible.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\compression.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\entities.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\es6-promise.d.ts" />

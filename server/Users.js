@@ -32,6 +32,7 @@ var User = (function () {
             _id: (showPrivate ? this.dbEntry._id : new mongodb.ObjectID("000000000000000000000000")),
             email: this.dbEntry.email,
             lastLoggedIn: this.dbEntry.lastLoggedIn,
+            createdOn: this.dbEntry.createdOn,
             password: showPrivate ? this.dbEntry.password : new Array(this.dbEntry.password.length).join("*"),
             registerKey: showPrivate ? this.dbEntry.registerKey : new Array(this.dbEntry.registerKey.length).join("*"),
             sessionId: showPrivate ? this.dbEntry.sessionId : new Array(this.dbEntry.sessionId.length).join("*"),
@@ -49,6 +50,7 @@ var User = (function () {
         return {
             email: this.dbEntry.email,
             lastLoggedIn: Date.now(),
+            createdOn: Date.now(),
             password: this.dbEntry.password,
             registerKey: (this.dbEntry.privileges == def.UserPrivileges.SuperAdmin ? "" : this.generateKey(10)),
             sessionId: this.dbEntry.sessionId,

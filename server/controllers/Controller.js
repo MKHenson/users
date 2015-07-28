@@ -11,6 +11,19 @@ var Controller = (function () {
         return null;
     };
     /**
+    * Ensures the index of a collection
+    */
+    Controller.prototype.ensureIndex = function (collection, name) {
+        return new Promise(function (resolve, reject) {
+            collection.ensureIndex(name, function (err, indexName) {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve();
+            });
+        });
+    };
+    /**
     * Creates a new mongodb collection
     * @param {string} name The name of the collection to create
     * @param {mongodb.Db} db The database to use

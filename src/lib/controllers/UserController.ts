@@ -75,17 +75,31 @@ export class UserController extends Controller
     initialize(db: mongodb.Db): Promise<void>
 	{
         var that = this;
-        
+       
 		return new Promise<void>(function (resolve, reject)
         {
+            var userCollection;
+            var sessionCollection;
+
             Promise.all([
                 that.createCollection(that._config.userCollection, db),
                 that.createCollection(that._config.sessionCollection, db)
 
             ]).then(function( collections )
             {
+                userCollection = collections[0];
+                sessionCollection = collections[1];
+
+                return Promise.all([
+                    that.ensureIndex(userCollection, "username"),
+                    that.ensureIndex(userCollection, "createdOn"),
+                    that.ensureIndex(userCollection, "lastLoggedIn"),
+                ]);
+
+            }).then(function ()
+            {
                 // Create the user manager
-                that._userManager = UserManager.create(collections[0], collections[1], that._config);
+                that._userManager = UserManager.create(userCollection, sessionCollection, that._config);
                 that._userManager.initialize().then(function ()
                 {
                     // Initialization is finished
