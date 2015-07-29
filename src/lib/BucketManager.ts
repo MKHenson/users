@@ -820,9 +820,10 @@ export class BucketManager
     /**
     * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
-    * @returns {Promise<fs.ReadStream>}
+    * @param {string} user Optionally specify the user of the file
+    * @returns {Promise<IFileEntry>}
     */
-    getFile(fileID: string): Promise<def.IFileEntry>
+    getFile(fileID: string, user? : string ): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -830,7 +831,11 @@ export class BucketManager
 
         return new Promise<def.IFileEntry>(function (resolve, reject)
         {
-            files.findOne(<def.IFileEntry>{ identifier: fileID }, function (err, result: def.IFileEntry)
+            var searchQuery: def.IFileEntry = { identifier: fileID };
+            if (user)
+                searchQuery.user = user;
+
+            files.findOne(searchQuery, function (err, result: def.IFileEntry)
             {
                 if (err)
                     return reject(err);
@@ -839,6 +844,33 @@ export class BucketManager
                 else
                     return resolve(result);
             });
+        });
+    }
+
+    /**
+    * Renames a file
+    * @param {string} file The file to rename
+    * @param {string} name The new name of the file
+    * @returns {Promise<IFileEntry>}
+    */
+    renameFile(file: def.IFileEntry, name: string): Promise<def.IFileEntry>
+    {
+        var that = this;
+        var gcs = this._gcs;
+        var files = this._files;
+
+        return new Promise<def.IFileEntry>(function (resolve, reject)
+        {
+            that.incrementAPI(file.user).then(function()
+            {
+                files.update(<def.IFileEntry>{ _id: file._id }, { $set: <def.IFileEntry>{ name : name } }, function (err, result)
+                {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(file);
+                });
+            })
         });
     }
 

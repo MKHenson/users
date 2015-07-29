@@ -1394,15 +1394,59 @@ describe('Checking media API', function(){
 				});	
 		}).timeout(20000)
 		
-		it('fetched the a file Id of the dinosaur2 bucket', function(done){
+		it('fetched the uploaded file Id of the dinosaur2 bucket', function(done){
 			agent
 				.get("/media/get-files/george/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', sessionCookie)
-				.attach('small-image', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
 					fileId = res.body.data[1].identifier
+					done()
+				});	
+		})
+		
+		it('did not rename an incorrect file to testy', function(done){
+			agent
+				.put("/media/rename-file/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.set( "contentType", 'application/json')
+				.send({name:"testy"})
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File '123' does not exist")
+					done()
+				});	
+		})
+		
+		it('did not rename a correct file with an empty name', function(done){
+			agent
+				.put("/media/rename-file/"+ fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.set( "contentType", 'application/json')
+				.send({name:""})
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Please specify the new name of the file")
+					done()
+				});	
+		})
+		
+		it('did rename a correct file to testy', function(done){
+			agent
+				.put("/media/rename-file/"+ fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.set( "contentType", 'application/json')
+				.send({name:"testy"})
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Renamed file to 'testy'")
 					done()
 				});	
 		})
@@ -1442,7 +1486,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(7)
+					test.number(res.body.data.apiCallsUsed).is(8)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					done();
 				});	
@@ -1483,7 +1527,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(9)
+					test.number(res.body.data.apiCallsUsed).is(10)
 					test.number(res.body.data.memoryUsed).is(226)
 					done();
 				});	

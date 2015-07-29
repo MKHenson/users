@@ -607,20 +607,45 @@ var BucketManager = (function () {
     /**
     * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
-    * @returns {Promise<fs.ReadStream>}
+    * @param {string} user Optionally specify the user of the file
+    * @returns {Promise<IFileEntry>}
     */
-    BucketManager.prototype.getFile = function (fileID) {
+    BucketManager.prototype.getFile = function (fileID, user) {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
         return new Promise(function (resolve, reject) {
-            files.findOne({ identifier: fileID }, function (err, result) {
+            var searchQuery = { identifier: fileID };
+            if (user)
+                searchQuery.user = user;
+            files.findOne(searchQuery, function (err, result) {
                 if (err)
                     return reject(err);
                 else if (!result)
                     return reject("File '" + fileID + "' does not exist");
                 else
                     return resolve(result);
+            });
+        });
+    };
+    /**
+    * Renames a file
+    * @param {string} file The file to rename
+    * @param {string} name The new name of the file
+    * @returns {Promise<IFileEntry>}
+    */
+    BucketManager.prototype.renameFile = function (file, name) {
+        var that = this;
+        var gcs = this._gcs;
+        var files = this._files;
+        return new Promise(function (resolve, reject) {
+            that.incrementAPI(file.user).then(function () {
+                files.update({ _id: file._id }, { $set: { name: name } }, function (err, result) {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(file);
+                });
             });
         });
     };

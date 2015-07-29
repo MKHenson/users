@@ -36,6 +36,9 @@ export class BucketController extends Controller
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
+        router.use(bodyParser.urlencoded({ 'extended': true }));
+        router.use(bodyParser.json());
+        router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
         router.get("/download/:id", <any>[this.getFile.bind(this)]);
         router.get("/get-files/:user/:bucket", <any>[hasAdminRights, this.getFiles.bind(this)]);
@@ -50,7 +53,8 @@ export class BucketController extends Controller
         router.put("/storage-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
         router.put("/storage-allocated-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-        
+        router.put("/rename-file/:file", <any>[identifyUser, this.renameFile.bind(this)]);
+
         // Register the path
         e.use(`${config.mediaURL}`, router);
     }
@@ -214,6 +218,46 @@ export class BucketController extends Controller
                 message: `Removed [${numRemoved.length}] files`,
                 error: false,
                 data:numRemoved
+            }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        });
+    }
+
+    /**
+   * Renames a file
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private renameFile(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager.get;
+        
+        if (!req.params.file || req.params.file.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the file to rename", error: true }));
+        if (!req.body || !req.body.name || req.body.name.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the new name of the file", error: true }));
+
+        manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file)
+        {
+            if (!file)
+                return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
+        
+            return manager.renameFile(file, req.body.name);
+
+        }).then(function (file)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: `Renamed file to '${req.body.name}'`,
+                error: false
             }));
 
         }).catch(function (err: Error)
