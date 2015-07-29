@@ -8,7 +8,15 @@ echo "Downloading latest version from github dev"
 
 #download latest
 wget https://github.com/MKHenson/webinate-users/archive/dev.zip
-unzip -o -j "dev.zip" "webinate-users-dev/server/*"
+unzip -o "dev.zip" "webinate-users-dev/server/*"
+
+# Moves the server folder to the current directory
+cp -r webinate-users-dev/server/* .
+
+# Remove modepress folder
+if [ -d "webinate-users-dev" ]; then
+	rm webinate-users-dev -R
+fi
 
 rm "dev.zip"
 
