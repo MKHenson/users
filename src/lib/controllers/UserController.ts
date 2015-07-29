@@ -545,8 +545,7 @@ export class UserController extends Controller
             
             return res.end(JSON.stringify(token));
 
-        })
-        .catch(function (error: Error)
+        }).catch(function (error: Error)
 		{
 			return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,

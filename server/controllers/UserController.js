@@ -414,8 +414,7 @@ var UserController = (function (_super) {
                 data: user.dbEntry
             };
             return res.end(JSON.stringify(token));
-        })
-            .catch(function (error) {
+        }).catch(function (error) {
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
