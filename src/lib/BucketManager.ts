@@ -699,7 +699,7 @@ export class BucketManager
     * @param {string} user The username
     * @returns {Promise<IFileEntry>}
     */
-    private registerFile(fileID: string, bucket: def.IBucketEntry, part: multiparty.Part, user: string): Promise<def.IFileEntry>
+    private registerFile(fileID: string, bucket: def.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -716,6 +716,8 @@ export class BucketManager
                 created: Date.now(),
                 numDownloads: 0,
                 size: part.byteCount,
+                isPublic: isPublic,
+                publicURL: `https://storage.googleapis.com/${bucket.identifier}/${fileID}`,
                 mimeType: part.headers["content-type"]
             };
 
@@ -799,7 +801,7 @@ export class BucketManager
                     {
                         statCollection.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
                         {
-                            that.registerFile(fileID, bucketEntry, part, user).then(function (file)
+                            that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file)
                             {
                                 if (makePublic)
                                     rawFile.makePublic(function (err, api)

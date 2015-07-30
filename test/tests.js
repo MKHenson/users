@@ -1285,6 +1285,7 @@ describe('Checking media API', function(){
 					test.number(res.body.data[0].size).is(226)
 					test.string(res.body.data[0].mimeType).is("image/png")
 					test.string(res.body.data[0].user).is("george")
+					test.object(res.body.data[0]).hasProperty("publicURL")
 					test.object(res.body.data[0]).hasProperty("identifier")
 					test.object(res.body.data[0]).hasProperty("bucketId")
 					test.object(res.body.data[0]).hasProperty("created")

@@ -517,7 +517,7 @@ var BucketManager = (function () {
     * @param {string} user The username
     * @returns {Promise<IFileEntry>}
     */
-    BucketManager.prototype.registerFile = function (fileID, bucket, part, user) {
+    BucketManager.prototype.registerFile = function (fileID, bucket, part, user, isPublic) {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
@@ -531,6 +531,8 @@ var BucketManager = (function () {
                 created: Date.now(),
                 numDownloads: 0,
                 size: part.byteCount,
+                isPublic: isPublic,
+                publicURL: "https://storage.googleapis.com/" + bucket.identifier + "/" + fileID,
                 mimeType: part.headers["content-type"]
             };
             files.save(entry, function (err, result) {
@@ -593,7 +595,7 @@ var BucketManager = (function () {
                 }).on('complete', function () {
                     bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: part.byteCount } }, function (err, result) {
                         statCollection.update({ user: user }, { $inc: { memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result) {
-                            that.registerFile(fileID, bucketEntry, part, user).then(function (file) {
+                            that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file) {
                                 if (makePublic)
                                     rawFile.makePublic(function (err, api) {
                                         if (err)
