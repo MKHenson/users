@@ -745,9 +745,10 @@ export class BucketManager
     * @param {Part} part
     * @param {string} bucket The bucket to which we are uploading to
     * @param {string} user The username
+    * @param {string} makePublic Makes this uploaded file public to the world
     * @returns {Promise<any>}
     */
-    uploadStream(part: multiparty.Part, bucketEntry: def.IBucketEntry, user: string): Promise<def.IFileEntry>
+    uploadStream(part: multiparty.Part, bucketEntry: def.IBucketEntry, user: string, makePublic: boolean = true ): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -762,14 +763,14 @@ export class BucketManager
                 storageStats = stats;
                 var bucket = that._gcs.bucket(bucketEntry.identifier);
                 var fileID = that.generateRandString(16);
-                var file = bucket.file(fileID);
+                var rawFile = bucket.file(fileID);
 
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
                 // on the user's side.
                 part.on('error', function (err: Error)
                 {
                     // Delete the file on the bucket
-                    file.delete(function (bucketErr, apiResponse)
+                    rawFile.delete(function (bucketErr, apiResponse)
                     {
                         if (bucketErr)
                             return reject(new Error(`While uploading a user part an error occurred while cleaning the bucket: ${bucketErr.toString() }`))
@@ -783,9 +784,9 @@ export class BucketManager
                 // Check if the stream content type is something that can be compressed - if so, then compress it before sending it to
                 // Google and set the content encoding
                 if (compressible(part.headers["content-type"]))
-                    stream = part.pipe(that._zipper).pipe(file.createWriteStream({ metadata: { metadata: { encoded: true } } }));
+                    stream = part.pipe(that._zipper).pipe(rawFile.createWriteStream({ metadata: { metadata: { encoded: true } } }));
                 else
-                    stream = part.pipe(file.createWriteStream());
+                    stream = part.pipe(rawFile.createWriteStream());
 
                 // Pipe the file to the bucket
                 stream.on("error", function (err: Error)
@@ -800,7 +801,16 @@ export class BucketManager
                         {
                             that.registerFile(fileID, bucketEntry, part, user).then(function (file)
                             {
-                                return resolve(file);
+                                if (makePublic)
+                                    rawFile.makePublic(function (err, api)
+                                    {
+                                        if (err)
+                                            return reject(err);
+                                        else
+                                            return resolve(file);
+                                    });
+                                else
+                                    return resolve(file);
 
                             }).catch(function (err: Error)
                             {

@@ -353,23 +353,13 @@ export class BucketController extends Controller
         manager.getFile(fileID).then(function (iFile)
         {
             file = iFile;
-            return manager.withinAPILimit(iFile.user);
-
-        }).then(function (valid)
-        {
-            if (!valid)
-                return Promise.reject(new Error("API limit reached"));
-
-            return manager.incrementAPI(file.user);
-
-        }).then(function (data)
-        {
             res.setHeader('Content-Type', file.mimeType);
             res.setHeader('Content-Length', file.size.toString());
             if (cache)
                 res.setHeader("Cache-Control", "public, max-age=" + cache);
 
-            manager.downloadFile( req, res, file);            
+            manager.downloadFile(req, res, file);
+            manager.incrementAPI(file.user);
 
         }).catch(function (err)
         {
