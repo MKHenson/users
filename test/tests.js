@@ -22,6 +22,7 @@ var sessionCookie = "";
 var sessionCookie2 = "";
 var activation = "";
 var fileId = "";
+var publicURL = "";
 
 describe('Testing user API functions', function(){
 	
@@ -1286,6 +1287,7 @@ describe('Checking media API', function(){
 					test.string(res.body.data[0].mimeType).is("image/png")
 					test.string(res.body.data[0].user).is("george")
 					test.object(res.body.data[0]).hasProperty("publicURL")
+					test.bool(res.body.data[0].isPublic).isTrue()
 					test.object(res.body.data[0]).hasProperty("identifier")
 					test.object(res.body.data[0]).hasProperty("bucketId")
 					test.object(res.body.data[0]).hasProperty("created")
@@ -1293,9 +1295,81 @@ describe('Checking media API', function(){
 					test.object(res.body.data[0]).hasProperty("_id")
 					
 					fileId = res.body.data[0].identifier
+					publicURL = res.body.data[0].publicURL
 					done()
 				});	
 		}).timeout(20000)
+		
+		it('did not make a non-file public', function(done){
+			agent
+				.put("/media/make-public/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File '123' does not exist")
+					done()
+				});	
+		})
+		
+		it('did not make a non-file private', function(done){
+			agent
+				.put("/media/make-private/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File '123' does not exist")
+					done()
+				});	
+		})
+		
+		it('did make a file public', function(done){
+			agent
+				.put("/media/make-public/" + fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File is now public")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did download the file off the bucket', function(done){
+			test.httpAgent(publicURL)
+				.get("").expect(200).expect('content-type', /image/)
+				.end(function(err, res){
+					if (err) return done(err);
+					
+					done();
+				});	
+		})
+		
+		it('did make a file private', function(done){
+			agent
+				.put("/media/make-private/" + fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File is now private")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did not download the file off the bucket when private', function(done){
+			test.httpAgent(publicURL)
+				.get("").expect(403)
+				.end(function(err, res){
+					if (err) return done(err);
+					done();
+				});	
+		})
 		
 		it('updated its stats accordingly', function(done){
 			agent
@@ -1304,7 +1378,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(3)
+					test.number(res.body.data.apiCallsUsed).is(5)
 					test.number(res.body.data.memoryUsed).is(226)
 					done();
 				});	
@@ -1338,7 +1412,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(4)
+					test.number(res.body.data.apiCallsUsed).is(6)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					done();
 				});	
@@ -1369,7 +1443,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(5)
+					test.number(res.body.data.apiCallsUsed).is(7)
 					done();
 				});	
 		})
@@ -1487,7 +1561,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(8)
+					test.number(res.body.data.apiCallsUsed).is(10)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					done();
 				});	
@@ -1528,7 +1602,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(10)
+					test.number(res.body.data.apiCallsUsed).is(12)
 					test.number(res.body.data.memoryUsed).is(226)
 					done();
 				});	

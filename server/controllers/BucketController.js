@@ -46,6 +46,8 @@ var BucketController = (function (_super) {
         router.put("/storage-allocated-calls/:target/:value", [PermissionController_1.hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", [PermissionController_1.hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
         router.put("/rename-file/:file", [PermissionController_1.identifyUser, this.renameFile.bind(this)]);
+        router.put("/make-public/:id", [PermissionController_1.identifyUser, this.makePublic.bind(this)]);
+        router.put("/make-private/:id", [PermissionController_1.identifyUser, this.makePrivate.bind(this)]);
         // Register the path
         e.use("" + config.mediaURL, router);
     }
@@ -279,6 +281,56 @@ var BucketController = (function (_super) {
             manager.incrementAPI(file.user);
         }).catch(function (err) {
             return res.status(404).send('File not found');
+        });
+    };
+    /**
+   * Attempts to make a file public
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    BucketController.prototype.makePublic = function (req, res, next) {
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager_1.BucketManager.get;
+        var fileID = req.params.id;
+        var file = null;
+        var cache = this._config.bucket.cacheLifetime;
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
+        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
+            return manager.makeFilePublic(iFile);
+        }).then(function (iFile) {
+            return res.end(JSON.stringify({ message: "File is now public", error: false, data: iFile }));
+        }).catch(function (err) {
+            return res.end(JSON.stringify({
+                message: err.toString(),
+                error: true
+            }));
+        });
+    };
+    /**
+   * Attempts to make a file private
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    BucketController.prototype.makePrivate = function (req, res, next) {
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager_1.BucketManager.get;
+        var fileID = req.params.id;
+        var file = null;
+        var cache = this._config.bucket.cacheLifetime;
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
+        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
+            return manager.makeFilePrivate(iFile);
+        }).then(function (iFile) {
+            return res.end(JSON.stringify({ message: "File is now private", error: false, data: iFile }));
+        }).catch(function (err) {
+            return res.end(JSON.stringify({
+                message: err.toString(),
+                error: true
+            }));
         });
     };
     /**

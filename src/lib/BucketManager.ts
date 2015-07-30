@@ -692,6 +692,92 @@ export class BucketManager
     }
 
     /**
+    * Makes a file publicly available
+    * @param {IFileEntry} file
+    * @returns {Promise<IFileEntry>}
+    */
+    makeFilePublic(file: def.IFileEntry): Promise<def.IFileEntry>
+    {
+        var that = this;
+        return new Promise<def.IFileEntry>(function (resolve, reject)
+        {
+            that.withinAPILimit(file.user).then(function (val)
+            {
+                if (!val)
+                    return Promise.reject(new Error("You do not have enough API calls left to make this request"));
+
+                return that.incrementAPI(file.user);
+
+            }).then(function ()
+            {
+                var bucket = that._gcs.bucket(file.bucketId);
+                var rawFile = bucket.file(file.identifier);
+                rawFile.makePublic(function (err, api)
+                {
+                    if (err)
+                        return reject(err);
+
+                    that._files.update(<def.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <def.IFileEntry>{ isPublic: true } }, function (err, result)
+                    {
+                        if (err)
+                            return reject(err);
+
+                        resolve(file);
+                    });
+                });
+
+            }).catch(function (err)
+            {
+                return reject(new err);
+            });
+
+        });
+    }
+
+    /**
+    * Makes a file private
+    * @param {IFileEntry} file
+    * @returns {Promise<IFileEntry>}
+    */
+    makeFilePrivate(file: def.IFileEntry): Promise<def.IFileEntry>
+    {
+        var that = this;
+        return new Promise<def.IFileEntry>(function (resolve, reject)
+        {
+            that.withinAPILimit(file.user).then(function (val)
+            {
+                if (!val)
+                    return Promise.reject(new Error("You do not have enough API calls left to make this request"));
+
+                return that.incrementAPI(file.user);
+
+            }).then(function ()
+            {
+                var bucket = that._gcs.bucket(file.bucketId);
+                var rawFile = bucket.file(file.identifier);
+                rawFile.makePrivate({ strict: true }, function (err)
+                {
+                    if (err)
+                        return reject(err);
+
+                    that._files.update(<def.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <def.IFileEntry>{ isPublic: false } }, function (err, result)
+                    {
+                        if (err)
+                            return reject(err);
+
+                        resolve(file);
+                    });
+                });
+
+            }).catch(function (err)
+            {
+                return reject(new err);
+            });
+
+        });
+    }
+
+    /**
     * Registers an uploaded part as a new user file in the local dbs
     * @param {string} fileID The id of the file on the bucket
     * @param {string} bucketID The id of the bucket this file belongs to

@@ -41,6 +41,7 @@ export class BucketController extends Controller
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
         router.get("/download/:id", <any>[this.getFile.bind(this)]);
+        
         router.get("/get-files/:user/:bucket", <any>[hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", <any>[hasAdminRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", <any>[hasAdminRights, this.getBuckets.bind(this)]);
@@ -54,6 +55,8 @@ export class BucketController extends Controller
         router.put("/storage-allocated-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
         router.put("/rename-file/:file", <any>[identifyUser, this.renameFile.bind(this)]);
+        router.put("/make-public/:id", <any>[identifyUser, this.makePublic.bind(this)]);
+        router.put("/make-private/:id", <any>[identifyUser, this.makePrivate.bind(this)]);
 
         // Register the path
         e.use(`${config.mediaURL}`, router);
@@ -364,6 +367,78 @@ export class BucketController extends Controller
         }).catch(function (err)
         {
             return res.status(404).send('File not found');
+        })
+    }
+
+    /**
+   * Attempts to make a file public
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private makePublic(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        res.setHeader('Content-Type', 'application/json');
+
+        var manager = BucketManager.get;
+        var fileID = req.params.id;
+        var file: def.IFileEntry = null;
+        var cache = this._config.bucket.cacheLifetime;
+
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+
+
+        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
+        {
+            return manager.makeFilePublic(iFile)
+
+        }).then(function (iFile)
+        {
+            return res.end(JSON.stringify(<def.IGetFile>{ message: `File is now public`, error: false, data: iFile }));
+
+        }).catch(function (err)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        })
+    }
+
+    /**
+   * Attempts to make a file private
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private makePrivate(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        res.setHeader('Content-Type', 'application/json');
+
+        var manager = BucketManager.get;
+        var fileID = req.params.id;
+        var file: def.IFileEntry = null;
+        var cache = this._config.bucket.cacheLifetime;
+
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+
+
+        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
+        {
+            return manager.makeFilePrivate(iFile)
+
+        }).then(function (iFile)
+        {
+            return res.end(JSON.stringify(<def.IGetFile>{ message: `File is now private`, error: false, data: iFile }));
+
+        }).catch(function (err)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
         })
     }
 
