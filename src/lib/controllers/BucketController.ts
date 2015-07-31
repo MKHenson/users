@@ -36,8 +36,12 @@ export class BucketController extends Controller
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
+        router.use(bodyParser.urlencoded({ 'extended': true }));
+        router.use(bodyParser.json());
+        router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
         router.get("/download/:id", <any>[this.getFile.bind(this)]);
+        
         router.get("/get-files/:user/:bucket", <any>[hasAdminRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", <any>[hasAdminRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", <any>[hasAdminRights, this.getBuckets.bind(this)]);
@@ -50,7 +54,10 @@ export class BucketController extends Controller
         router.put("/storage-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
         router.put("/storage-allocated-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-        
+        router.put("/rename-file/:file", <any>[identifyUser, this.renameFile.bind(this)]);
+        router.put("/make-public/:id", <any>[identifyUser, this.makePublic.bind(this)]);
+        router.put("/make-private/:id", <any>[identifyUser, this.makePrivate.bind(this)]);
+
         // Register the path
         e.use(`${config.mediaURL}`, router);
     }
@@ -225,6 +232,46 @@ export class BucketController extends Controller
         });
     }
 
+    /**
+   * Renames a file
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private renameFile(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var manager = BucketManager.get;
+        
+        if (!req.params.file || req.params.file.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the file to rename", error: true }));
+        if (!req.body || !req.body.name || req.body.name.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the new name of the file", error: true }));
+
+        manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file)
+        {
+            if (!file)
+                return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
+        
+            return manager.renameFile(file, req.body.name);
+
+        }).then(function (file)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: `Renamed file to '${req.body.name}'`,
+                error: false
+            }));
+
+        }).catch(function (err: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        });
+    }
+
    /**
    * Removes buckets specified in the URL
    * @param {express.Request} req
@@ -309,27 +356,89 @@ export class BucketController extends Controller
         manager.getFile(fileID).then(function (iFile)
         {
             file = iFile;
-            return manager.withinAPILimit(iFile.user);
-
-        }).then(function (valid)
-        {
-            if (!valid)
-                return Promise.reject(new Error("API limit reached"));
-
-            return manager.incrementAPI(file.user);
-
-        }).then(function (data)
-        {
             res.setHeader('Content-Type', file.mimeType);
             res.setHeader('Content-Length', file.size.toString());
             if (cache)
                 res.setHeader("Cache-Control", "public, max-age=" + cache);
 
-            manager.downloadFile( req, res, file);            
+            manager.downloadFile(req, res, file);
+            manager.incrementAPI(file.user);
 
         }).catch(function (err)
         {
             return res.status(404).send('File not found');
+        })
+    }
+
+    /**
+   * Attempts to make a file public
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private makePublic(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        res.setHeader('Content-Type', 'application/json');
+
+        var manager = BucketManager.get;
+        var fileID = req.params.id;
+        var file: def.IFileEntry = null;
+        var cache = this._config.bucket.cacheLifetime;
+
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+
+
+        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
+        {
+            return manager.makeFilePublic(iFile)
+
+        }).then(function (iFile)
+        {
+            return res.end(JSON.stringify(<def.IGetFile>{ message: `File is now public`, error: false, data: iFile }));
+
+        }).catch(function (err)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
+        })
+    }
+
+    /**
+   * Attempts to make a file private
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {Function} next
+   */
+    private makePrivate(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        res.setHeader('Content-Type', 'application/json');
+
+        var manager = BucketManager.get;
+        var fileID = req.params.id;
+        var file: def.IFileEntry = null;
+        var cache = this._config.bucket.cacheLifetime;
+
+        if (!fileID || fileID.trim() == "")
+            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+
+
+        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
+        {
+            return manager.makeFilePrivate(iFile)
+
+        }).then(function (iFile)
+        {
+            return res.end(JSON.stringify(<def.IGetFile>{ message: `File is now private`, error: false, data: iFile }));
+
+        }).catch(function (err)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: err.toString(),
+                error: true
+            }));
         })
     }
 

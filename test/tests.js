@@ -22,6 +22,7 @@ var sessionCookie = "";
 var sessionCookie2 = "";
 var activation = "";
 var fileId = "";
+var publicURL = "";
 
 describe('Testing user API functions', function(){
 	
@@ -122,6 +123,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.user._id).contains("00000000")
 					test.string(res.body.user.email).is(config.adminUser.email)
 					test.number(res.body.user.lastLoggedIn).isNotNaN()
+					test.number(res.body.user.createdOn).isNotNaN()
 					test.string(res.body.user.password).is("***********************************************************")
 					test.object(res.body.user).hasProperty("registerKey")
 					test.string(res.body.user.sessionId).is("**********")
@@ -145,6 +147,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.user._id).isNot("000000000000000000000000")
 					test.string(res.body.user.email).is(config.adminUser.email)
 					test.number(res.body.user.lastLoggedIn).isNotNaN()
+					test.number(res.body.user.createdOn).isNotNaN()
 					test.string(res.body.user.password).isNot("***********************************************************")
 					test.object(res.body.user).hasProperty("registerKey")
 					test.string(res.body.user.sessionId).isNot("**********")
@@ -1283,6 +1286,8 @@ describe('Checking media API', function(){
 					test.number(res.body.data[0].size).is(226)
 					test.string(res.body.data[0].mimeType).is("image/png")
 					test.string(res.body.data[0].user).is("george")
+					test.object(res.body.data[0]).hasProperty("publicURL")
+					test.bool(res.body.data[0].isPublic).isTrue()
 					test.object(res.body.data[0]).hasProperty("identifier")
 					test.object(res.body.data[0]).hasProperty("bucketId")
 					test.object(res.body.data[0]).hasProperty("created")
@@ -1290,9 +1295,81 @@ describe('Checking media API', function(){
 					test.object(res.body.data[0]).hasProperty("_id")
 					
 					fileId = res.body.data[0].identifier
+					publicURL = res.body.data[0].publicURL
 					done()
 				});	
 		}).timeout(20000)
+		
+		it('did not make a non-file public', function(done){
+			agent
+				.put("/media/make-public/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File '123' does not exist")
+					done()
+				});	
+		})
+		
+		it('did not make a non-file private', function(done){
+			agent
+				.put("/media/make-private/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File '123' does not exist")
+					done()
+				});	
+		})
+		
+		it('did make a file public', function(done){
+			agent
+				.put("/media/make-public/" + fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File is now public")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did download the file off the bucket', function(done){
+			test.httpAgent(publicURL)
+				.get("").expect(200).expect('content-type', /image/)
+				.end(function(err, res){
+					if (err) return done(err);
+					
+					done();
+				});	
+		})
+		
+		it('did make a file private', function(done){
+			agent
+				.put("/media/make-private/" + fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File is now private")
+					done()
+				});	
+		}).timeout(20000)
+		
+		it('did not download the file off the bucket when private', function(done){
+			test.httpAgent(publicURL)
+				.get("").expect(403)
+				.end(function(err, res){
+					if (err) return done(err);
+					done();
+				});	
+		})
 		
 		it('updated its stats accordingly', function(done){
 			agent
@@ -1301,7 +1378,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(3)
+					test.number(res.body.data.apiCallsUsed).is(5)
 					test.number(res.body.data.memoryUsed).is(226)
 					done();
 				});	
@@ -1335,7 +1412,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(4)
+					test.number(res.body.data.apiCallsUsed).is(6)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					done();
 				});	
@@ -1366,7 +1443,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(5)
+					test.number(res.body.data.apiCallsUsed).is(7)
 					done();
 				});	
 		})
@@ -1392,15 +1469,59 @@ describe('Checking media API', function(){
 				});	
 		}).timeout(20000)
 		
-		it('fetched the a file Id of the dinosaur2 bucket', function(done){
+		it('fetched the uploaded file Id of the dinosaur2 bucket', function(done){
 			agent
 				.get("/media/get-files/george/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', sessionCookie)
-				.attach('small-image', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
 					fileId = res.body.data[1].identifier
+					done()
+				});	
+		})
+		
+		it('did not rename an incorrect file to testy', function(done){
+			agent
+				.put("/media/rename-file/123").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.set( "contentType", 'application/json')
+				.send({name:"testy"})
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("File '123' does not exist")
+					done()
+				});	
+		})
+		
+		it('did not rename a correct file with an empty name', function(done){
+			agent
+				.put("/media/rename-file/"+ fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.set( "contentType", 'application/json')
+				.send({name:""})
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Please specify the new name of the file")
+					done()
+				});	
+		})
+		
+		it('did rename a correct file to testy', function(done){
+			agent
+				.put("/media/rename-file/"+ fileId).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.set( "contentType", 'application/json')
+				.send({name:"testy"})
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Renamed file to 'testy'")
 					done()
 				});	
 		})
@@ -1440,7 +1561,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(7)
+					test.number(res.body.data.apiCallsUsed).is(10)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					done();
 				});	
@@ -1481,7 +1602,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isNotTrue()
-					test.number(res.body.data.apiCallsUsed).is(9)
+					test.number(res.body.data.apiCallsUsed).is(12)
 					test.number(res.body.data.memoryUsed).is(226)
 					done();
 				});	

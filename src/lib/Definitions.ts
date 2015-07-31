@@ -56,9 +56,11 @@ export interface IFileEntry
     identifier?: string;
     bucketId?: string;
     bucketName?: string;
+    publicURL?: string;
     created?: number;
     size?: number;
     mimeType?: string;
+    isPublic?: boolean;
     numDownloads?: number;
 }
 
@@ -444,5 +446,6 @@ export interface IGetUserStorageData extends IGetResponse<IStorageStats> { }
 export interface IGetUsers extends IGetArrayResponse<IUserEntry> { count: number; }
 export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }
 export interface IGetBuckets extends IGetArrayResponse<IBucketEntry> { }
+export interface IGetFile extends IGetResponse<IFileEntry> { }
 export interface IGetFiles extends IGetArrayResponse<IFileEntry> { }
 export interface IRemoveFiles extends IGetArrayResponse<string> { }

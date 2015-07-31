@@ -692,6 +692,92 @@ export class BucketManager
     }
 
     /**
+    * Makes a file publicly available
+    * @param {IFileEntry} file
+    * @returns {Promise<IFileEntry>}
+    */
+    makeFilePublic(file: def.IFileEntry): Promise<def.IFileEntry>
+    {
+        var that = this;
+        return new Promise<def.IFileEntry>(function (resolve, reject)
+        {
+            that.withinAPILimit(file.user).then(function (val)
+            {
+                if (!val)
+                    return Promise.reject(new Error("You do not have enough API calls left to make this request"));
+
+                return that.incrementAPI(file.user);
+
+            }).then(function ()
+            {
+                var bucket = that._gcs.bucket(file.bucketId);
+                var rawFile = bucket.file(file.identifier);
+                rawFile.makePublic(function (err, api)
+                {
+                    if (err)
+                        return reject(err);
+
+                    that._files.update(<def.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <def.IFileEntry>{ isPublic: true } }, function (err, result)
+                    {
+                        if (err)
+                            return reject(err);
+
+                        resolve(file);
+                    });
+                });
+
+            }).catch(function (err)
+            {
+                return reject(new err);
+            });
+
+        });
+    }
+
+    /**
+    * Makes a file private
+    * @param {IFileEntry} file
+    * @returns {Promise<IFileEntry>}
+    */
+    makeFilePrivate(file: def.IFileEntry): Promise<def.IFileEntry>
+    {
+        var that = this;
+        return new Promise<def.IFileEntry>(function (resolve, reject)
+        {
+            that.withinAPILimit(file.user).then(function (val)
+            {
+                if (!val)
+                    return Promise.reject(new Error("You do not have enough API calls left to make this request"));
+
+                return that.incrementAPI(file.user);
+
+            }).then(function ()
+            {
+                var bucket = that._gcs.bucket(file.bucketId);
+                var rawFile = bucket.file(file.identifier);
+                rawFile.makePrivate({ strict: true }, function (err)
+                {
+                    if (err)
+                        return reject(err);
+
+                    that._files.update(<def.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <def.IFileEntry>{ isPublic: false } }, function (err, result)
+                    {
+                        if (err)
+                            return reject(err);
+
+                        resolve(file);
+                    });
+                });
+
+            }).catch(function (err)
+            {
+                return reject(new err);
+            });
+
+        });
+    }
+
+    /**
     * Registers an uploaded part as a new user file in the local dbs
     * @param {string} fileID The id of the file on the bucket
     * @param {string} bucketID The id of the bucket this file belongs to
@@ -699,7 +785,7 @@ export class BucketManager
     * @param {string} user The username
     * @returns {Promise<IFileEntry>}
     */
-    private registerFile(fileID: string, bucket: def.IBucketEntry, part: multiparty.Part, user: string): Promise<def.IFileEntry>
+    private registerFile(fileID: string, bucket: def.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -716,6 +802,8 @@ export class BucketManager
                 created: Date.now(),
                 numDownloads: 0,
                 size: part.byteCount,
+                isPublic: isPublic,
+                publicURL: `https://storage.googleapis.com/${bucket.identifier}/${fileID}`,
                 mimeType: part.headers["content-type"]
             };
 
@@ -745,9 +833,10 @@ export class BucketManager
     * @param {Part} part
     * @param {string} bucket The bucket to which we are uploading to
     * @param {string} user The username
+    * @param {string} makePublic Makes this uploaded file public to the world
     * @returns {Promise<any>}
     */
-    uploadStream(part: multiparty.Part, bucketEntry: def.IBucketEntry, user: string): Promise<def.IFileEntry>
+    uploadStream(part: multiparty.Part, bucketEntry: def.IBucketEntry, user: string, makePublic: boolean = true ): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -762,14 +851,14 @@ export class BucketManager
                 storageStats = stats;
                 var bucket = that._gcs.bucket(bucketEntry.identifier);
                 var fileID = that.generateRandString(16);
-                var file = bucket.file(fileID);
+                var rawFile = bucket.file(fileID);
 
                 // We look for part errors so that we can cleanup any faults with the upload if it cuts out
                 // on the user's side.
                 part.on('error', function (err: Error)
                 {
                     // Delete the file on the bucket
-                    file.delete(function (bucketErr, apiResponse)
+                    rawFile.delete(function (bucketErr, apiResponse)
                     {
                         if (bucketErr)
                             return reject(new Error(`While uploading a user part an error occurred while cleaning the bucket: ${bucketErr.toString() }`))
@@ -783,9 +872,9 @@ export class BucketManager
                 // Check if the stream content type is something that can be compressed - if so, then compress it before sending it to
                 // Google and set the content encoding
                 if (compressible(part.headers["content-type"]))
-                    stream = part.pipe(that._zipper).pipe(file.createWriteStream({ metadata: { metadata: { encoded: true } } }));
+                    stream = part.pipe(that._zipper).pipe(rawFile.createWriteStream({ metadata: { metadata: { encoded: true } } }));
                 else
-                    stream = part.pipe(file.createWriteStream());
+                    stream = part.pipe(rawFile.createWriteStream());
 
                 // Pipe the file to the bucket
                 stream.on("error", function (err: Error)
@@ -798,9 +887,18 @@ export class BucketManager
                     {
                         statCollection.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
                         {
-                            that.registerFile(fileID, bucketEntry, part, user).then(function (file)
+                            that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file)
                             {
-                                return resolve(file);
+                                if (makePublic)
+                                    rawFile.makePublic(function (err, api)
+                                    {
+                                        if (err)
+                                            return reject(err);
+                                        else
+                                            return resolve(file);
+                                    });
+                                else
+                                    return resolve(file);
 
                             }).catch(function (err: Error)
                             {
@@ -820,9 +918,10 @@ export class BucketManager
     /**
     * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
-    * @returns {Promise<fs.ReadStream>}
+    * @param {string} user Optionally specify the user of the file
+    * @returns {Promise<IFileEntry>}
     */
-    getFile(fileID: string): Promise<def.IFileEntry>
+    getFile(fileID: string, user? : string ): Promise<def.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -830,7 +929,11 @@ export class BucketManager
 
         return new Promise<def.IFileEntry>(function (resolve, reject)
         {
-            files.findOne(<def.IFileEntry>{ identifier: fileID }, function (err, result: def.IFileEntry)
+            var searchQuery: def.IFileEntry = { identifier: fileID };
+            if (user)
+                searchQuery.user = user;
+
+            files.findOne(searchQuery, function (err, result: def.IFileEntry)
             {
                 if (err)
                     return reject(err);
@@ -839,6 +942,33 @@ export class BucketManager
                 else
                     return resolve(result);
             });
+        });
+    }
+
+    /**
+    * Renames a file
+    * @param {string} file The file to rename
+    * @param {string} name The new name of the file
+    * @returns {Promise<IFileEntry>}
+    */
+    renameFile(file: def.IFileEntry, name: string): Promise<def.IFileEntry>
+    {
+        var that = this;
+        var gcs = this._gcs;
+        var files = this._files;
+
+        return new Promise<def.IFileEntry>(function (resolve, reject)
+        {
+            that.incrementAPI(file.user).then(function()
+            {
+                files.update(<def.IFileEntry>{ _id: file._id }, { $set: <def.IFileEntry>{ name : name } }, function (err, result)
+                {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(file);
+                });
+            })
         });
     }
 

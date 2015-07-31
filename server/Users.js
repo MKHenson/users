@@ -1,6 +1,6 @@
 var mongodb = require("mongodb");
 var validator = require("validator");
-var bcrypt = require("bcrypt-nodejs");
+var bcrypt = require("bcryptjs");
 var recaptcha = require("recaptcha-async");
 var nodemailer = require("nodemailer");
 var def = require("./Definitions");
@@ -342,6 +342,37 @@ var UserManager = (function () {
         });
     };
     /**
+    * Creates a hashed password
+    * @param {string} pass The password to hash
+    * @returns {Promise<boolean>}
+    */
+    UserManager.prototype.hashPassword = function (pass) {
+        return new Promise(function (resolve, reject) {
+            bcrypt.hash(pass, 8, function (err, encrypted) {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve(encrypted);
+            });
+        });
+    };
+    /**
+    * Compares a password to the stored hash in the database
+    * @param {string} pass The password to test
+    * @param {string} hash The hash stored in the DB
+    * @returns {Promise<boolean>}
+    */
+    UserManager.prototype.comparePassword = function (pass, hash) {
+        return new Promise(function (resolve, reject) {
+            bcrypt.compare(pass, hash, function (err, same) {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve(same);
+            });
+        });
+    };
+    /**
     * Attempts to reset a user's password.
     * @param {string} username The username of the user
     * @param {string} code The password code
@@ -351,19 +382,23 @@ var UserManager = (function () {
     UserManager.prototype.resetPassword = function (username, code, newPassword) {
         var that = this;
         return new Promise(function (resolve, reject) {
+            var user;
             // Get the user
-            that.getUser(username).then(function (user) {
+            that.getUser(username).then(function (selectedUser) {
+                user = selectedUser;
                 // No user - so invalid
                 if (!user)
-                    return reject(new Error("No user exists with those credentials"));
+                    return Promise.reject(new Error("No user exists with those credentials"));
                 // If key is the same
                 if (user.dbEntry.passwordTag != code)
-                    return reject(new Error("Password codes do not match. Please try resetting your password again"));
+                    return Promise.reject(new Error("Password codes do not match. Please try resetting your password again"));
                 // Make sure password is valid
                 if (newPassword === undefined || newPassword == "" || validator.blacklist(newPassword, "@\'\"{}") != newPassword)
-                    return reject(new Error("Please enter a valid password"));
+                    return Promise.reject(new Error("Please enter a valid password"));
+                return that.hashPassword(newPassword);
+            }).then(function (hashed) {
                 // Update the key to be blank
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { passwordTag: "", password: bcrypt.hashSync(newPassword) } }, function (error, result) {
+                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { passwordTag: "", password: hashed } }, function (error, result) {
                     if (error)
                         return reject(error);
                     // All done :)
@@ -482,16 +517,18 @@ var UserManager = (function () {
                 return reject(new Error("Privilege type is unrecognised"));
             if (privilege == def.UserPrivileges.SuperAdmin)
                 return reject(new Error("You cannot create a super user"));
+            var hashedPsw;
             // Check if the user already exists
-            that.getUser(user, email).then(function (existingUser) {
+            that.hashPassword(password).then(function (hashedPassword) {
+                hashedPsw = hashedPassword;
+                return that.getUser(user, email);
+            }).then(function (existingUser) {
                 if (existingUser)
-                    return reject(new Error("A user with that name or email already exists"));
-                return Promise.reject(new Error());
-            }).catch(function (error) {
+                    return Promise.reject(new Error("A user with that name or email already exists"));
                 // Create the user
                 var newUser = new User({
                     username: user,
-                    password: bcrypt.hashSync(password),
+                    password: hashedPsw,
                     email: email,
                     privileges: privilege,
                     passwordTag: "",
@@ -524,6 +561,8 @@ var UserManager = (function () {
                         });
                     });
                 });
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -598,22 +637,26 @@ var UserManager = (function () {
         if (pass === void 0) { pass = ""; }
         if (rememberMe === void 0) { rememberMe = true; }
         var that = this;
-        return that.logOut(request, response).then(function (success) {
-            return that.getUser(username);
-        }).then(function (user) {
-            return new Promise(function (resolve, reject) {
+        return new Promise(function (resolve, reject) {
+            var user;
+            that.logOut(request, response).then(function (success) {
+                return that.getUser(username);
+            }).then(function (selectedUser) {
+                user = selectedUser;
                 // If no user - then reject
                 if (!user)
-                    return reject(new Error("The username or password is incorrect."));
+                    return Promise.reject(new Error("The username or password is incorrect."));
                 // Validate password				
                 pass = validator.trim(pass);
                 if (!pass || pass == "")
-                    return reject(new Error("Please enter a valid password"));
+                    return Promise.reject(new Error("Please enter a valid password"));
                 // Check if the registration key has been removed yet
                 if (user.dbEntry.registerKey != "")
-                    return reject(new Error("Please authorise your account by clicking on the link that was sent to your email"));
+                    return Promise.reject(new Error("Please authorise your account by clicking on the link that was sent to your email"));
+                return that.comparePassword(pass, user.dbEntry.password);
+            }).then(function (same) {
                 // Check the password
-                if (!bcrypt.compareSync(pass, user.dbEntry.password))
+                if (!same)
                     return reject(new Error("The username or password is incorrect."));
                 // Set the user last login time
                 user.dbEntry.lastLoggedIn = Date.now();
@@ -640,6 +683,8 @@ var UserManager = (function () {
                         });
                     }
                 });
+            }).catch(function (err) {
+                return reject(err);
             });
         });
     };
