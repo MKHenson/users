@@ -48,6 +48,7 @@ var UserController = (function (_super) {
         router.post("/login", this.login.bind(this));
         router.post("/register", this.register.bind(this));
         router.post("/create-user", [PermissionController_1.hasAdminRights, this.createUser.bind(this)]);
+        router.post("/message-webmaster", this.messageWebmaster.bind(this));
         router.put("/approve-activation/:user", [PermissionController_1.hasAdminRights, this.approveActivation.bind(this)]);
         // Register the path
         e.use(config.restURL, router);
@@ -336,6 +337,24 @@ var UserController = (function (_super) {
                 message: error.message,
                 error: true
             }));
+        });
+    };
+    /**
+    * Attempts to send the webmaster an email message
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    UserController.prototype.messageWebmaster = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var token = req.body;
+        if (!token.message)
+            return res.end(JSON.stringify({ message: "Please specify a message to send", error: true }));
+        this._userManager.sendAdminEmail(token.message, token.name, token.from).then(function () {
+            return res.end(JSON.stringify({ message: "Your message has been sent to the support team", error: false }));
+        }).catch(function (error) {
+            return res.end(JSON.stringify({ message: error.message, error: true }));
         });
     };
     /**

@@ -236,6 +236,31 @@ var UserManager = (function () {
         });
     };
     /**
+    * Attempts to send the an email to the admin user
+    * @param {string} message The message body
+    * @param {string} name The name of the sender
+    * @param {string} from The email of the sender
+    * @returns {Promise<boolean>}
+    */
+    UserManager.prototype.sendAdminEmail = function (message, name, from) {
+        var that = this;
+        return new Promise(function (resolve, reject) {
+            // Setup e-mail data with unicode symbols
+            var mailOptions = {
+                from: that._config.adminUser.email,
+                to: that._config.adminUser.email,
+                subject: "Message from " + (name ? name : "a user"),
+                text: message + "<br /><br />Email: " + (from ? from : ""),
+                html: message.replace(/(?:\r\n|\r|\n)/g, '<br />') + (from ? "\n\nEmail: " + from : ""),
+            };
+            that._transport.sendMail(mailOptions, function (error, info) {
+                if (error)
+                    reject(new Error("Could not send email to user: " + error.message));
+                return resolve(true);
+            });
+        });
+    };
+    /**
     * Attempts to resend the activation link
     * @param {string} username The username of the user
     * @returns {Promise<boolean>}

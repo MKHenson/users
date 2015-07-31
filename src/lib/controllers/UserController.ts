@@ -18,9 +18,6 @@ import * as compression from "compression";
 */
 export class UserController extends Controller
 {
-	private _transport: Transport;
-	private _from: string;
-	private _adminEmail: string;
 	private _userManager: UserManager;
     private _config: def.IConfig;
     
@@ -59,7 +56,7 @@ export class UserController extends Controller
 		router.post("/login", this.login.bind(this));
 		router.post("/register", this.register.bind(this));
         router.post("/create-user", <any>[hasAdminRights, this.createUser.bind(this)]);
-
+        router.post("/message-webmaster", this.messageWebmaster.bind(this));
         router.put("/approve-activation/:user", <any>[hasAdminRights, this.approveActivation.bind(this)]);
 		
 		// Register the path
@@ -443,7 +440,33 @@ export class UserController extends Controller
 				error: true
 			}));
 		});
-	}
+    }
+
+    /**
+	* Attempts to send the webmaster an email message
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    messageWebmaster(req: express.Request, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+
+        var token: any = req.body;
+
+        if (!token.message)
+            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a message to send", error: true }));
+
+        this._userManager.sendAdminEmail(token.message, token.name, token.from).then(function()
+        {
+            return res.end(JSON.stringify(<def.IAuthenticationResponse>{ message: "Your message has been sent to the support team", error: false }));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{ message: error.message,  error: true }));
+        });
+    }
 	
 	/**
 	* Attempts to register a new user
