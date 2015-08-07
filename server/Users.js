@@ -127,7 +127,7 @@ var UserManager = (function () {
                     resolve();
                 }).catch(function (error) {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin).then(function (newUser) {
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, true).then(function (newUser) {
                         resolve();
                     }).catch(function (error) {
                         reject(error);
@@ -498,8 +498,9 @@ var UserManager = (function () {
     * @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
     * @returns {Promise<User>}
     */
-    UserManager.prototype.createUser = function (user, email, password, privilege) {
+    UserManager.prototype.createUser = function (user, email, password, privilege, allowAdmin) {
         if (privilege === void 0) { privilege = def.UserPrivileges.Regular; }
+        if (allowAdmin === void 0) { allowAdmin = false; }
         var that = this;
         return new Promise(function (resolve, reject) {
             // Basic checks
@@ -515,7 +516,7 @@ var UserManager = (function () {
                 return reject(new Error("Password cannot be empty"));
             if (privilege > 3)
                 return reject(new Error("Privilege type is unrecognised"));
-            if (privilege == def.UserPrivileges.SuperAdmin)
+            if (privilege == def.UserPrivileges.SuperAdmin && allowAdmin == false)
                 return reject(new Error("You cannot create a super user"));
             var hashedPsw;
             // Check if the user already exists
