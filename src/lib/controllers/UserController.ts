@@ -41,6 +41,7 @@ export class UserController extends Controller
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
+        router.get("/meta/:user/:name", <any>[hasAdminRights, this.getVal.bind(this)]);
         router.get("/users/:username", <any>[hasAdminRights, this.getUser.bind(this)]);
         router.get("/users", <any>[hasAdminRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
@@ -57,6 +58,8 @@ export class UserController extends Controller
 		router.post("/register", this.register.bind(this));
         router.post("/create-user", <any>[hasAdminRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
+        router.post("/meta/:user/:name", <any>[hasAdminRights, this.setVal.bind(this)]);
+        router.post("/meta/:user", <any>[hasAdminRights, this.setData.bind(this)]);	
         router.put("/approve-activation/:user", <any>[hasAdminRights, this.approveActivation.bind(this)]);
 		
 		// Register the path
@@ -478,7 +481,7 @@ export class UserController extends Controller
 	{
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
-
+        
         var token: def.IRegisterToken = req.body;
         
 		this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, req, res).then(function (user)
@@ -497,7 +500,96 @@ export class UserController extends Controller
 				error: true
 			}));
 		});
-	}
+    }
+
+    /**
+	* Sets a user's meta data
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private setData(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+
+        var user = req._user.dbEntry;
+
+        that._userManager.setMeta(user, req.body.value).then(function ()
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: `User's data has been updated`,
+                error: false
+            }));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: error.message,
+                error: true
+            }));
+        });
+    }
+
+    /**
+	* Sets a user's meta value
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private setVal(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+
+        var user = req._user.dbEntry;
+        var name = req.params.name;
+        
+        that._userManager.setMetaVal(user, name, req.body.value ).then(function()
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: `Value '${name}' has been updated`,
+                error: false
+            }));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: error.message,
+                error: true
+            }));
+        });
+    }
+
+    /**
+	* Gets a user's meta value
+	* @param {express.Request} req
+	* @param {express.Response} res
+	* @param {Function} next
+	*/
+    private getVal(req: def.AuthRequest, res: express.Response, next: Function): any
+    {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+
+        var user = req._user.dbEntry;
+        var name = req.params.name;
+
+        that._userManager.getMetaVal(user, name).then(function (val)
+        {
+            return res.end(JSON.stringify(val));
+
+        }).catch(function (error: Error)
+        {
+            return res.end(JSON.stringify(<def.IResponse>{
+                message: error.message,
+                error: true
+            }));
+        });
+    }
 
 	/**
 	* Removes a user from the database

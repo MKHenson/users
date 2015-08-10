@@ -17,7 +17,7 @@ export interface IUserEntry
     lastLoggedIn?: number;
     privileges?: UserPrivileges;
     passwordTag?: string;
-    data?: any;
+    meta?: any;
 }
 
 /**

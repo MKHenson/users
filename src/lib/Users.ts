@@ -50,7 +50,7 @@ export class User
             username: this.dbEntry.username,
             privileges: this.dbEntry.privileges,
             passwordTag: (showPrivate ? this.dbEntry.passwordTag : new Array(this.dbEntry.passwordTag.length).join("*")),
-            data: this.dbEntry.data
+            meta: this.dbEntry.meta
         };
     }
 
@@ -70,7 +70,7 @@ export class User
 			username: this.dbEntry.username,
             privileges: this.dbEntry.privileges,
             passwordTag: this.dbEntry.passwordTag,
-            data: this.dbEntry.data
+            meta: this.dbEntry.meta
 		};
 	}
 
@@ -694,7 +694,7 @@ export class UserManager
                     email: email,
                     privileges: privilege,
                     passwordTag: "",
-                    data: {}
+                    meta: {}
                 });
 
                 // Update the database
@@ -934,6 +934,98 @@ export class UserManager
 				});
 			});
 		});
+    }
+
+    /**
+	* Sets the meta data associated with the user
+	* @param {IUserEntry} user The user
+    * @param {any} data The meta data object to set
+	* @param {http.ServerRequest} request 
+	* @param {http.ServerResponse} response
+	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
+	*/
+    setMeta(user: def.IUserEntry, data?: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+    {
+        var that = this;
+        
+        return new Promise<boolean>(function (resolve, reject)
+        {
+            // There was no user
+            if (!user)
+                return reject(false);
+
+            // Remove the user from the DB
+            that._userCollection.update(<def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
+            {
+                if (error)
+                    return reject(error);
+
+                resolve(true);
+            });
+        });
+    }
+
+    /**
+	* Sets a meta value on the user. This updates the user's meta value by name
+	* @param {IUserEntry} user The user
+    * @param {any} name The name of the meta to set
+    * @param {any} data The value of the meta to set
+	* @param {http.ServerRequest} request 
+	* @param {http.ServerResponse} response
+	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
+	*/
+    setMetaVal(user: def.IUserEntry, name : string, val: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+    {
+        var that = this;
+        
+        return new Promise<boolean>(function (resolve, reject)
+        {
+            // There was no user
+            if (!user)
+                return resolve(false);
+
+            var datum = "data." + name;
+
+            // Remove the user from the DB
+            that._userCollection.update(<def.IUserEntry>{ _id: user._id }, { $set: { datum : val } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
+            {
+                if (error)
+                    return reject(error);
+
+                resolve(true);
+            });
+        });
+    }
+
+    /**
+	* Gets the value of user's meta by name
+	* @param {IUserEntry} user The user
+    * @param {any} name The name of the meta to get
+	* @param {http.ServerRequest} request 
+	* @param {http.ServerResponse} response
+	* @returns {Promise<any>} The value to get
+	*/
+    getMetaVal(user: def.IUserEntry, name: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<any>
+    {
+        var that = this;
+        
+        return new Promise<any>(function (resolve, reject)
+        {
+            // There was no user
+            if (!user)
+                return resolve(false);
+
+            var datum = "data." + name;
+
+            // Remove the user from the DB
+            that._userCollection.findOne( <def.IUserEntry>{ _id: user._id }, { datum: 1 }, function (error: Error, result: def.IUserEntry)
+            {
+                if (error)
+                    return reject(error);
+
+                resolve(result);
+            });
+        });
     }
 
     /** 

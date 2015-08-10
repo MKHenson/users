@@ -33,6 +33,7 @@ var UserController = (function (_super) {
         router.use(bodyParser.urlencoded({ 'extended': true }));
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+        router.get("/meta/:user/:name", [PermissionController_1.hasAdminRights, this.getVal.bind(this)]);
         router.get("/users/:username", [PermissionController_1.hasAdminRights, this.getUser.bind(this)]);
         router.get("/users", [PermissionController_1.hasAdminRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
@@ -49,6 +50,8 @@ var UserController = (function (_super) {
         router.post("/register", this.register.bind(this));
         router.post("/create-user", [PermissionController_1.hasAdminRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
+        router.post("/meta/:user/:name", [PermissionController_1.hasAdminRights, this.setVal.bind(this)]);
+        router.post("/meta/:user", [PermissionController_1.hasAdminRights, this.setData.bind(this)]);
         router.put("/approve-activation/:user", [PermissionController_1.hasAdminRights, this.approveActivation.bind(this)]);
         // Register the path
         e.use(config.restURL, router);
@@ -377,6 +380,74 @@ var UserController = (function (_super) {
             return res.end(JSON.stringify({
                 message: error.message,
                 authenticated: false,
+                error: true
+            }));
+        });
+    };
+    /**
+    * Sets a user's meta data
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    UserController.prototype.setData = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+        var user = req._user.dbEntry;
+        that._userManager.setMeta(user, req.body.value).then(function () {
+            return res.end(JSON.stringify({
+                message: "User's data has been updated",
+                error: false
+            }));
+        }).catch(function (error) {
+            return res.end(JSON.stringify({
+                message: error.message,
+                error: true
+            }));
+        });
+    };
+    /**
+    * Sets a user's meta value
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    UserController.prototype.setVal = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+        var user = req._user.dbEntry;
+        var name = req.params.name;
+        that._userManager.setMetaVal(user, name, req.body.value).then(function () {
+            return res.end(JSON.stringify({
+                message: "Value '" + name + "' has been updated",
+                error: false
+            }));
+        }).catch(function (error) {
+            return res.end(JSON.stringify({
+                message: error.message,
+                error: true
+            }));
+        });
+    };
+    /**
+    * Gets a user's meta value
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    UserController.prototype.getVal = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+        var user = req._user.dbEntry;
+        var name = req.params.name;
+        that._userManager.getMetaVal(user, name).then(function (val) {
+            return res.end(JSON.stringify(val));
+        }).catch(function (error) {
+            return res.end(JSON.stringify({
+                message: error.message,
                 error: true
             }));
         });
