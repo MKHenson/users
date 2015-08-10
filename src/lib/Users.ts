@@ -164,7 +164,7 @@ export class UserManager
                 }).catch(function (error: Error)
                 {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin).then(function (newUser)
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, true).then(function (newUser)
                     {
                         resolve();
 
@@ -660,7 +660,7 @@ export class UserManager
 	* @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
 	* @returns {Promise<User>}
 	*/
-	createUser(user: string, email: string, password: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular): Promise<User>
+	createUser(user: string, email: string, password: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular, allowAdmin = false): Promise<User>
 	{
 		var that = this;
 		
@@ -673,7 +673,7 @@ export class UserManager
 			if (!validator.isEmail(email)) return reject(new Error("Email must be valid"));
 			if (!password || validator.trim(password) == "") return reject(new Error("Password cannot be empty"));
 			if (privilege > 3) return reject(new Error("Privilege type is unrecognised"));
-            if (privilege == def.UserPrivileges.SuperAdmin) return reject(new Error("You cannot create a super user"));
+            if (privilege == def.UserPrivileges.SuperAdmin && allowAdmin == false ) return reject(new Error("You cannot create a super user"));
             var hashedPsw : string;
 
 			// Check if the user already exists
