@@ -516,7 +516,7 @@ export class UserController extends Controller
 
         var user = req._user.dbEntry;
 
-        that._userManager.setMeta(user, req.body.value).then(function ()
+        that._userManager.setMeta( user, req.body || {} ).then(function ()
         {
             return res.end(JSON.stringify(<def.IResponse>{
                 message: `User's data has been updated`,

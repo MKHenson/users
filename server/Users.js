@@ -753,9 +753,11 @@ var UserManager = (function () {
             // There was no user
             if (!user)
                 return resolve(false);
-            var datum = "data." + name;
+            var datum = "meta." + name;
+            var updateToken = { $set: {} };
+            updateToken.$set[datum] = val;
             // Remove the user from the DB
-            that._userCollection.update({ _id: user._id }, { $set: { datum: val } }, function (error, result) {
+            that._userCollection.update({ _id: user._id }, updateToken, function (error, result) {
                 if (error)
                     return reject(error);
                 resolve(true);
@@ -776,12 +778,11 @@ var UserManager = (function () {
             // There was no user
             if (!user)
                 return resolve(false);
-            var datum = "data." + name;
             // Remove the user from the DB
-            that._userCollection.findOne({ _id: user._id }, { datum: 1 }, function (error, result) {
+            that._userCollection.findOne({ _id: user._id }, { _id: 0, meta: 1 }, function (error, result) {
                 if (error)
                     return reject(error);
-                resolve(result);
+                resolve(result.meta[name]);
             });
         });
     };

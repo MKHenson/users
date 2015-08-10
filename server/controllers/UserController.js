@@ -1,4 +1,4 @@
-var __extends = (this && this.__extends) || function (d, b) {
+var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -395,7 +395,7 @@ var UserController = (function (_super) {
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         var user = req._user.dbEntry;
-        that._userManager.setMeta(user, req.body.value).then(function () {
+        that._userManager.setMeta(user, req.body || {}).then(function () {
             return res.end(JSON.stringify({
                 message: "User's data has been updated",
                 error: false

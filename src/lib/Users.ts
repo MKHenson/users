@@ -984,10 +984,13 @@ export class UserManager
             if (!user)
                 return resolve(false);
 
-            var datum = "data." + name;
+            var datum = "meta." + name;
+
+            var updateToken = { $set: {} };
+            updateToken.$set[datum] = val;
 
             // Remove the user from the DB
-            that._userCollection.update(<def.IUserEntry>{ _id: user._id }, { $set: { datum : val } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
+            that._userCollection.update(<def.IUserEntry>{ _id: user._id }, updateToken, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
             {
                 if (error)
                     return reject(error);
@@ -1014,16 +1017,14 @@ export class UserManager
             // There was no user
             if (!user)
                 return resolve(false);
-
-            var datum = "data." + name;
-
+            
             // Remove the user from the DB
-            that._userCollection.findOne( <def.IUserEntry>{ _id: user._id }, { datum: 1 }, function (error: Error, result: def.IUserEntry)
+            that._userCollection.findOne( <def.IUserEntry>{ _id: user._id }, { _id: 0, meta: 1 }, function (error: Error, result: def.IUserEntry)
             {
                 if (error)
                     return reject(error);
 
-                resolve(result);
+                resolve(result.meta[name]);
             });
         });
     }
