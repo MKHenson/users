@@ -164,7 +164,7 @@ export class UserManager
                 }).catch(function (error: Error)
                 {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, true).then(function (newUser)
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser)
                     {
                         resolve();
 
@@ -185,11 +185,12 @@ export class UserManager
 	* @param {string} email The users email address
 	* @param {string} captcha The captcha value the user guessed
 	* @param {string} captchaChallenge The captcha challenge
+    * @param {any} meta Any optional data associated with this user
 	* @param {http.ServerRequest} request 
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
-	register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
+    register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", meta: any = {}, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
 	{
         var that = this;
 
@@ -221,7 +222,7 @@ export class UserManager
                         if (!captchaResult.is_valid)
                             throw new Error("Your captcha code seems to be wrong. Please try another.");
 
-                        return that.createUser(username, email, pass);
+                        return that.createUser(username, email, pass, def.UserPrivileges.Regular, meta);
                         
                     }).then(function(user)
                     {
@@ -658,9 +659,11 @@ export class UserManager
 	* @param {string} email The unique email
 	* @param {string} password The password for the user
 	* @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
+    * @param {any} meta Any optional data associated with this user
+    * @param {boolean} allowAdmin Should this be allowed to create a super user
 	* @returns {Promise<User>}
 	*/
-	createUser(user: string, email: string, password: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular, allowAdmin = false): Promise<User>
+    createUser(user: string, email: string, password: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
 	{
 		var that = this;
 		
@@ -694,7 +697,7 @@ export class UserManager
                     email: email,
                     privileges: privilege,
                     passwordTag: "",
-                    meta: {}
+                    meta: meta
                 });
 
                 // Update the database

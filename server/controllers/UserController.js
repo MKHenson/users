@@ -371,7 +371,7 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var token = req.body;
-        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, req, res).then(function (user) {
+        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, token.meta, req, res).then(function (user) {
             return res.end(JSON.stringify({
                 message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
                 authenticated: (user ? true : false),
@@ -519,7 +519,7 @@ var UserController = (function (_super) {
                 message: "You cannot create a user with super admin permissions",
                 error: true
             }));
-        that._userManager.createUser(token.username, token.email, token.password, token.privileges).then(function (user) {
+        that._userManager.createUser(token.username, token.email, token.password, token.privileges, token.meta).then(function (user) {
             var token = {
                 error: false,
                 message: "User " + user.dbEntry.username + " has been created",

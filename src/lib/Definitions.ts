@@ -199,7 +199,8 @@ export interface IRegisterToken
 	email: string;
 	captcha?: string;
 	challenge?: string;
-	privileges: number;
+    privileges: number;
+    meta: any;
 }
 
 /*

@@ -127,7 +127,7 @@ var UserManager = (function () {
                     resolve();
                 }).catch(function (error) {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, true).then(function (newUser) {
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser) {
                         resolve();
                     }).catch(function (error) {
                         reject(error);
@@ -143,16 +143,18 @@ var UserManager = (function () {
     * @param {string} email The users email address
     * @param {string} captcha The captcha value the user guessed
     * @param {string} captchaChallenge The captcha challenge
+    * @param {any} meta Any optional data associated with this user
     * @param {http.ServerRequest} request
     * @param {http.ServerResponse} response
     * @returns {Promise<User>}
     */
-    UserManager.prototype.register = function (username, pass, email, captcha, captchaChallenge, request, response) {
+    UserManager.prototype.register = function (username, pass, email, captcha, captchaChallenge, meta, request, response) {
         if (username === void 0) { username = ""; }
         if (pass === void 0) { pass = ""; }
         if (email === void 0) { email = ""; }
         if (captcha === void 0) { captcha = ""; }
         if (captchaChallenge === void 0) { captchaChallenge = ""; }
+        if (meta === void 0) { meta = {}; }
         var that = this;
         return new Promise(function (resolve, reject) {
             // First check if user exists, make sure the details supplied are ok, then create the new user
@@ -181,7 +183,7 @@ var UserManager = (function () {
                     captchaChecker.on("data", function (captchaResult) {
                         if (!captchaResult.is_valid)
                             throw new Error("Your captcha code seems to be wrong. Please try another.");
-                        return that.createUser(username, email, pass);
+                        return that.createUser(username, email, pass, def.UserPrivileges.Regular, meta);
                     }).then(function (user) {
                         newUser = user;
                         return resolve(newUser);
@@ -496,10 +498,13 @@ var UserManager = (function () {
     * @param {string} email The unique email
     * @param {string} password The password for the user
     * @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
+    * @param {any} meta Any optional data associated with this user
+    * @param {boolean} allowAdmin Should this be allowed to create a super user
     * @returns {Promise<User>}
     */
-    UserManager.prototype.createUser = function (user, email, password, privilege, allowAdmin) {
+    UserManager.prototype.createUser = function (user, email, password, privilege, meta, allowAdmin) {
         if (privilege === void 0) { privilege = def.UserPrivileges.Regular; }
+        if (meta === void 0) { meta = {}; }
         if (allowAdmin === void 0) { allowAdmin = false; }
         var that = this;
         return new Promise(function (resolve, reject) {
@@ -533,7 +538,7 @@ var UserManager = (function () {
                     email: email,
                     privileges: privilege,
                     passwordTag: "",
-                    meta: {}
+                    meta: meta
                 });
                 // Update the database
                 that._userCollection.insert(newUser.generateDbEntry(), function (error, result) {
