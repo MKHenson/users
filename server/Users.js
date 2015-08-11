@@ -787,6 +787,27 @@ var UserManager = (function () {
         });
     };
     /**
+    * Gets the meta data of a user
+    * @param {IUserEntry} user The user
+    * @param {http.ServerRequest} request
+    * @param {http.ServerResponse} response
+    * @returns {Promise<any>} The value to get
+    */
+    UserManager.prototype.getMetaData = function (user, request, response) {
+        var that = this;
+        return new Promise(function (resolve, reject) {
+            // There was no user
+            if (!user)
+                return resolve(false);
+            // Remove the user from the DB
+            that._userCollection.findOne({ _id: user._id }, { _id: 0, meta: 1 }, function (error, result) {
+                if (error)
+                    return reject(error);
+                resolve(result.meta);
+            });
+        });
+    };
+    /**
     * Gets the total number of users
     * @param {RegExp} searchPhrases Search phrases
     * @returns {Promise<number>}

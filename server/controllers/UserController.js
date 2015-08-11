@@ -33,6 +33,7 @@ var UserController = (function (_super) {
         router.use(bodyParser.urlencoded({ 'extended': true }));
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+        router.get("/meta/:user", [PermissionController_1.hasAdminRights, this.getData.bind(this)]);
         router.get("/meta/:user/:name", [PermissionController_1.hasAdminRights, this.getVal.bind(this)]);
         router.get("/users/:username", [PermissionController_1.hasAdminRights, this.getUser.bind(this)]);
         router.get("/users", [PermissionController_1.hasAdminRights, this.getUsers.bind(this)]);
@@ -444,6 +445,27 @@ var UserController = (function (_super) {
         var user = req._user.dbEntry;
         var name = req.params.name;
         that._userManager.getMetaVal(user, name).then(function (val) {
+            return res.end(JSON.stringify(val));
+        }).catch(function (error) {
+            return res.end(JSON.stringify({
+                message: error.message,
+                error: true
+            }));
+        });
+    };
+    /**
+    * Gets a user's meta data
+    * @param {express.Request} req
+    * @param {express.Response} res
+    * @param {Function} next
+    */
+    UserController.prototype.getData = function (req, res, next) {
+        // Set the content type
+        res.setHeader('Content-Type', 'application/json');
+        var that = this;
+        var user = req._user.dbEntry;
+        var name = req.params.name;
+        that._userManager.getMetaData(user).then(function (val) {
             return res.end(JSON.stringify(val));
         }).catch(function (error) {
             return res.end(JSON.stringify({
