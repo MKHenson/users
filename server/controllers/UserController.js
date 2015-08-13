@@ -246,7 +246,8 @@ var UserController = (function (_super) {
     UserController.prototype.requestPasswordReset = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        this._userManager.requestPasswordReset(req.params.user).then(function (success) {
+        var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
+        this._userManager.requestPasswordReset(req.params.user, origin).then(function (success) {
             return res.end(JSON.stringify({
                 message: "Instructions have been sent to your email on how to change your password",
                 error: false

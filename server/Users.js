@@ -213,10 +213,11 @@ var UserManager = (function () {
     /**
     * Creates the link to send to the user for password reset
     * @param {string} username The username of the user
+     * @param {string} origin The origin of where the activation link came from
     * @returns {string}
     */
-    UserManager.prototype.createResetLink = function (user) {
-        return this._config.passwordResetURL + "?key=" + user.dbEntry.passwordTag + "&user=" + user.dbEntry.username;
+    UserManager.prototype.createResetLink = function (user, origin) {
+        return this._config.passwordResetURL + "?key=" + user.dbEntry.passwordTag + "&user=" + user.dbEntry.username + "&origin=" + origin;
     };
     /**
     * Approves a user's activation code so they can login without email validation
@@ -309,9 +310,10 @@ var UserManager = (function () {
     /**
     * Sends the user an email with instructions on how to reset their password
     * @param {string} username The username of the user
+    * @param {string} origin The site where the request came from
     * @returns {Promise<boolean>}
     */
-    UserManager.prototype.requestPasswordReset = function (username) {
+    UserManager.prototype.requestPasswordReset = function (username, origin) {
         var that = this;
         return new Promise(function (resolve, reject) {
             // Get the user
@@ -326,7 +328,7 @@ var UserManager = (function () {
                     if (error)
                         return reject(error);
                     // Send a message to the user to say they are registered but need to activate their account
-                    var message = "A request has been made to reset your password.\n\t\t\t\t\tTo change your password please click the link below:\n\n\t\t\t\t\t" + that.createResetLink(user) + "\n\n\t\t\t\t\tThanks\n\t\t\t\t\tThe Webinate Team";
+                    var message = "A request has been made to reset your password.\n\t\t\t\t\tTo change your password please click the link below:\n\n\t\t\t\t\t" + that.createResetLink(user, origin) + "\n\n\t\t\t\t\tThanks\n\t\t\t\t\tThe Webinate Team";
                     // Setup e-mail data with unicode symbols
                     var mailOptions = {
                         from: that._config.emailFrom,

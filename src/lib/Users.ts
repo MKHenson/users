@@ -264,11 +264,12 @@ export class UserManager
 	/** 
 	* Creates the link to send to the user for password reset
 	* @param {string} username The username of the user
+     * @param {string} origin The origin of where the activation link came from
 	* @returns {string}
 	*/
-    private createResetLink(user: User): string
+    private createResetLink(user: User, origin: string): string
     {
-        return `${this._config.passwordResetURL}?key=${user.dbEntry.passwordTag}&user=${user.dbEntry.username}`;
+        return `${this._config.passwordResetURL}?key=${user.dbEntry.passwordTag}&user=${user.dbEntry.username}&origin=${origin}`;
     }
 
 	/** 
@@ -398,9 +399,10 @@ export class UserManager
     /** 
 	* Sends the user an email with instructions on how to reset their password
 	* @param {string} username The username of the user
+    * @param {string} origin The site where the request came from
 	* @returns {Promise<boolean>}
 	*/
-    requestPasswordReset(username: string): Promise<boolean>
+    requestPasswordReset(username: string, origin: string ): Promise<boolean>
     {
         var that = this;
 
@@ -427,7 +429,7 @@ export class UserManager
                     var message: string = `A request has been made to reset your password.
 					To change your password please click the link below:
 
-					${that.createResetLink(user)}
+					${that.createResetLink(user, origin)}
 
 					Thanks
 					The Webinate Team`;
