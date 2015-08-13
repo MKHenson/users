@@ -372,7 +372,7 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var token = req.body;
-        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, token.meta, req, res).then(function (user) {
+        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res).then(function (user) {
             return res.end(JSON.stringify({
                 message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
                 authenticated: (user ? true : false),
@@ -397,7 +397,10 @@ var UserController = (function (_super) {
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         var user = req._user.dbEntry;
-        that._userManager.setMeta(user, req.body || {}).then(function () {
+        var val = req.body && req.body.value;
+        if (!val)
+            val = {};
+        that._userManager.setMeta(user, val).then(function () {
             return res.end(JSON.stringify({
                 message: "User's data has been updated",
                 error: false

@@ -251,7 +251,7 @@ describe('Testing user API functions', function(){
 		it('did set user meta data of myself', function(done){
 			agent
 				.post("/users/meta/" + config.adminUser.username ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.send( { sister : "sam", brother: "mat" } )
+				.send( { value: { sister : "sam", brother: "mat" } } )
 				.set('Cookie', sessionCookie)
 				.end(function(err, res){
 					if (err) return done(err);

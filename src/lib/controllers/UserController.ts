@@ -484,7 +484,7 @@ export class UserController extends Controller
         
         var token: def.IRegisterToken = req.body;
         
-        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, token.meta, req, res).then(function (user)
+        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res).then(function (user)
 		{
             return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
@@ -515,8 +515,11 @@ export class UserController extends Controller
         var that = this;
 
         var user = req._user.dbEntry;
+        var val = req.body && req.body.value;
+        if (!val)
+            val = {};
 
-        that._userManager.setMeta( user, req.body || {} ).then(function ()
+        that._userManager.setMeta(user, val).then(function ()
         {
             return res.end(JSON.stringify(<def.IResponse>{
                 message: `User's data has been updated`,
