@@ -6,7 +6,6 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var express = require("express");
 var bodyParser = require('body-parser');
-var entities = require("entities");
 var def = require("../Definitions");
 var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
@@ -45,7 +44,6 @@ var UserController = (function (_super) {
         router.get("/resend-activation/:user", this.resendActivation.bind(this));
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
-        router.get("/password-reset", this.passwordReset.bind(this));
         router.delete("/sessions/:id", [PermissionController_1.ownerRights, this.deleteSession.bind(this)]);
         router.delete("/remove-user/:user", [PermissionController_1.ownerRights, this.removeUser.bind(this)]);
         router.post("/login", this.login.bind(this));
@@ -55,6 +53,7 @@ var UserController = (function (_super) {
         router.post("/meta/:user/:name", [PermissionController_1.adminRights, this.setVal.bind(this)]);
         router.post("/meta/:user", [PermissionController_1.adminRights, this.setData.bind(this)]);
         router.put("/approve-activation/:user", [PermissionController_1.ownerRights, this.approveActivation.bind(this)]);
+        router.put("/password-reset", this.passwordReset.bind(this));
         // Register the path
         e.use(config.restURL, router);
     }
@@ -267,13 +266,30 @@ var UserController = (function (_super) {
     */
     UserController.prototype.passwordReset = function (req, res, next) {
         var redirectURL = this._config.passwordRedirectURL;
+        res.setHeader('Content-Type', 'application/json');
+        if (!req.body)
+            return res.end(JSON.stringify({ message: "Expecting body content and found none", error: true }));
+        if (!req.body.user)
+            return res.end(JSON.stringify({ message: "Please specify a user", error: true }));
+        if (!req.body.key)
+            return res.end(JSON.stringify({ message: "Please specify a key", error: true }));
+        if (!req.body.password)
+            return res.end(JSON.stringify({ message: "Please specify a password", error: true }));
         // Check the user's activation and forward them onto the admin message page
-        this._userManager.resetPassword(req.query.user, req.query.key, req.query.password).then(function (success) {
-            res.writeHead(302, { 'Location': redirectURL + "?message=" + entities.encodeHTML("Your password has been reset!") + "&status=success" });
-            res.end();
+        this._userManager.resetPassword(req.body.user, req.body.key, req.body.password).then(function (success) {
+            //res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML("Your password has been reset!") }&status=success` });
+            //res.end();
+            return res.end(JSON.stringify({
+                message: "Your password has been reset",
+                error: false
+            }));
         }).catch(function (error) {
-            res.writeHead(302, { 'Location': redirectURL + "?message=" + entities.encodeHTML(error.message) + "&status=error" });
-            res.end();
+            //res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML(error.message) }&status=error` });
+            //res.end();
+            return res.end(JSON.stringify({
+                message: error.message,
+                error: true
+            }));
         });
     };
     /**
