@@ -268,17 +268,7 @@ export interface IConfig
     * eg: "http://localhost/reset-password"
 	*/
     passwordResetURL: string;
-    
-    /**
-	* The URL to redirect to after the user attempts to change their password.
-    * User's will reset their password via the "/password-reset" URL, and after its validation the server will redirect to this URL
-    * adding a query ?message=You%20have%20activated%20your%20account&status=success. 
-    * The status can be either 'success' or 'error'
-    *
-    * eg: "http://localhost/notify-user"
-	*/
-    passwordRedirectURL: string;
-    
+        
     /**
 	* An array of approved domains that can access this API. 
     * e.g. ["webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1"] etc...

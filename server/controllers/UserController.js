@@ -266,7 +266,6 @@ var UserController = (function (_super) {
     * @param {Function} next
     */
     UserController.prototype.passwordReset = function (req, res, next) {
-        var redirectURL = this._config.passwordRedirectURL;
         res.setHeader('Content-Type', 'application/json');
         if (!req.body)
             return res.end(JSON.stringify({ message: "Expecting body content and found none", error: true }));
@@ -278,15 +277,11 @@ var UserController = (function (_super) {
             return res.end(JSON.stringify({ message: "Please specify a password", error: true }));
         // Check the user's activation and forward them onto the admin message page
         this._userManager.resetPassword(req.body.user, req.body.key, req.body.password).then(function (success) {
-            //res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML("Your password has been reset!") }&status=success` });
-            //res.end();
             return res.end(JSON.stringify({
                 message: "Your password has been reset",
                 error: false
             }));
         }).catch(function (error) {
-            //res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML(error.message) }&status=error` });
-            //res.end();
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true

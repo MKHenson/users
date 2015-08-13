@@ -4,7 +4,6 @@
   "mediaURL":  "media",
 	"accountRedirectURL": "http://host.com/admin/message",
 	"passwordResetURL": "http://host.com/admin/password-reset-form",
-	"passwordRedirectURL" : "http://host.com/admin/message",
 	"userCollection": "users",
   "sessionCollection": "sessions",
   "approvedDomains": [ "webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1" ],

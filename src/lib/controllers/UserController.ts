@@ -345,7 +345,6 @@ export class UserController extends Controller
 	*/
     private passwordReset(req: express.Request, res: express.Response, next: Function): any
     {
-        var redirectURL = this._config.passwordRedirectURL;
         res.setHeader('Content-Type', 'application/json');
 
         if (!req.body)
@@ -360,8 +359,6 @@ export class UserController extends Controller
         // Check the user's activation and forward them onto the admin message page
         this._userManager.resetPassword(req.body.user, req.body.key, req.body.password).then(function (success: boolean)
         {
-            //res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML("Your password has been reset!") }&status=success` });
-            //res.end();
             return res.end(JSON.stringify(<def.IResponse>{
                 message: "Your password has been reset",
                 error: false
@@ -369,8 +366,6 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
-            //res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML(error.message) }&status=error` });
-            //res.end();
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
