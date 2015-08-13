@@ -313,6 +313,7 @@ var UserController = (function (_super) {
             return res.end(JSON.stringify({
                 message: (user ? "User is authenticated" : "User is not authenticated"),
                 authenticated: (user ? true : false),
+                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
                 error: false
             }));
         }).catch(function (error) {

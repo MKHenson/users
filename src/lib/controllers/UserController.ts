@@ -404,7 +404,8 @@ export class UserController extends Controller
 		{
             return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "User is authenticated" : "User is not authenticated"),
-				authenticated: (user ? true : false),
+                authenticated: (user ? true : false),
+                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
 				error: false
 			}));
 
