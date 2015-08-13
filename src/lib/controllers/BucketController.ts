@@ -6,7 +6,7 @@ import * as def from "../Definitions";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
 import {UserManager, User} from "../Users";
-import {hasAdminRights, identifyUser} from "../PermissionController";
+import {ownerRights, identifyUser} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
 import * as multiparty from "multiparty";
@@ -42,18 +42,18 @@ export class BucketController extends Controller
 
         router.get("/download/:id", <any>[this.getFile.bind(this)]);
         
-        router.get("/get-files/:user/:bucket", <any>[hasAdminRights, this.getFiles.bind(this)]);
-        router.get("/get-stats/:user?", <any>[hasAdminRights, this.getStats.bind(this)]);
-        router.get("/get-buckets/:user?", <any>[hasAdminRights, this.getBuckets.bind(this)]);
+        router.get("/get-files/:user/:bucket", <any>[ownerRights, this.getFiles.bind(this)]);
+        router.get("/get-stats/:user?", <any>[ownerRights, this.getStats.bind(this)]);
+        router.get("/get-buckets/:user?", <any>[ownerRights, this.getBuckets.bind(this)]);
         router.delete("/remove-buckets/:buckets", <any>[identifyUser, this.removeBuckets.bind(this)]);
         router.delete("/remove-files/:files", <any>[identifyUser, this.removeFiles.bind(this)]);
         router.post("/upload/:bucket", <any>[identifyUser, this.uploadUserFiles.bind(this)]);
-        router.post("/create-bucket/:user/:name", <any>[hasAdminRights, this.createBucket.bind(this)]);
-        router.post("/create-stats/:target", <any>[hasAdminRights, this.createStats.bind(this)]);
-        router.put("/storage-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
-        router.put("/storage-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
-        router.put("/storage-allocated-calls/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
-        router.put("/storage-allocated-memory/:target/:value", <any>[hasAdminRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
+        router.post("/create-bucket/:user/:name", <any>[ownerRights, this.createBucket.bind(this)]);
+        router.post("/create-stats/:target", <any>[ownerRights, this.createStats.bind(this)]);
+        router.put("/storage-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
+        router.put("/storage-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
+        router.put("/storage-allocated-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
+        router.put("/storage-allocated-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
         router.put("/rename-file/:file", <any>[identifyUser, this.renameFile.bind(this)]);
         router.put("/make-public/:id", <any>[identifyUser, this.makePublic.bind(this)]);
         router.put("/make-private/:id", <any>[identifyUser, this.makePrivate.bind(this)]);

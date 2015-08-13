@@ -27,33 +27,34 @@ var UserController = (function (_super) {
     function UserController(e, config) {
         _super.call(this);
         this._config = config;
+        PermissionController_1.secret.key = config.secret;
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
         router.use(bodyParser.urlencoded({ 'extended': true }));
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
-        router.get("/meta/:user", [PermissionController_1.hasAdminRights, this.getData.bind(this)]);
-        router.get("/meta/:user/:name", [PermissionController_1.hasAdminRights, this.getVal.bind(this)]);
-        router.get("/users/:username", [PermissionController_1.hasAdminRights, this.getUser.bind(this)]);
-        router.get("/users", [PermissionController_1.hasAdminRights, this.getUsers.bind(this)]);
+        router.get("/meta/:user", [PermissionController_1.ownerRights, this.getData.bind(this)]);
+        router.get("/meta/:user/:name", [PermissionController_1.ownerRights, this.getVal.bind(this)]);
+        router.get("/users/:username", [PermissionController_1.ownerRights, this.getUser.bind(this)]);
+        router.get("/users", [PermissionController_1.ownerRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
         router.get("/authenticated", this.authenticated.bind(this));
-        router.get("/sessions", [PermissionController_1.hasAdminRights, this.getSessions.bind(this)]);
+        router.get("/sessions", [PermissionController_1.ownerRights, this.getSessions.bind(this)]);
         router.get("/logout", this.logout.bind(this));
         router.get("/resend-activation/:user", this.resendActivation.bind(this));
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
         router.get("/password-reset", this.passwordReset.bind(this));
-        router.delete("/sessions/:id", [PermissionController_1.hasAdminRights, this.deleteSession.bind(this)]);
-        router.delete("/remove-user/:user", [PermissionController_1.hasAdminRights, this.removeUser.bind(this)]);
+        router.delete("/sessions/:id", [PermissionController_1.ownerRights, this.deleteSession.bind(this)]);
+        router.delete("/remove-user/:user", [PermissionController_1.ownerRights, this.removeUser.bind(this)]);
         router.post("/login", this.login.bind(this));
         router.post("/register", this.register.bind(this));
-        router.post("/create-user", [PermissionController_1.hasAdminRights, this.createUser.bind(this)]);
+        router.post("/create-user", [PermissionController_1.ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
-        router.post("/meta/:user/:name", [PermissionController_1.hasAdminRights, this.setVal.bind(this)]);
-        router.post("/meta/:user", [PermissionController_1.hasAdminRights, this.setData.bind(this)]);
-        router.put("/approve-activation/:user", [PermissionController_1.hasAdminRights, this.approveActivation.bind(this)]);
+        router.post("/meta/:user/:name", [PermissionController_1.adminRights, this.setVal.bind(this)]);
+        router.post("/meta/:user", [PermissionController_1.adminRights, this.setData.bind(this)]);
+        router.put("/approve-activation/:user", [PermissionController_1.ownerRights, this.approveActivation.bind(this)]);
         // Register the path
         e.use(config.restURL, router);
     }
@@ -513,6 +514,8 @@ var UserController = (function (_super) {
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         var token = req.body;
+        // Set default privileges
+        token.privileges = token.privileges ? token.privileges : def.UserPrivileges.Regular;
         // Not allowed to create super users
         if (token.privileges == def.UserPrivileges.SuperAdmin)
             return res.end(JSON.stringify({

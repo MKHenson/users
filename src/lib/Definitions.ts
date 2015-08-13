@@ -200,6 +200,7 @@ export interface IRegisterToken
 	captcha?: string;
 	challenge?: string;
     meta?: any;
+    privileges?: number;
 }
 
 /*
@@ -244,6 +245,11 @@ export interface IConfig
     * eg: If "/media", then the API url would be 127.0.0.1:80/media (or rather host:port/restURL)
 	*/
     mediaURL: string;
+
+    /**
+	* A secret string to identify authenticated servers
+	*/
+    secret: string;
     
     /**
 	* The URL to redirect to after the user attempts to activate their account. 

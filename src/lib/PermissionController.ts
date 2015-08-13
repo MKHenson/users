@@ -6,14 +6,16 @@ import * as http from "http";
 import * as def from "./Definitions";
 import {UserManager, User} from "./Users";
 
+export var secret = { key : "" };
+
 
 /**
-* Checks if the request has admin rights. If not, an error is sent back to the user
+* Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
 * @param {def.AuthRequest} req
 * @param {express.Response} res
 * @param {Function} next
 */
-export function hasAdminRights(req: def.AuthRequest, res: express.Response, next: Function): any
+export function ownerRights(req: def.AuthRequest, res: express.Response, next: Function): any
 {
     var username = req.params.username || req.params.user;
     requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user)
@@ -31,7 +33,33 @@ export function hasAdminRights(req: def.AuthRequest, res: express.Response, next
 }
 
 /**
-* Checks for session data and fetches the user
+* Checks if the request has admin rights. If not, an error is sent back to the user
+* @param {def.AuthRequest} req
+* @param {express.Response} res
+* @param {Function} next
+*/
+export function adminRights(req: def.AuthRequest, res: express.Response, next: Function): any
+{
+    UserManager.get.loggedIn(req, res).then(function (user)
+    {
+        if (!user)
+            return res.end(JSON.stringify(<def.IResponse>{ message: "You must be logged in to make this request", error: true }));
+
+        req._user = user;
+
+        // Allow certain user requests that have the secret key
+        var secretKey = (req.body ? req.body.secret : null)
+        if (secretKey && secretKey == secret.key)
+            next();
+        else if (user.dbEntry.privileges > def.UserPrivileges.Admin)
+            return res.end(JSON.stringify(<def.IResponse>{ message: "You don't have permission to make this request", error: true }));
+        else
+            next();
+    });
+}
+
+/**
+* Checks for session data and fetches the user. Sends back an error if no user present
 * @param {def.AuthRequest} req
 * @param {express.Response} res
 * @param {Function} next

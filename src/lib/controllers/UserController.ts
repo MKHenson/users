@@ -8,7 +8,7 @@ import * as def from "../Definitions";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
 import {UserManager, User} from "../Users";
-import {hasAdminRights} from "../PermissionController";
+import {ownerRights, adminRights, secret} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
 import * as compression from "compression";
@@ -32,7 +32,8 @@ export class UserController extends Controller
     {
         super();
 
-		this._config = config;
+        this._config = config;
+        secret.key = config.secret;
 		
 		// Setup the rest calls
         var router = express.Router();
@@ -40,34 +41,32 @@ export class UserController extends Controller
 		router.use(bodyParser.urlencoded({ 'extended': true }));
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
-
-        router.get("/meta/:user", <any>[hasAdminRights, this.getData.bind(this)]);
-        router.get("/meta/:user/:name", <any>[hasAdminRights, this.getVal.bind(this)]);
-        router.get("/users/:username", <any>[hasAdminRights, this.getUser.bind(this)]);
-        router.get("/users", <any>[hasAdminRights, this.getUsers.bind(this)]);
+        
+        router.get("/meta/:user", <any>[ownerRights, this.getData.bind(this)]);
+        router.get("/meta/:user/:name", <any>[ownerRights, this.getVal.bind(this)]);
+        router.get("/users/:username", <any>[ownerRights, this.getUser.bind(this)]);
+        router.get("/users", <any>[ownerRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
 		router.get("/authenticated", this.authenticated.bind(this));
-        router.get("/sessions", <any>[hasAdminRights, this.getSessions.bind(this)]);
+        router.get("/sessions", <any>[ownerRights, this.getSessions.bind(this)]);
 		router.get("/logout", this.logout.bind(this));
 		router.get("/resend-activation/:user", this.resendActivation.bind(this));		
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
         router.get("/password-reset", this.passwordReset.bind(this));
-        router.delete("/sessions/:id", <any>[hasAdminRights, this.deleteSession.bind(this)]);
-        router.delete("/remove-user/:user", <any>[hasAdminRights, this.removeUser.bind(this)]);	
+        router.delete("/sessions/:id", <any>[ownerRights, this.deleteSession.bind(this)]);
+        router.delete("/remove-user/:user", <any>[ownerRights, this.removeUser.bind(this)]);	
 		router.post("/login", this.login.bind(this));
 		router.post("/register", this.register.bind(this));
-        router.post("/create-user", <any>[hasAdminRights, this.createUser.bind(this)]);
+        router.post("/create-user", <any>[ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
-        router.post("/meta/:user/:name", <any>[hasAdminRights, this.setVal.bind(this)]);
-        router.post("/meta/:user", <any>[hasAdminRights, this.setData.bind(this)]);	
-        router.put("/approve-activation/:user", <any>[hasAdminRights, this.approveActivation.bind(this)]);
+        router.post("/meta/:user/:name", <any>[adminRights, this.setVal.bind(this)]);
+        router.post("/meta/:user", <any>[adminRights, this.setData.bind(this)]);	
+        router.put("/approve-activation/:user", <any>[ownerRights, this.approveActivation.bind(this)]);
 		
 		// Register the path
         e.use(config.restURL, router);
     }
-
-    
 
 	/**
 	* Called to initialize this controller and its related database objects
@@ -670,6 +669,9 @@ export class UserController extends Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
         var token: def.IRegisterToken = req.body;
+        
+        // Set default privileges
+        token.privileges = token.privileges ? token.privileges : def.UserPrivileges.Regular;
 
 		// Not allowed to create super users
 		if (token.privileges == def.UserPrivileges.SuperAdmin)

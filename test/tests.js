@@ -247,6 +247,80 @@ describe('Testing user API functions', function(){
 					done();
 				});
 		})
+		
+		it('did set user meta data of myself', function(done){
+			agent
+				.post("/users/meta/" + config.adminUser.username ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send( { sister : "sam", brother: "mat" } )
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("User's data has been updated")			
+					done();
+				});	
+		})
+		
+		it('did get user meta "sister"', function(done){
+			agent
+				.get("/users/meta/" + config.adminUser.username + "/sister").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.string(res.body).is("sam")			
+					done();
+				});	
+		})
+		
+		it('did get user meta "brother"', function(done){
+			agent
+				.get("/users/meta/" + config.adminUser.username + "/brother").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.string(res.body).is("mat")
+					done();
+				});	
+		})
+		
+		it('did update user meta "brother" to john', function(done){
+			agent
+				.post("/users/meta/" + config.adminUser.username + "/brother").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.send({value: "john" })
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Value 'brother' has been updated")
+					done();
+				});	
+		})
+		
+		it('did get user meta "brother" and its john', function(done){
+			agent
+				.get("/users/meta/" + config.adminUser.username + "/brother").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.string(res.body).is("john")
+					done();
+				});	
+		})
+		
+		it('did set clear all user data', function(done){
+			agent
+				.post("/users/meta/" + config.adminUser.username).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', sessionCookie)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.bool(res.body.error).isNotTrue()
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("User's data has been updated")			
+					done();
+				});	
+		})
 	})
 	
 	describe('Logging out', function(){	
@@ -895,82 +969,6 @@ describe('Testing user API functions', function(){
 					done();
 				});	
 		})
-		
-		it('did set user meta data of myself', function(done){
-			agent
-				.post("/users/meta/george" ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.send( { sister : "sam", brother: "mat" } )
-				.set('Cookie', sessionCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
-					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("User's data has been updated")			
-					done();
-				});	
-		})
-		
-		it('did get user meta "sister"', function(done){
-			agent
-				.get("/users/meta/george/sister").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', sessionCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.string(res.body).is("sam")			
-					done();
-				});	
-		})
-		
-		it('did get user meta "brother"', function(done){
-			agent
-				.get("/users/meta/george/brother").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', sessionCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.string(res.body).is("mat")
-					done();
-				});	
-		})
-		
-		it('did update user meta "brother" to john', function(done){
-			agent
-				.post("/users/meta/george/brother").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.send({value: "john" })
-				.set('Cookie', sessionCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
-					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Value 'brother' has been updated")
-					done();
-				});	
-		})
-		
-		it('did get user meta "brother" and its john', function(done){
-			agent
-				.get("/users/meta/george/brother").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', sessionCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.string(res.body).is("john")
-					done();
-				});	
-		})
-		
-		it('did set clear all user data', function(done){
-			agent
-				.post("/users/meta/george").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', sessionCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
-					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("User's data has been updated")			
-					done();
-				});	
-		})
-		
-		
 	})
 })
 

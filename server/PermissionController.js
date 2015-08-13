@@ -1,12 +1,13 @@
 var def = require("./Definitions");
 var Users_1 = require("./Users");
+exports.secret = { key: "" };
 /**
-* Checks if the request has admin rights. If not, an error is sent back to the user
+* Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
 * @param {def.AuthRequest} req
 * @param {express.Response} res
 * @param {Function} next
 */
-function hasAdminRights(req, res, next) {
+function ownerRights(req, res, next) {
     var username = req.params.username || req.params.user;
     requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user) {
         next();
@@ -18,9 +19,31 @@ function hasAdminRights(req, res, next) {
         }));
     });
 }
-exports.hasAdminRights = hasAdminRights;
+exports.ownerRights = ownerRights;
 /**
-* Checks for session data and fetches the user
+* Checks if the request has admin rights. If not, an error is sent back to the user
+* @param {def.AuthRequest} req
+* @param {express.Response} res
+* @param {Function} next
+*/
+function adminRights(req, res, next) {
+    Users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+        if (!user)
+            return res.end(JSON.stringify({ message: "You must be logged in to make this request", error: true }));
+        req._user = user;
+        // Allow certain user requests that have the secret key
+        var secretKey = (req.body ? req.body.secret : null);
+        if (secretKey && secretKey == exports.secret.key)
+            next();
+        else if (user.dbEntry.privileges > def.UserPrivileges.Admin)
+            return res.end(JSON.stringify({ message: "You don't have permission to make this request", error: true }));
+        else
+            next();
+    });
+}
+exports.adminRights = adminRights;
+/**
+* Checks for session data and fetches the user. Sends back an error if no user present
 * @param {def.AuthRequest} req
 * @param {express.Response} res
 * @param {Function} next
