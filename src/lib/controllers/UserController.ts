@@ -272,13 +272,11 @@ export class UserController extends Controller
 		// Check the user's activation and forward them onto the admin message page
 		this._userManager.checkActivation(req.query.user, req.query.key).then(function (success: boolean)
 		{
-			res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML("Your account has been activated!") }&status=success` });
-			res.end();
-
+            res.redirect(`${redirectURL}?message=${encodeURIComponent("Your account has been activated!") }&status=success&origin=${encodeURIComponent(req.query.origin)}`);
+		
 		}).catch(function (error: Error)
-		{
-			res.writeHead(302, { 'Location': `${redirectURL}?message=${entities.encodeHTML(error.message) }&status=error` });
-			res.end();
+        {
+            res.redirect(`${redirectURL}?message=${encodeURIComponent(error.message) }&status=error&origin=${encodeURIComponent(req.query.origin)}`);
 		});
 	}
 
@@ -291,9 +289,10 @@ export class UserController extends Controller
 	private resendActivation(req: express.Request, res: express.Response, next: Function): any
 	{
 		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
-		
-		this._userManager.resendActivation(req.params.user).then(function (success)
+        res.setHeader('Content-Type', 'application/json');
+        var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
+
+        this._userManager.resendActivation(req.params.user, origin).then(function (success)
 		{
             return res.end(JSON.stringify(<def.IResponse>{
 				message: "An activation link has been sent, please check your email for further instructions",
@@ -489,7 +488,8 @@ export class UserController extends Controller
 		{
             return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
-				authenticated: (user ? true : false),
+                authenticated: (user ? true : false),
+                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
 				error: false
 			}));
 
@@ -685,7 +685,7 @@ export class UserController extends Controller
 			}));
 			
 
-        that._userManager.createUser(token.username, token.email, token.password, token.privileges, token.meta ).then(function(user)
+        that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user)
         {
             var token: def.IGetUser = {
                 error: false,

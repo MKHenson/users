@@ -211,11 +211,9 @@ var UserController = (function (_super) {
         var redirectURL = this._config.accountRedirectURL;
         // Check the user's activation and forward them onto the admin message page
         this._userManager.checkActivation(req.query.user, req.query.key).then(function (success) {
-            res.writeHead(302, { 'Location': redirectURL + "?message=" + entities.encodeHTML("Your account has been activated!") + "&status=success" });
-            res.end();
+            res.redirect(redirectURL + "?message=" + encodeURIComponent("Your account has been activated!") + "&status=success&origin=" + encodeURIComponent(req.query.origin));
         }).catch(function (error) {
-            res.writeHead(302, { 'Location': redirectURL + "?message=" + entities.encodeHTML(error.message) + "&status=error" });
-            res.end();
+            res.redirect(redirectURL + "?message=" + encodeURIComponent(error.message) + "&status=error&origin=" + encodeURIComponent(req.query.origin));
         });
     };
     /**
@@ -227,7 +225,8 @@ var UserController = (function (_super) {
     UserController.prototype.resendActivation = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        this._userManager.resendActivation(req.params.user).then(function (success) {
+        var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
+        this._userManager.resendActivation(req.params.user, origin).then(function (success) {
             return res.end(JSON.stringify({
                 message: "An activation link has been sent, please check your email for further instructions",
                 error: false
@@ -377,6 +376,7 @@ var UserController = (function (_super) {
             return res.end(JSON.stringify({
                 message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
                 authenticated: (user ? true : false),
+                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
                 error: false
             }));
         }).catch(function (error) {
@@ -526,7 +526,7 @@ var UserController = (function (_super) {
                 message: "You cannot create a user with super admin permissions",
                 error: true
             }));
-        that._userManager.createUser(token.username, token.email, token.password, token.privileges, token.meta).then(function (user) {
+        that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user) {
             var token = {
                 error: false,
                 message: "User " + user.dbEntry.username + " has been created",

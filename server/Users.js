@@ -127,7 +127,7 @@ var UserManager = (function () {
                     resolve();
                 }).catch(function (error) {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser) {
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser) {
                         resolve();
                     }).catch(function (error) {
                         reject(error);
@@ -156,6 +156,7 @@ var UserManager = (function () {
         if (captchaChallenge === void 0) { captchaChallenge = ""; }
         if (meta === void 0) { meta = {}; }
         var that = this;
+        var origin = encodeURIComponent(request.headers["origin"] || request.headers["referer"]);
         return new Promise(function (resolve, reject) {
             // First check if user exists, make sure the details supplied are ok, then create the new user
             that.getUser(username, email).then(function (user) {
@@ -182,13 +183,13 @@ var UserManager = (function () {
                     var newUser = null;
                     captchaChecker.on("data", function (captchaResult) {
                         if (!captchaResult.is_valid)
-                            throw new Error("Your captcha code seems to be wrong. Please try another.");
-                        return that.createUser(username, email, pass, def.UserPrivileges.Regular, meta);
-                    }).then(function (user) {
-                        newUser = user;
-                        return resolve(newUser);
-                    }).catch(function (err) {
-                        return reject(err);
+                            return reject(new Error("Your captcha code seems to be wrong. Please try another."));
+                        that.createUser(username, email, pass, origin, def.UserPrivileges.Regular, meta).then(function (user) {
+                            newUser = user;
+                            return resolve(newUser);
+                        }).catch(function (err) {
+                            return reject(err);
+                        });
                     });
                     // Check for valid captcha
                     captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
@@ -202,11 +203,12 @@ var UserManager = (function () {
     };
     /**
     * Creates the link to send to the user for activation
-    * @param {string} username The username of the user
+    * @param {string} user The user we are activating
+    * @param {string} origin The origin of where the activation link came from
     * @returns {string}
     */
-    UserManager.prototype.createActivationLink = function (user) {
-        return "" + (this._config.ssl ? "https://" : "http://") + this._config.host + ":" + (this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) + this._config.restURL + "/activate-account?key=" + user.dbEntry.registerKey + "&user=" + user.dbEntry.username;
+    UserManager.prototype.createActivationLink = function (user, origin) {
+        return "" + (this._config.ssl ? "https://" : "http://") + this._config.host + ":" + (this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) + this._config.restURL + "/activate-account?key=" + user.dbEntry.registerKey + "&user=" + user.dbEntry.username + "&origin=" + origin;
     };
     /**
     * Creates the link to send to the user for password reset
@@ -265,9 +267,10 @@ var UserManager = (function () {
     /**
     * Attempts to resend the activation link
     * @param {string} username The username of the user
+    * @param {string} origin The origin of where the request came from (this is emailed to the user)
     * @returns {Promise<boolean>}
     */
-    UserManager.prototype.resendActivation = function (username) {
+    UserManager.prototype.resendActivation = function (username, origin) {
         var that = this;
         return new Promise(function (resolve, reject) {
             // Get the user
@@ -283,7 +286,7 @@ var UserManager = (function () {
                     if (error)
                         return reject(error);
                     // Send a message to the user to say they are registered but need to activate their account
-                    var message = "Thank you for registering with Webinate!\n\t\t\t\t\tTo activate your account please click the link below:\n\n\t\t\t\t\t" + that.createActivationLink(user) + "\n\n\t\t\t\t\tThanks\n\t\t\t\t\tThe Webinate Team";
+                    var message = "Thank you for registering with Webinate!\n\t\t\t\t\tTo activate your account please click the link below:\n\n\t\t\t\t\t" + that.createActivationLink(user, origin) + "\n\n\t\t\t\t\tThanks\n\t\t\t\t\tThe Webinate Team";
                     // Setup e-mail data with unicode symbols
                     var mailOptions = {
                         from: that._config.emailFrom,
@@ -497,12 +500,14 @@ var UserManager = (function () {
     * @param {string} user The unique username
     * @param {string} email The unique email
     * @param {string} password The password for the user
+    * @param {string} origin The origin of where the request came from (this is emailed to the user)
     * @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
     * @param {any} meta Any optional data associated with this user
     * @param {boolean} allowAdmin Should this be allowed to create a super user
+
     * @returns {Promise<User>}
     */
-    UserManager.prototype.createUser = function (user, email, password, privilege, meta, allowAdmin) {
+    UserManager.prototype.createUser = function (user, email, password, origin, privilege, meta, allowAdmin) {
         if (privilege === void 0) { privilege = def.UserPrivileges.Regular; }
         if (meta === void 0) { meta = {}; }
         if (allowAdmin === void 0) { allowAdmin = false; }
@@ -547,7 +552,7 @@ var UserManager = (function () {
                     // Assing the ID and pass the user on
                     newUser.dbEntry = result.ops[0];
                     // Send a message to the user to say they are registered but need to activate their account
-                    var message = "Thank you for registering with Webinate!\n                    To activate your account please click the link below:\n\n                    " + that.createActivationLink(newUser) + "\n\n                    Thanks\n                    The Webinate Team";
+                    var message = "Thank you for registering with Webinate!\n                    To activate your account please click the link below:\n\n                    " + that.createActivationLink(newUser, origin) + "\n\n                    Thanks\n                    The Webinate Team";
                     // Setup e-mail data with unicode symbols
                     var mailOptions = {
                         from: that._config.emailFrom,

@@ -5,6 +5,7 @@ import * as bcrypt from "bcryptjs";
 import * as recaptcha from "recaptcha-async";
 import * as nodemailer from "nodemailer";
 import * as bodyParser from "body-parser";
+import * as express from "express";
 
 import * as def from "./Definitions";
 import {SessionManager, Session} from "./Session";
@@ -164,7 +165,7 @@ export class UserManager
                 }).catch(function (error: Error)
                 {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser)
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser)
                     {
                         resolve();
 
@@ -190,9 +191,10 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
-    register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", meta: any = {}, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
+    register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", meta: any = {}, request?: express.Request, response?: express.Response): Promise<User>
 	{
         var that = this;
+        var origin = encodeURIComponent( request.headers["origin"] || request.headers["referer"] );
 
         return new Promise<User>(function (resolve, reject)
         {
@@ -220,18 +222,17 @@ export class UserManager
                     captchaChecker.on("data", function (captchaResult)
                     {
                         if (!captchaResult.is_valid)
-                            throw new Error("Your captcha code seems to be wrong. Please try another.");
+                            return reject( new Error("Your captcha code seems to be wrong. Please try another."));
 
-                        return that.createUser(username, email, pass, def.UserPrivileges.Regular, meta);
-                        
-                    }).then(function(user)
-                    {
-                        newUser = user;
-                        return resolve(newUser);
+                        that.createUser(username, email, pass, origin, def.UserPrivileges.Regular, meta).then(function (user)
+                        {
+                            newUser = user;
+                            return resolve(newUser);
 
-                    }).catch(function (err)
-                    {
-                        return reject(err);
+                        }).catch(function (err: Error)
+                        {
+                            return reject(err);
+                        });
                     });
 
                     // Check for valid captcha
@@ -251,12 +252,13 @@ export class UserManager
 
 	/** 
 	* Creates the link to send to the user for activation
-	* @param {string} username The username of the user
+	* @param {string} user The user we are activating
+    * @param {string} origin The origin of where the activation link came from
 	* @returns {string}
 	*/
-	private createActivationLink( user : User ): string
+	private createActivationLink( user : User, origin : string ): string
 	{
-		return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP)}${this._config.restURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}`;
+        return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) }${this._config.restURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
 	}
 
 	/** 
@@ -332,9 +334,10 @@ export class UserManager
 	/** 
 	* Attempts to resend the activation link
 	* @param {string} username The username of the user
+    * @param {string} origin The origin of where the request came from (this is emailed to the user)
 	* @returns {Promise<boolean>}
 	*/
-    resendActivation(username: string): Promise<boolean>
+    resendActivation(username: string, origin : string): Promise<boolean>
 	{
         var that = this;
 
@@ -362,7 +365,7 @@ export class UserManager
                     var message: string = `Thank you for registering with Webinate!
 					To activate your account please click the link below:
 
-					${that.createActivationLink(user) }
+					${that.createActivationLink(user, origin) }
 
 					Thanks
 					The Webinate Team`;
@@ -658,12 +661,14 @@ export class UserManager
 	* @param {string} user The unique username
 	* @param {string} email The unique email
 	* @param {string} password The password for the user
+    * @param {string} origin The origin of where the request came from (this is emailed to the user)
 	* @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
     * @param {any} meta Any optional data associated with this user
     * @param {boolean} allowAdmin Should this be allowed to create a super user
+
 	* @returns {Promise<User>}
 	*/
-    createUser(user: string, email: string, password: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
+    createUser(user: string, email: string, password: string, origin: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
 	{
 		var that = this;
 		
@@ -713,7 +718,7 @@ export class UserManager
                     var message: string = `Thank you for registering with Webinate!
                     To activate your account please click the link below:
 
-                    ${that.createActivationLink(newUser) }
+                    ${that.createActivationLink(newUser, origin) }
 
                     Thanks
                     The Webinate Team`;
