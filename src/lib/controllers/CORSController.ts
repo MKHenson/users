@@ -19,9 +19,6 @@ export class CORSController extends Controller
     {
         super();
 
-        // Create the router
-        var router = express.Router();
-
         var matches: Array<RegExp> = [];
         for (var i = 0, l = config.approvedDomains.length; i < l; i++)
             matches.push(new RegExp(config.approvedDomains[i]));
@@ -31,20 +28,22 @@ export class CORSController extends Controller
         {
             if ((<http.ServerRequest>req).headers.origin)
             {
+                var matched = false;
                 for (var m = 0, l = matches.length; m < l; m++)
                     if ((<http.ServerRequest>req).headers.origin.match(matches[m]))
                     {
+                        matched = true;
                         res.setHeader('Access-Control-Allow-Origin', (<http.ServerRequest>req).headers.origin);
                         res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
                         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Mime-Type, X-File-Name, Cache-Control');
                         res.setHeader("Access-Control-Allow-Credentials", "true");
                         break;
                     }
+
+                if (!matched)
+                    console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
             }
-            else if ((<http.ServerRequest>req).headers.origin)
-                console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
-
-
+         
             if (req.method === 'OPTIONS')
             {
                 res.status(200);
