@@ -2,7 +2,7 @@
 import bodyParser = require('body-parser');
 import * as http from "http";
 import * as entities from "entities";
-import * as def from "../Definitions";
+import * as users from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
 import {UserManager, User} from "../Users";
@@ -19,7 +19,7 @@ import * as compression from "compression";
 export class BucketController extends Controller
 {
     private _bucketManager: BucketManager;
-    private _config: def.IConfig;
+    private _config: users.IConfig;
     
 	/**
 	* Creates an instance of the user manager
@@ -27,7 +27,7 @@ export class BucketController extends Controller
 	* @param {mongodb.Collection} sessionCollection The mongo collection that stores the session data
 	* @param {def.IConfig} The config options of this manager
 	*/
-    constructor(e: express.Express, config: def.IConfig)
+    constructor(e: express.Express, config: users.IConfig)
     {
         super();
 
@@ -68,7 +68,7 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private verifyTargetValue(req: def.AuthRequest, res: express.Response, next: Function): any
+    private verifyTargetValue(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         var value = parseInt(req.params.value);
@@ -76,12 +76,12 @@ export class BucketController extends Controller
         if (!req.params.target || req.params.target.trim() == "")
         {
             res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid user to target", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid user to target", error: true }));
         }
         if (!req.params.value || req.params.value.trim() == "" || isNaN(value))
         {
             res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid value", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid value", error: true }));
         }
 
         // Make sure the user exists
@@ -90,7 +90,7 @@ export class BucketController extends Controller
             if (!user)
             {
                 res.setHeader('Content-Type', 'application/json');
-                return res.end(JSON.stringify(<def.IResponse>{ message: `Could not find the user '${req.params.target}'`, error: true }));
+                return res.end(JSON.stringify(<users.IResponse>{ message: `Could not find the user '${req.params.target}'`, error: true }));
             }
             else
             {
@@ -101,7 +101,7 @@ export class BucketController extends Controller
         }).catch(function (err)
         {
             res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
 
@@ -111,20 +111,20 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private updateCalls(req: def.AuthRequest, res: express.Response, next: Function): any
+    private updateCalls(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
-        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ apiCallsUsed: value }).then(function ()
+        manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ apiCallsUsed: value }).then(function ()
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
 
@@ -134,20 +134,20 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private updateMemory(req: def.AuthRequest, res: express.Response, next: Function): any
+    private updateMemory(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);        
         var manager = BucketManager.get;
 
-        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ memoryUsed: value }).then(function ()
+        manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ memoryUsed: value }).then(function ()
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
 
@@ -157,20 +157,20 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private updateAllocatedCalls(req: def.AuthRequest, res: express.Response, next: Function): any
+    private updateAllocatedCalls(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
-        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ apiCallsAllocated: value }).then(function ()
+        manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ apiCallsAllocated: value }).then(function ()
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
 
@@ -180,20 +180,20 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private updateAllocatedMemory(req: def.AuthRequest, res: express.Response, next: Function): any
+    private updateAllocatedMemory(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
-        manager.updateStorage(req._target.dbEntry.username, <def.IStorageStats>{ memoryAllocated: value }).then(function ()
+        manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ memoryAllocated: value }).then(function ()
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
 
@@ -203,7 +203,7 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private removeFiles(req: def.AuthRequest, res: express.Response, next: Function): any
+    private removeFiles(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -211,13 +211,13 @@ export class BucketController extends Controller
         var files: Array<string> = null;
 
         if (!req.params.files || req.params.files.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the files to remove", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the files to remove", error: true }));
 
         files = req.params.files.split(",");
 
         manager.removeFilesById(files, req._user.dbEntry.username).then(function (numRemoved)
         {
-            return res.end(JSON.stringify(<def.IRemoveFiles>{
+            return res.end(JSON.stringify(<users.IRemoveFiles>{
                 message: `Removed [${numRemoved.length}] files`,
                 error: false,
                 data:numRemoved
@@ -225,7 +225,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -238,16 +238,16 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private renameFile(req: def.AuthRequest, res: express.Response, next: Function): any
+    private renameFile(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         
         if (!req.params.file || req.params.file.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the file to rename", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the file to rename", error: true }));
         if (!req.body || !req.body.name || req.body.name.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the new name of the file", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the new name of the file", error: true }));
 
         manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file)
         {
@@ -258,14 +258,14 @@ export class BucketController extends Controller
 
         }).then(function (file)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: `Renamed file to '${req.body.name}'`,
                 error: false
             }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -278,7 +278,7 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private removeBuckets(req: def.AuthRequest, res: express.Response, next: Function): any
+    private removeBuckets(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -286,13 +286,13 @@ export class BucketController extends Controller
         var buckets: Array<string> = null;
 
         if (!req.params.buckets || req.params.buckets.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify the buckets to remove", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the buckets to remove", error: true }));
 
         buckets = req.params.buckets.split(",");
 
         manager.removeBucketsByName(buckets, req._user.dbEntry.username).then(function (numRemoved)
         {
-            return res.end(JSON.stringify(<def.IRemoveFiles>{
+            return res.end(JSON.stringify(<users.IRemoveFiles>{
                 message: `Removed [${numRemoved.length}] buckets`,
                 error: false,
                 data: numRemoved
@@ -300,7 +300,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -313,7 +313,7 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private getStats(req: def.AuthRequest, res: express.Response, next: Function): any
+    private getStats(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -321,7 +321,7 @@ export class BucketController extends Controller
 
         manager.getUserStats(req._user.dbEntry.username).then(function (stats)
         {
-            return res.end(JSON.stringify(<def.IGetUserStorageData>{
+            return res.end(JSON.stringify(<users.IGetUserStorageData>{
                 message: `Successfully retrieved ${req._user.dbEntry.username}'s stats`,
                 error: false,
                 data: stats
@@ -329,7 +329,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -342,15 +342,15 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private getFile(req: def.AuthRequest, res: express.Response, next: Function): any
+    private getFile(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         var manager = BucketManager.get;
         var fileID = req.params.id;
-        var file: def.IFileEntry = null;
+        var file: users.IFileEntry = null;
         var cache = this._config.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
 
         
         manager.getFile(fileID).then(function (iFile)
@@ -361,7 +361,7 @@ export class BucketController extends Controller
             if (cache)
                 res.setHeader("Cache-Control", "public, max-age=" + cache);
 
-            manager.downloadFile(req, res, file);
+            manager.downloadFile(<express.Request><Express.Request>req, res, file);
             manager.incrementAPI(file.user);
 
         }).catch(function (err)
@@ -376,17 +376,17 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private makePublic(req: def.AuthRequest, res: express.Response, next: Function): any
+    private makePublic(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         res.setHeader('Content-Type', 'application/json');
 
         var manager = BucketManager.get;
         var fileID = req.params.id;
-        var file: def.IFileEntry = null;
+        var file: users.IFileEntry = null;
         var cache = this._config.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
 
 
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
@@ -395,11 +395,11 @@ export class BucketController extends Controller
 
         }).then(function (iFile)
         {
-            return res.end(JSON.stringify(<def.IGetFile>{ message: `File is now public`, error: false, data: iFile }));
+            return res.end(JSON.stringify(<users.IGetFile>{ message: `File is now public`, error: false, data: iFile }));
 
         }).catch(function (err)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -412,17 +412,17 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private makePrivate(req: def.AuthRequest, res: express.Response, next: Function): any
+    private makePrivate(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         res.setHeader('Content-Type', 'application/json');
 
         var manager = BucketManager.get;
         var fileID = req.params.id;
-        var file: def.IFileEntry = null;
+        var file: users.IFileEntry = null;
         var cache = this._config.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: `Please specify a file ID`, error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
 
 
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
@@ -431,11 +431,11 @@ export class BucketController extends Controller
 
         }).then(function (iFile)
         {
-            return res.end(JSON.stringify(<def.IGetFile>{ message: `File is now private`, error: false, data: iFile }));
+            return res.end(JSON.stringify(<users.IGetFile>{ message: `File is now private`, error: false, data: iFile }));
 
         }).catch(function (err)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -448,7 +448,7 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private getFiles(req: def.AuthRequest, res: express.Response, next: Function): any
+    private getFiles(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -456,10 +456,10 @@ export class BucketController extends Controller
         var numFiles = 0;
         var index = parseInt(req.query.index);
         var limit = parseInt(req.query.limit);
-        var bucketEntry: def.IBucketEntry;
+        var bucketEntry: users.IBucketEntry;
 
         if (!req.params.bucket || req.params.bucket.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid bucket name", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid bucket name", error: true }));
 
         manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket)
         {
@@ -476,7 +476,7 @@ export class BucketController extends Controller
 
         }).then(function (files)
         {
-            return res.end(JSON.stringify(<def.IGetFiles>{
+            return res.end(JSON.stringify(<users.IGetFiles>{
                 message: `Found [${numFiles}] files`,
                 error: false,
                 data: files,
@@ -485,7 +485,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -498,7 +498,7 @@ export class BucketController extends Controller
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-    private getBuckets(req: def.AuthRequest, res: express.Response, next: Function): any
+    private getBuckets(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         var user = req.params.user;
 
@@ -509,7 +509,7 @@ export class BucketController extends Controller
 
         manager.getBucketEntries(user).then(function (buckets)
         {
-            return res.end(JSON.stringify(<def.IGetBuckets>{
+            return res.end(JSON.stringify(<users.IGetBuckets>{
                 message: `Found [${buckets.length}] buckets`,
                 error: false,
                 data: buckets,
@@ -518,7 +518,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -531,21 +531,21 @@ export class BucketController extends Controller
    * @param {express.Response} res
    * @param {Function} next
    */
-    private createStats(req: def.AuthRequest, res: express.Response, next: Function): any
+    private createStats(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         manager.createUserStats(req.params.target).then(function (stats)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: `Stats for the user '${req.params.target}' have been created`,
                 error: false
             }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -566,7 +566,7 @@ export class BucketController extends Controller
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-    private createBucket(req: def.AuthRequest, res: express.Response, next: Function): any
+    private createBucket(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -575,11 +575,11 @@ export class BucketController extends Controller
         var bucketName: string = req.params.name;
 
         if (!username || username.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid username", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid username", error: true }));
         if (!bucketName || bucketName.trim() == "")
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a valid name", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid name", error: true }));
         if (!this.alphaNumericDashSpace(bucketName))
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please only use safe characters", error: true }));
+            return res.end(JSON.stringify(<users.IResponse>{ message: "Please only use safe characters", error: true }));
 
         UserManager.get.getUser(username).then(function(user)
         {
@@ -597,14 +597,14 @@ export class BucketController extends Controller
 
         }).then(function (bucket)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: `Bucket '${bucketName}' created`,
                 error: false
             }));
 
         }).catch(function (err: Error)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
+            return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
             }));
@@ -617,14 +617,14 @@ export class BucketController extends Controller
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-    private uploadUserFiles(req: def.AuthRequest, res: express.Response, next: Function): any
+    private uploadUserFiles(req: users.AuthRequest, res: express.Response, next: Function): any
     {
         var form = new multiparty.Form();
         var successfulParts = 0;
         var numParts = 0;
         var completedParts = 0;
         var closed = false;
-        var uploadedTokens: Array<def.IUploadToken> = [];
+        var uploadedTokens: Array<users.IUploadToken> = [];
         var manager = BucketManager.get;
         var that = this;
         var username = req._user.dbEntry.username;
@@ -634,18 +634,18 @@ export class BucketController extends Controller
 
         var bucketName = req.params.bucket;
         if (!bucketName || bucketName.trim() == "")
-            return res.end(JSON.stringify(<def.IUploadResponse>{ message: `Please specify a bucket`, error: true, tokens: [] }));
+            return res.end(JSON.stringify(<users.IUploadResponse>{ message: `Please specify a bucket`, error: true, tokens: [] }));
 
         manager.getIBucket(bucketName, username).then(function (bucketEntry)
         {
             if (!bucketEntry)
-                return res.end(JSON.stringify(<def.IUploadResponse>{ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }));
+                return res.end(JSON.stringify(<users.IUploadResponse>{ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }));
 
             // Parts are emitted when parsing the form
             form.on('part', function (part: multiparty.Part)
             {
                 // Create a new upload token
-                var newUpload: def.IUploadToken = {
+                var newUpload: users.IUploadToken = {
                     file: "",
                     field: (!part.name ? "" : part.name),
                     filename: part.filename,
@@ -699,7 +699,7 @@ export class BucketController extends Controller
             {
                 if (closed && completedParts == numParts)
                 {
-                    return res.end(JSON.stringify(<def.IUploadResponse>{
+                    return res.end(JSON.stringify(<users.IUploadResponse>{
                         message: `Upload complete. [${successfulParts}] Files have been saved.`,
                         error: false,
                         tokens: uploadedTokens
@@ -715,11 +715,11 @@ export class BucketController extends Controller
             });
 
             // Parse req
-            form.parse(req);
+            form.parse(<express.Request><Express.Request>req);
 
         }).catch(function (err)
         {
-            return res.end(JSON.stringify(<def.IUploadResponse>{ message: err.toString(), error: true, tokens: [] }));
+            return res.end(JSON.stringify(<users.IUploadResponse>{ message: err.toString(), error: true, tokens: [] }));
         });
     }
 

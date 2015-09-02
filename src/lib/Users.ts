@@ -9,7 +9,7 @@ import * as express from "express";
 import * as winston from "winston";
 
 import {CommsController, EventType} from "./controllers/CommsController";
-import * as def from "./Definitions";
+import * as def from "webinate-users";
 import {SessionManager, Session} from "./Session";
 import {BucketManager} from "./BucketManager";
 

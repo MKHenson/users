@@ -1,6 +1,6 @@
 ﻿import * as mongodb from "mongodb";
 import * as http from "http";
-import * as def from "../Definitions";
+import * as def from "webinate-users";
 import {Controller} from "./Controller"
 import express = require("express");
 

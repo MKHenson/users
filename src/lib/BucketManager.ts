@@ -1,4 +1,4 @@
-﻿import * as def from "./Definitions";
+﻿import * as users from "webinate-users";
 import * as fs from "fs";
 import * as gcloud from "gcloud";
 import * as http from "http";
@@ -18,7 +18,7 @@ export class BucketManager
     private static API_CALLS_ALLOCATED: number = 20000; //20,000
 
     private static _singleton: BucketManager;
-    private _config: def.IConfig;
+    private _config: users.IConfig;
     private _gcs: gcloud.IGCS;
     private _buckets: mongodb.Collection;
     private _files: mongodb.Collection;
@@ -27,7 +27,7 @@ export class BucketManager
     private _unzipper: zlib.Gunzip;
     private _deflater: zlib.Deflate;
 
-    constructor(buckets: mongodb.Collection, files: mongodb.Collection, stats: mongodb.Collection, config: def.IConfig)
+    constructor(buckets: mongodb.Collection, files: mongodb.Collection, stats: mongodb.Collection, config: users.IConfig)
     {
         BucketManager._singleton = this;
         this._gcs = gcloud.storage({ projectId: config.bucket.projectId, keyFilename: config.bucket.keyFile });
@@ -44,7 +44,7 @@ export class BucketManager
     * @param {string} user [Optional] Specify the user. If none provided, then all buckets are retrieved
     * @returns {Promise<Array<def.IBucketEntry>>}
     */
-    getBucketEntries(user? : string): Promise<Array<def.IBucketEntry>>
+    getBucketEntries(user? : string): Promise<Array<users.IBucketEntry>>
     {
         var that = this;
         var gcs = this._gcs;
@@ -52,7 +52,7 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            var search: def.IBucketEntry = {};
+            var search: users.IBucketEntry = {};
             if (user)
                 search.user = user;
 
@@ -63,7 +63,7 @@ export class BucketManager
                     return reject(err);
                 else
                 {
-                    result.toArray(function(err, buckets: Array<def.IBucketEntry>)
+                    result.toArray(function(err, buckets: Array<users.IBucketEntry>)
                     {
                         if (err)
                             return reject(err);
@@ -80,7 +80,7 @@ export class BucketManager
     * @param {IFileEntry} searchQuery The search query to idenfify files
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    numFiles(searchQuery: def.IFileEntry): Promise<number>
+    numFiles(searchQuery: users.IFileEntry): Promise<number>
     {
         var files = this._files;
         return new Promise(function (resolve, reject)
@@ -101,7 +101,7 @@ export class BucketManager
     * @param {any} searchQuery The search query to idenfify files
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    getFiles(searchQuery: any, startIndex?: number, limit?: number): Promise<Array<def.IFileEntry>>
+    getFiles(searchQuery: any, startIndex?: number, limit?: number): Promise<Array<users.IFileEntry>>
     {
         var that = this;
         var gcs = this._gcs;
@@ -116,7 +116,7 @@ export class BucketManager
                     return reject(err);
                 else
                 {
-                    result.toArray(function (err, files: Array<def.IFileEntry>)
+                    result.toArray(function (err, files: Array<users.IFileEntry>)
                     {
                         if (err)
                             return reject(err);
@@ -133,9 +133,9 @@ export class BucketManager
     * @param {IBucketEntry} bucket Specify the bucket from which he files belong to
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    getFilesByBucket(bucket: def.IBucketEntry, startIndex?: number, limit?: number): Promise<Array<def.IFileEntry>>
+    getFilesByBucket(bucket: users.IBucketEntry, startIndex?: number, limit?: number): Promise<Array<users.IFileEntry>>
     {
-        var searchQuery: def.IFileEntry = { bucketId: bucket.identifier };
+        var searchQuery: users.IFileEntry = { bucketId: bucket.identifier };
         return this.getFiles(searchQuery, startIndex, limit);
     }
 
@@ -144,7 +144,7 @@ export class BucketManager
     * @param {string} user The user whos data we are fetching
     * @returns {Promise<def.IFileEntry>}
     */
-    getUserStats(user?: string): Promise<def.IStorageStats>
+    getUserStats(user?: string): Promise<users.IStorageStats>
     {
         var that = this;
         var gcs = this._gcs;
@@ -153,7 +153,7 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Save the new entry into the database
-            stats.findOne(<def.IStorageStats>{ user: user }, function (err, result: def.IStorageStats)
+            stats.findOne(<users.IStorageStats>{ user: user }, function (err, result: users.IStorageStats)
             {
                 if (err)
                     return reject(err);
@@ -170,14 +170,14 @@ export class BucketManager
     * @param {string} user The user associated with this bucket
     * @returns {Promise<IStorageStats>}
     */
-    createUserStats(user: string): Promise<def.IStorageStats>
+    createUserStats(user: string): Promise<users.IStorageStats>
     {
         var that = this;
         var stats = this._stats;
 
         return new Promise(function (resolve, reject)
         {
-            var storage: def.IStorageStats = {
+            var storage: users.IStorageStats = {
                 user: user,
                 apiCallsAllocated: BucketManager.API_CALLS_ALLOCATED,
                 memoryAllocated: BucketManager.MEMORY_ALLOCATED,
@@ -185,7 +185,7 @@ export class BucketManager
                 memoryUsed: 0
             }
 
-            stats.save(storage, function (err, result: def.IStorageStats)
+            stats.save(storage, function (err, result: users.IStorageStats)
             {
                 if (err)
                     return reject(err);
@@ -207,7 +207,7 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            var storage: def.IStorageStats = { user: user };
+            var storage: users.IStorageStats = { user: user };
             stats.remove(storage, function (err, result: number)
             {
                 if (err)
@@ -274,7 +274,7 @@ export class BucketManager
                         return reject(new Error(`Could not connect to storage system: '${err.message}'`));
                     else
                     {
-                        var newEntry: def.IBucketEntry = {
+                        var newEntry: users.IBucketEntry = {
                             name: name,
                             identifier: bucketID,
                             created: Date.now(),
@@ -283,14 +283,14 @@ export class BucketManager
                         }
 
                         // Save the new entry into the database
-                        bucketCollection.save(newEntry, function (err, result: def.IBucketEntry)
+                        bucketCollection.save(newEntry, function (err, result: users.IBucketEntry)
                         {
                             if (err)
                                 return reject(err);
                             else
                             {
                                 // Increments the API calls
-                                stats.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ apiCallsUsed: 1 } }, function (err, result)
+                                stats.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } }, function (err, result)
                                 {
                                     return resolve(bucket);
                                 });
@@ -328,7 +328,7 @@ export class BucketManager
 
                 var toRemove = [];
 
-                cursor.toArray(function (err, buckets: Array<def.IBucketEntry>)
+                cursor.toArray(function (err, buckets: Array<users.IBucketEntry>)
                 {
                     if (err)
                         return reject(err);
@@ -374,7 +374,7 @@ export class BucketManager
         // Create the search query for each of the files
         var searchQuery = { $or: [], user: user };
         for (var i = 0, l = buckets.length; i < l; i++)
-            searchQuery.$or.push(<def.IBucketEntry>{ name: buckets[i] });
+            searchQuery.$or.push(<users.IBucketEntry>{ name: buckets[i] });
 
         return this.removeBuckets(searchQuery);
     }
@@ -386,13 +386,13 @@ export class BucketManager
     */
     removeBucketsByUser( user : string ): Promise<Array<string>>
     {
-        return this.removeBuckets(<def.IBucketEntry>{ user: user });
+        return this.removeBuckets(<users.IBucketEntry>{ user: user });
     }
     
     /**
     * Deletes the bucket from storage and updates the databases
     */
-    private deleteBucket(bucketEntry: def.IBucketEntry): Promise<def.IBucketEntry>
+    private deleteBucket(bucketEntry: users.IBucketEntry): Promise<users.IBucketEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -400,7 +400,7 @@ export class BucketManager
         var files = this._files;
         var stats = this._stats;
 
-        return new Promise<def.IBucketEntry>(function (resolve, reject)
+        return new Promise<users.IBucketEntry>(function (resolve, reject)
         {
             that.removeFilesByBucket(bucketEntry.identifier).then(function (files)
             {
@@ -412,10 +412,10 @@ export class BucketManager
                     else
                     {
                         // Remove the bucket entry
-                        bucketCollection.remove(<def.IBucketEntry>{ _id: bucketEntry._id }, function (err, result)
+                        bucketCollection.remove(<users.IBucketEntry>{ _id: bucketEntry._id }, function (err, result)
                         {
                             // Remove the bucket entry
-                            stats.update(<def.IStorageStats>{ user: bucketEntry.user }, { $inc: <def.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
+                            stats.update(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
                             {
                                 return resolve(bucketEntry);
                             });
@@ -433,7 +433,7 @@ export class BucketManager
     /**
     * Deletes the file from storage and updates the databases
     */
-    private deleteFile(fileEntry: def.IFileEntry): Promise<def.IFileEntry>
+    private deleteFile(fileEntry: users.IFileEntry): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -457,19 +457,19 @@ export class BucketManager
                         return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`));
                                    
                     // Update the bucket data usage
-                    bucketCollection.update(<def.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <def.IBucketEntry>{ memoryUsed: -fileEntry.size } }, function (err, result)
+                    bucketCollection.update(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } }, function (err, result)
                     {
                         if (err)
                             return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
 
                         // Remove the file entries
-                        files.remove(<def.IFileEntry>{ _id: fileEntry._id }, function (err, result)
+                        files.remove(<users.IFileEntry>{ _id: fileEntry._id }, function (err, result)
                         {
                             if (err)
                                 return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
 
                             // Update the stats usage
-                            stats.update(<def.IStorageStats>{ user: bucketEntry.user }, { $inc: <def.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } }, function (err, result)
+                            stats.update(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } }, function (err, result)
                             {
                                 if (err)
                                     return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
@@ -512,7 +512,7 @@ export class BucketManager
                     return reject(err);
                 
                 // For each file entry
-                cursor.toArray(function (err, fileEntries: Array<def.IFileEntry>)
+                cursor.toArray(function (err, fileEntries: Array<users.IFileEntry>)
                 {
                     for (var i = 0, l = fileEntries.length; i < l; i++)
                     {
@@ -554,10 +554,10 @@ export class BucketManager
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)
-            searchQuery.$or.push(<def.IFileEntry>{ identifier: fileIDs[i] });
+            searchQuery.$or.push(<users.IFileEntry>{ identifier: fileIDs[i] });
 
         if (user)
-            (<def.IFileEntry>searchQuery).user = user;
+            (<users.IFileEntry>searchQuery).user = user;
 
         return this.removeFiles(searchQuery);
     }
@@ -573,7 +573,7 @@ export class BucketManager
             return Promise.reject(new Error("Please specify a valid bucket"));
         
         // Create the search query for each of the files
-        var searchQuery = { $or: <Array<def.IFileEntry>>[{ bucketId: bucket }, { bucketName: bucket }] };
+        var searchQuery = { $or: <Array<users.IFileEntry>>[{ bucketId: bucket }, { bucketName: bucket }] };
         return this.removeFiles(searchQuery);
     }
 
@@ -583,11 +583,11 @@ export class BucketManager
     * @param {string} user The username associated with the bucket (Only applicable if bucket is a name and not an ID)
     * @returns {IBucketEntry}
     */
-    getIBucket(bucket: string, user?: string): Promise<def.IBucketEntry>
+    getIBucket(bucket: string, user?: string): Promise<users.IBucketEntry>
     {
         var that = this;
         var bucketCollection = this._buckets;
-        var searchQuery: def.IBucketEntry = {};
+        var searchQuery: users.IBucketEntry = {};
         
         if (user)
         {
@@ -597,9 +597,9 @@ export class BucketManager
         else
             searchQuery.identifier = bucket;
 
-        return new Promise<def.IBucketEntry>(function (resolve, reject)
+        return new Promise<users.IBucketEntry>(function (resolve, reject)
         {
-            bucketCollection.findOne(searchQuery, function (err, result: def.IBucketEntry)
+            bucketCollection.findOne(searchQuery, function (err, result: users.IBucketEntry)
             {
                 if (err)
                     return reject(err);
@@ -617,15 +617,15 @@ export class BucketManager
     * @param {Part} part 
     * @returns {Promise<def.IStorageStats>}
     */
-    private canUpload(user: string, part: multiparty.Part): Promise<def.IStorageStats>
+    private canUpload(user: string, part: multiparty.Part): Promise<users.IStorageStats>
     {
         var that = this;
         var bucketCollection = this._buckets;
         var stats = this._stats;
 
-        return new Promise<def.IStorageStats>(function (resolve, reject)
+        return new Promise<users.IStorageStats>(function (resolve, reject)
         {
-            stats.findOne(<def.IStorageStats>{ user: user }, function (err, result: def.IStorageStats )
+            stats.findOne(<users.IStorageStats>{ user: user }, function (err, result: users.IStorageStats )
             {
                 if (err)
                     return reject(err);
@@ -653,9 +653,9 @@ export class BucketManager
         var that = this;
         var stats = this._stats;
 
-        return new Promise<def.IStorageStats>(function (resolve, reject)
+        return new Promise<users.IStorageStats>(function (resolve, reject)
         {
-            stats.findOne(<def.IStorageStats>{ user: user }, function (err, result: def.IStorageStats)
+            stats.findOne(<users.IStorageStats>{ user: user }, function (err, result: users.IStorageStats)
             {
                 if (err)
                     return reject(err);
@@ -679,9 +679,9 @@ export class BucketManager
         var that = this;
         var stats = this._stats;
 
-        return new Promise<def.IStorageStats>(function (resolve, reject)
+        return new Promise<users.IStorageStats>(function (resolve, reject)
         {
-            stats.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
+            stats.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
             {
                 if (err)
                     return reject(err);
@@ -696,10 +696,10 @@ export class BucketManager
     * @param {IFileEntry} file
     * @returns {Promise<IFileEntry>}
     */
-    makeFilePublic(file: def.IFileEntry): Promise<def.IFileEntry>
+    makeFilePublic(file: users.IFileEntry): Promise<users.IFileEntry>
     {
         var that = this;
-        return new Promise<def.IFileEntry>(function (resolve, reject)
+        return new Promise<users.IFileEntry>(function (resolve, reject)
         {
             that.withinAPILimit(file.user).then(function (val)
             {
@@ -717,7 +717,7 @@ export class BucketManager
                     if (err)
                         return reject(err);
 
-                    that._files.update(<def.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <def.IFileEntry>{ isPublic: true } }, function (err, result)
+                    that._files.update(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: true } }, function (err, result)
                     {
                         if (err)
                             return reject(err);
@@ -739,10 +739,10 @@ export class BucketManager
     * @param {IFileEntry} file
     * @returns {Promise<IFileEntry>}
     */
-    makeFilePrivate(file: def.IFileEntry): Promise<def.IFileEntry>
+    makeFilePrivate(file: users.IFileEntry): Promise<users.IFileEntry>
     {
         var that = this;
-        return new Promise<def.IFileEntry>(function (resolve, reject)
+        return new Promise<users.IFileEntry>(function (resolve, reject)
         {
             that.withinAPILimit(file.user).then(function (val)
             {
@@ -760,7 +760,7 @@ export class BucketManager
                     if (err)
                         return reject(err);
 
-                    that._files.update(<def.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <def.IFileEntry>{ isPublic: false } }, function (err, result)
+                    that._files.update(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: false } }, function (err, result)
                     {
                         if (err)
                             return reject(err);
@@ -785,15 +785,15 @@ export class BucketManager
     * @param {string} user The username
     * @returns {Promise<IFileEntry>}
     */
-    private registerFile(fileID: string, bucket: def.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean): Promise<def.IFileEntry>
+    private registerFile(fileID: string, bucket: users.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
 
-        return new Promise<def.IFileEntry>(function (resolve, reject)
+        return new Promise<users.IFileEntry>(function (resolve, reject)
         {
-            var entry: def.IFileEntry = {
+            var entry: users.IFileEntry = {
                 name: part.filename,
                 user: user,
                 identifier: fileID,
@@ -836,15 +836,15 @@ export class BucketManager
     * @param {string} makePublic Makes this uploaded file public to the world
     * @returns {Promise<any>}
     */
-    uploadStream(part: multiparty.Part, bucketEntry: def.IBucketEntry, user: string, makePublic: boolean = true ): Promise<def.IFileEntry>
+    uploadStream(part: multiparty.Part, bucketEntry: users.IBucketEntry, user: string, makePublic: boolean = true ): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
         var statCollection = this._stats;
-        var storageStats: def.IStorageStats;
+        var storageStats: users.IStorageStats;
 
-        return new Promise<def.IFileEntry>(function (resolve, reject)
+        return new Promise<users.IFileEntry>(function (resolve, reject)
         {
             that.canUpload(user, part).then(function(stats)
             {
@@ -883,9 +883,9 @@ export class BucketManager
 
                 }).on('complete', function ()
                 {
-                    bucketCollection.update(<def.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <def.IBucketEntry>{ memoryUsed: part.byteCount } }, function (err, result)
+                    bucketCollection.update(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: part.byteCount } }, function (err, result)
                     {
-                        statCollection.update(<def.IStorageStats>{ user: user }, { $inc: <def.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
+                        statCollection.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
                         {
                             that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file)
                             {
@@ -921,19 +921,19 @@ export class BucketManager
     * @param {string} user Optionally specify the user of the file
     * @returns {Promise<IFileEntry>}
     */
-    getFile(fileID: string, user? : string ): Promise<def.IFileEntry>
+    getFile(fileID: string, user? : string ): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
 
-        return new Promise<def.IFileEntry>(function (resolve, reject)
+        return new Promise<users.IFileEntry>(function (resolve, reject)
         {
-            var searchQuery: def.IFileEntry = { identifier: fileID };
+            var searchQuery: users.IFileEntry = { identifier: fileID };
             if (user)
                 searchQuery.user = user;
 
-            files.findOne(searchQuery, function (err, result: def.IFileEntry)
+            files.findOne(searchQuery, function (err, result: users.IFileEntry)
             {
                 if (err)
                     return reject(err);
@@ -951,17 +951,17 @@ export class BucketManager
     * @param {string} name The new name of the file
     * @returns {Promise<IFileEntry>}
     */
-    renameFile(file: def.IFileEntry, name: string): Promise<def.IFileEntry>
+    renameFile(file: users.IFileEntry, name: string): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
 
-        return new Promise<def.IFileEntry>(function (resolve, reject)
+        return new Promise<users.IFileEntry>(function (resolve, reject)
         {
             that.incrementAPI(file.user).then(function()
             {
-                files.update(<def.IFileEntry>{ _id: file._id }, { $set: <def.IFileEntry>{ name : name } }, function (err, result)
+                files.update(<users.IFileEntry>{ _id: file._id }, { $set: <users.IFileEntry>{ name : name } }, function (err, result)
                 {
                     if (err)
                         reject(err);
@@ -979,7 +979,7 @@ export class BucketManager
     * @param {Response} response The response stream to return the data
     * @param {IFileEntry} file The file to download
     */
-    downloadFile(request: express.Request, response: express.Response, file: def.IFileEntry)
+    downloadFile(request: express.Request, response: express.Response, file: users.IFileEntry)
     {
         var that = this;
         var gcs = this._gcs;
@@ -1043,14 +1043,14 @@ export class BucketManager
     * @param {string} fileID The file ID of the file on the bucket
     * @returns {Promise<number>} Returns the number of results affected
     */
-    updateStorage(user: string, value: def.IStorageStats): Promise<number>
+    updateStorage(user: string, value: users.IStorageStats): Promise<number>
     {
         var that = this;
         var stats = this._stats;
 
         return new Promise<number>(function (resolve, reject)
         {
-            stats.update(<def.IStorageStats>{ user: user }, { $set: value }, function (err, numAffected)
+            stats.update(<users.IStorageStats>{ user: user }, { $set: value }, function (err, numAffected)
             {
                 if (err)
                     return reject(err);
@@ -1065,7 +1065,7 @@ export class BucketManager
     /**
     * Creates the bucket manager singleton
     */
-    static create(buckets: mongodb.Collection, files: mongodb.Collection, stats: mongodb.Collection, config: def.IConfig): BucketManager
+    static create(buckets: mongodb.Collection, files: mongodb.Collection, stats: mongodb.Collection, config: users.IConfig): BucketManager
     {
         return new BucketManager(buckets, files, stats, config);
     }

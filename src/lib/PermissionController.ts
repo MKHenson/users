@@ -3,7 +3,7 @@ import bodyParser = require('body-parser');
 
 // NEW ES6 METHOD
 import * as http from "http";
-import * as def from "./Definitions";
+import * as def from "webinate-users";
 import {UserManager, User} from "./Users";
 
 export var secret = { key : "" };
@@ -40,7 +40,7 @@ export function ownerRights(req: def.AuthRequest, res: express.Response, next: F
 */
 export function adminRights(req: def.AuthRequest, res: express.Response, next: Function): any
 {
-    UserManager.get.loggedIn(req, res).then(function (user)
+    UserManager.get.loggedIn(<express.Request><Express.Request>req, res).then(function (user)
     {
         if (!user)
             return res.end(JSON.stringify(<def.IResponse>{ message: "You must be logged in to make this request", error: true }));
@@ -66,7 +66,7 @@ export function adminRights(req: def.AuthRequest, res: express.Response, next: F
 */
 export function identifyUser(req: def.AuthRequest, res: express.Response, next: Function): any
 {
-    UserManager.get.loggedIn(req, res).then(function (user)
+    UserManager.get.loggedIn(<express.Request><Express.Request>req, res).then(function (user)
     {
         if (!user)
         {
@@ -98,7 +98,7 @@ export function requestHasPermission(level: def.UserPrivileges, req: def.AuthReq
 {
     return new Promise(function (resolve, reject)
     {
-        UserManager.get.loggedIn(req, res).then(function (user)
+        UserManager.get.loggedIn(<express.Request><Express.Request>req, res).then(function (user)
         {
             if (!user)
                 return reject(new Error("You must be logged in to make this request"));

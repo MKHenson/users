@@ -1,14 +1,37 @@
-﻿declare module UsersInterface
+﻿///<reference path='../definitions/express.d.ts' />
+
+declare module UsersInterface
 {
-    /*
-    * An interface to describe the data stored in the database from the sessions
-    */
-    export interface ISessionEntry
+    export class User
     {
-        _id: any;
-        sessionId: string;
-        data: any;
-        expiration: number;
+        dbEntry: IUserEntry;
+    }
+
+    export module SocketEvents
+    {
+        /*
+        * The base interface for all socket events
+        */
+        export interface IEvent
+        {
+            eventType: number;
+        }
+
+        /*
+        * The token used for logging in
+        */
+        export interface ILogin extends IEvent
+        {
+            username: string;
+        }
+
+        /*
+        * The token used for logging out
+        */
+        export interface ILogout extends IEvent
+        {
+            username: string;
+        }
     }
 
     /*
@@ -22,10 +45,153 @@
         password?: string;
         registerKey?: string;
         sessionId?: string;
+        createdOn?: number;
         lastLoggedIn?: number;
         privileges?: UserPrivileges;
         passwordTag?: string;
-        data?: any;
+        meta?: any;
+    }
+
+    /**
+    * The interface for describing each user's bucket
+    */
+    export interface IBucketEntry
+    {
+        _id?:any;
+        name?: string;
+        identifier?: string;
+        user?: string;
+        created?: number;
+        memoryUsed?: number;
+    }
+
+    /**
+    * The interface for describing each user's bucket
+    */
+    export interface IStorageStats
+    {
+        user?: string;
+        memoryUsed?: number;
+        memoryAllocated?: number;
+        apiCallsUsed?: number;
+        apiCallsAllocated?: number;
+    }
+
+    /**
+    * The interface for describing each user's file
+    */
+    export interface IFileEntry
+    {
+        _id?: any;
+        name?: string;
+        user?: string;
+        identifier?: string;
+        bucketId?: string;
+        bucketName?: string;
+        publicURL?: string;
+        created?: number;
+        size?: number;
+        mimeType?: string;
+        isPublic?: boolean;
+        numDownloads?: number;
+    }
+
+    /**
+    * Adds a logged in user to the request object
+    */
+    export interface AuthRequest extends Express.Request
+    {
+        _user: User;
+        _target: User;
+        params: any;
+        body: any;
+        query: any;
+    }
+
+    /*
+    * An interface to describe the data stored in the database from the sessions
+    */
+    export interface ISessionEntry
+    {
+        _id: any;
+        sessionId: string;
+        data: any;
+        expiration: number;
+    }
+
+
+    /*
+    * Describes the type of client listening communicating to the web sockets
+    */
+    export interface IWebsocketClient
+    {
+        /*Where is the client origin expected from*/
+        origin: string;
+    
+        /*Which events is it registered to listen for*/
+        eventListeners: Array<number>;
+    }
+
+    /*
+    * Users stores data on an external cloud bucket with Google
+    */
+    export interface IWebsocket
+    {
+        /**
+        * The port number to use for web socket communication. You can use this port to send and receive events or messages
+        * to the server.
+        * e.g. 8080
+        */
+        port: number;
+
+    
+        /**
+        * An array of expected clients
+        * [
+        *   { origin: "webinate.net", eventListeners: [1,4,5,6] }
+        * ]
+        */
+        clients: Array<IWebsocketClient>;
+    }
+
+    /*
+    * Users stores data on an external cloud bucket with Google
+    */
+    export interface IGoogleStorage
+    {
+        /*
+        * Path to the key file
+        */
+        keyFile: string;
+
+        /*
+        * Project ID
+        */
+        projectId: string;
+
+        /**
+        * The name of the mongodb collection for storing bucket details
+        * eg: "buckets"
+        */
+        bucketsCollection: string;
+
+        /**
+        * The name of the mongodb collection for storing file details
+        * eg: "files"
+        */
+        filesCollection: string;
+
+        /**
+        * The name of the mongodb collection for storing user stats
+        * eg: "storageAPI"
+        */
+        statsCollection: string;
+    
+        /**
+        * The length of time the assets should be cached on a user's browser. 
+        * eg:  2592000000 or 30 days
+        */
+        cacheLifetime: number;
     }
 
     /*
@@ -47,11 +213,32 @@
     }
 
     /*
+    * Token used to describe how the upload went
+    */
+    export interface IUploadToken
+    {
+        file: string;
+        field: string;
+        filename: string;
+        error: boolean;
+        errorMsg: string;
+    }
+
+    /*
+    * A POST request that returns the details of a multipart form upload
+    */
+    export interface IUploadResponse extends IResponse
+    {
+        tokens: Array<IUploadToken>
+    }
+
+    /*
     * A GET request that returns an array of data items
     */
     export interface IGetArrayResponse<T> extends IResponse
     {
         data: Array<T>;
+        count: number;
     }
 
     /*
@@ -82,7 +269,8 @@
         email: string;
         captcha?: string;
         challenge?: string;
-        privileges: number;
+        meta?: any;
+        privileges?: number;
     }
 
     /*
@@ -90,11 +278,10 @@
     */
     export enum UserPrivileges
     {
-        SuperAdmin,
-        Admin,
-        Regular
+        SuperAdmin = 1,
+        Admin = 2,
+        Regular = 3
     }
-
 
     /*
     * Represents the details of the admin user
@@ -124,6 +311,17 @@
         restURL: string;
 
         /**
+        * The RESTful path of the media API
+        * eg: If "/media", then the API url would be 127.0.0.1:80/media (or rather host:port/restURL)
+        */
+        mediaURL: string;
+
+        /**
+        * A secret string to identify authenticated servers
+        */
+        secret: string;
+    
+        /**
         * The URL to redirect to after the user attempts to activate their account. 
         * User's can activate their account via the "/activate-account" URL, and after its validation the server will redirect to this URL
         * adding a query ?message=You%20have%20activated%20your%20account&status=success. 
@@ -140,17 +338,7 @@
         * eg: "http://localhost/reset-password"
         */
         passwordResetURL: string;
-    
-        /**
-        * The URL to redirect to after the user attempts to change their password.
-        * User's will reset their password via the "/password-reset" URL, and after its validation the server will redirect to this URL
-        * adding a query ?message=You%20have%20activated%20your%20account&status=success. 
-        * The status can be either 'success' or 'error'
-        *
-        * eg: "http://localhost/notify-user"
-        */
-        passwordRedirectURL: string;
-    
+        
         /**
         * An array of approved domains that can access this API. 
         * e.g. ["webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1"] etc...
@@ -168,6 +356,11 @@
         * e.g. 443
         */
         portHTTPS: number;
+
+        /**
+        * Information regarding the websocket communication. Used for events and IPC
+        */
+        websocket: IWebsocket;
 	
         /**
         * The name of the mongo database name
@@ -185,12 +378,18 @@
         * eg: "sessions"
         */
         sessionCollection: string;
+    
+        /**
+        * The host the DB is listening on
+        * e.g. "127.0.0.1"
+        */
+        databaseHost: string;
 
         /**
         * The port number mongodb is listening on
         * e.g. 27017
         */
-        portDatabase: number;
+        databasePort: number;
 
         /**
         * If true, the API will try to secure its communications
@@ -299,9 +498,31 @@
             }
         */
         adminUser: IAdminUser;
+
+        /**
+        * Information relating to the Google storage platform
+        *
+        "bucket": {
+                "keyFile": "",
+                "projectId": "",
+                "bucketsCollection": "buckets",
+                "filesCollection": "files"
+            }
+        */
+        bucket: IGoogleStorage;
     }
 
     export interface IGetUser extends IGetResponse<IUserEntry> { }
+    export interface IGetUserStorageData extends IGetResponse<IStorageStats> { }
     export interface IGetUsers extends IGetArrayResponse<IUserEntry> { count: number; }
     export interface IGetSessions extends IGetArrayResponse<ISessionEntry> { }
+    export interface IGetBuckets extends IGetArrayResponse<IBucketEntry> { }
+    export interface IGetFile extends IGetResponse<IFileEntry> { }
+    export interface IGetFiles extends IGetArrayResponse<IFileEntry> { }
+    export interface IRemoveFiles extends IGetArrayResponse<string> { }
+}
+
+declare module "webinate-users"
+{
+    export = UsersInterface;
 }

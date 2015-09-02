@@ -4,7 +4,7 @@ import bodyParser = require('body-parser');
 // NEW ES6 METHOD
 import * as http from "http";
 import * as entities from "entities";
-import * as def from "../Definitions";
+import * as def from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
 import {UserManager, User} from "../Users";

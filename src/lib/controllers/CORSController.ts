@@ -1,6 +1,6 @@
 ﻿import * as mongodb from "mongodb";
 import * as http from "http";
-import * as def from "../Definitions";
+import {IConfig} from "webinate-users";
 import {Controller} from "./Controller"
 import express = require("express");
 
@@ -15,7 +15,7 @@ export class CORSController extends Controller
 	* @param {mongodb.Collection} sessionCollection The mongo collection that stores the session data
 	* @param {def.IConfig} The config options of this manager
 	*/
-    constructor(e: express.Express, config: def.IConfig)
+    constructor(e: express.Express, config: IConfig)
     {
         super();
 

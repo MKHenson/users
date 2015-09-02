@@ -5,7 +5,7 @@ var recaptcha = require("recaptcha-async");
 var nodemailer = require("nodemailer");
 var winston = require("winston");
 var CommsController_1 = require("./controllers/CommsController");
-var def = require("./Definitions");
+var def = require("webinate-users");
 var Session_1 = require("./Session");
 var BucketManager_1 = require("./BucketManager");
 /*

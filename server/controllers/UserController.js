@@ -6,7 +6,7 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var express = require("express");
 var bodyParser = require('body-parser');
-var def = require("../Definitions");
+var def = require("webinate-users");
 var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");

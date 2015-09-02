@@ -1,6 +1,6 @@
 ﻿import * as ws from "ws";
 import * as mongodb from "mongodb";
-import * as def from "../Definitions";
+import * as def from "webinate-users";
 import * as https from "https";
 import * as http from "http";
 import * as fs from "fs";

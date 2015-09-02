@@ -47,7 +47,7 @@
     <TypeScriptCompile Include="src\lib\definitions\nodemailer.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\recaptcha-async.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\validator.d.ts" />
-    <TypeScriptCompile Include="src\lib\Definitions.ts" />
+    <TypeScriptCompile Include="src\lib\custom-definitions\Definitions.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\winston.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\ws.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\yargs.d.ts" />
@@ -56,7 +56,6 @@
     <TypeScriptCompile Include="src\lib\Startup.ts" />
     <TypeScriptCompile Include="src\lib\Users.ts" />
     <TypeScriptCompile Include="src\lib\Session.ts" />
-    <TypeScriptCompile Include="webinate-users.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.md" />

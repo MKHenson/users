@@ -5,7 +5,7 @@ import * as express from "express";
 import * as morgan from "morgan";
 import * as methodOverride from "method-override";
 
-import {IConfig} from "./Definitions";
+import {IConfig} from "webinate-users";
 import * as winston from "winston";
 import {BucketController} from "./controllers/BucketController";
 import {UserController} from "./controllers/UserController";

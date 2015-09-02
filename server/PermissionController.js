@@ -1,4 +1,4 @@
-var def = require("./Definitions");
+var def = require("webinate-users");
 var Users_1 = require("./Users");
 exports.secret = { key: "" };
 /**
