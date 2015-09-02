@@ -8,6 +8,7 @@ var winston = require("winston");
 var BucketController_1 = require("./controllers/BucketController");
 var UserController_1 = require("./controllers/UserController");
 var CORSController_1 = require("./controllers/CORSController");
+var CommsController_1 = require("./controllers/CommsController");
 var ErrorController_1 = require("./controllers/ErrorController");
 var yargs = require("yargs");
 var mongodb = require("mongodb");
@@ -48,6 +49,7 @@ winston.info("Opening the database...", { process: process.pid });
 openDB(config).then(function (db) {
     winston.info("Initializing controllers...", { process: process.pid });
     return Promise.all([
+        new CommsController_1.CommsController(config).initialize(db),
         new CORSController_1.CORSController(app, config).initialize(db),
         new BucketController_1.BucketController(app, config).initialize(db),
         new UserController_1.UserController(app, config).initialize(db),

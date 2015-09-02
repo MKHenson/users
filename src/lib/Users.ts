@@ -6,7 +6,9 @@ import * as recaptcha from "recaptcha-async";
 import * as nodemailer from "nodemailer";
 import * as bodyParser from "body-parser";
 import * as express from "express";
+import * as winston from "winston";
 
+import {CommsController, EventType} from "./controllers/CommsController";
 import * as def from "./Definitions";
 import {SessionManager, Session} from "./Session";
 import {BucketManager} from "./BucketManager";
@@ -134,8 +136,33 @@ export class UserManager
 				path: config.sessionPath,
 				persistent: config.sessionPersistent,
 				secure: config.ssl
-			});
-	}
+            });
+
+        this.sessionManager.on("sessionRemoved", this.onSessionRemoved.bind(this));
+    }
+
+    /** 
+	* Called whenever a session is removed from the database
+	* @returns {Promise<void>}
+	*/
+    onSessionRemoved(sessionId: string)
+    {
+        if (!sessionId || sessionId == "")
+            return;
+
+        this._userCollection.findOne({ sessionId: sessionId }, function (error: Error, useEntry: def.IUserEntry)
+        {
+            if (useEntry)
+            {
+                // Send logged in event to socket
+                var sEvent: def.SocketEvents.ILogout = { username: useEntry.username, eventType: EventType.Logout };
+                CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                {
+                    winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
+                })
+            }
+        });
+    }
 
 	/** 
 	* Initializes the API
@@ -899,8 +926,18 @@ export class UserManager
 							that._userCollection.update({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry> )
 							{
 								if (error) return reject(error);
-								if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
-								return resolve(user);
+                                if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+
+                                // Send logged in event to socket
+                                var sEvent: def.SocketEvents.ILogin = { username: username, eventType: EventType.Login };
+                                CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                                {
+                                    return resolve(user);
+
+                                }).catch(function (err)
+                                {
+                                    return reject(err);
+                                });
 							});
 
 						}).catch(function (error: Error)

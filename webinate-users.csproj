@@ -25,6 +25,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="src\lib\BucketManager.ts" />
     <TypeScriptCompile Include="src\lib\controllers\BucketController.ts" />
+    <TypeScriptCompile Include="src\lib\controllers\CommsController.ts" />
     <TypeScriptCompile Include="src\lib\controllers\Controller.ts" />
     <TypeScriptCompile Include="src\lib\controllers\ErrorController.ts" />
     <TypeScriptCompile Include="src\lib\controllers\CORSController.ts" />
@@ -48,6 +49,7 @@
     <TypeScriptCompile Include="src\lib\definitions\validator.d.ts" />
     <TypeScriptCompile Include="src\lib\Definitions.ts" />
     <TypeScriptCompile Include="src\lib\definitions\winston.d.ts" />
+    <TypeScriptCompile Include="src\lib\definitions\ws.d.ts" />
     <TypeScriptCompile Include="src\lib\definitions\yargs.d.ts" />
     <TypeScriptCompile Include="src\lib\Main.ts" />
     <TypeScriptCompile Include="src\lib\PermissionController.ts" />

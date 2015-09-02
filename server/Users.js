@@ -3,6 +3,8 @@ var validator = require("validator");
 var bcrypt = require("bcryptjs");
 var recaptcha = require("recaptcha-async");
 var nodemailer = require("nodemailer");
+var winston = require("winston");
+var CommsController_1 = require("./controllers/CommsController");
 var def = require("./Definitions");
 var Session_1 = require("./Session");
 var BucketManager_1 = require("./BucketManager");
@@ -107,7 +109,25 @@ var UserManager = (function () {
             persistent: config.sessionPersistent,
             secure: config.ssl
         });
+        this.sessionManager.on("sessionRemoved", this.onSessionRemoved.bind(this));
     }
+    /**
+    * Called whenever a session is removed from the database
+    * @returns {Promise<void>}
+    */
+    UserManager.prototype.onSessionRemoved = function (sessionId) {
+        if (!sessionId || sessionId == "")
+            return;
+        this._userCollection.findOne({ sessionId: sessionId }, function (error, useEntry) {
+            if (useEntry) {
+                // Send logged in event to socket
+                var sEvent = { username: useEntry.username, eventType: CommsController_1.EventType.Logout };
+                CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                    winston.info("User '" + useEntry.username + "' has logged out", { process: process.pid });
+                });
+            }
+        });
+    };
     /**
     * Initializes the API
     * @returns {Promise<void>}
@@ -689,7 +709,13 @@ var UserManager = (function () {
                                     return reject(error);
                                 if (result.result.n === 0)
                                     return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
-                                return resolve(user);
+                                // Send logged in event to socket
+                                var sEvent = { username: username, eventType: CommsController_1.EventType.Login };
+                                CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                                    return resolve(user);
+                                }).catch(function (err) {
+                                    return reject(err);
+                                });
                             });
                         }).catch(function (error) {
                             return reject(error);

@@ -54,7 +54,7 @@ export class UserController extends Controller
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
         router.delete("/sessions/:id", <any>[ownerRights, this.deleteSession.bind(this)]);
-        router.delete("/remove-user/:user", <any>[ownerRights, this.removeUser.bind(this)]);	
+        router.delete("/remove-user/:user", <any>[ownerRights, this.removeUser.bind(this)]);
 		router.post("/login", this.login.bind(this));
 		router.post("/register", this.register.bind(this));
         router.post("/create-user", <any>[ownerRights, this.createUser.bind(this)]);

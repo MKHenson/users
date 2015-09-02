@@ -10,6 +10,7 @@ import * as winston from "winston";
 import {BucketController} from "./controllers/BucketController";
 import {UserController} from "./controllers/UserController";
 import {CORSController} from "./controllers/CORSController";
+import {CommsController} from "./controllers/CommsController";
 import {ErrorController} from "./controllers/ErrorController";
 import * as yargs from "yargs";
 import * as mongodb from "mongodb";
@@ -66,6 +67,7 @@ openDB(config).then(function (db)
 {
     winston.info(`Initializing controllers...`, { process: process.pid });
     return Promise.all([
+        new CommsController(config).initialize(db),
         new CORSController(app, config).initialize(db),
         new BucketController(app, config).initialize(db),        
         new UserController(app, config).initialize(db),

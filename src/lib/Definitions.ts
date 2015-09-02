@@ -2,6 +2,33 @@
 import * as express from "express";
 import {User} from "./Users";
 
+export declare module SocketEvents
+{
+    /*
+    * The base interface for all socket events
+    */
+    export interface IEvent
+    {
+        eventType: number;
+    }
+
+    /*
+    * The token used for logging in
+    */
+    export interface ILogin extends IEvent
+    {
+        username: string;
+    }
+
+    /*
+    * The token used for logging out
+    */
+    export interface ILogout extends IEvent
+    {
+        username: string;
+    }
+}
+
 /*
 * An interface to describe the data stored in the database for users
 */
@@ -82,6 +109,44 @@ export interface ISessionEntry
     sessionId: string;
     data: any;
     expiration: number;
+}
+
+
+/*
+* Describes the type of client listening communicating to the web sockets
+*/
+export interface IWebsocketClient
+{
+    /*Where is the client origin expected from*/
+    origin: string;
+
+    /*Where is the client host expected from*/
+    host: string;
+
+    /*Which events is it registered to listen for*/
+    eventListeners: Array<number>;
+}
+
+/*
+* Users stores data on an external cloud bucket with Google
+*/
+export interface IWebsocket
+{
+    /**
+    * The port number to use for web socket communication. You can use this port to send and receive events or messages
+    * to the server.
+    * e.g. 8080
+    */
+    port: number;
+
+    
+    /**
+    * An array of expected clients
+    * [
+    *   { origin: "webinate.net", eventListeners: [1,4,5,6] }
+    * ]
+    */
+    clients: Array<IWebsocketClient>;
 }
 
 /*
@@ -285,7 +350,12 @@ export interface IConfig
 	* The port number to use for SSL requests
     * e.g. 443
 	*/
-	portHTTPS: number;
+    portHTTPS: number;
+
+    /**
+    * Information regarding the websocket communication. Used for events and IPC
+    */
+    websocket: IWebsocket;
 	
     /**
 	* The name of the mongo database name

@@ -1,15 +1,15 @@
 {
-	"host": "127.0.0.1",
+  "host": "127.0.0.1",
   "restURL": "",
-  "mediaURL":  "media",
-	"accountRedirectURL": "http://host.com/admin/message",
-	"passwordResetURL": "http://host.com/admin/password-reset-form",
-	"userCollection": "users",
+  "mediaURL": "media",
+  "accountRedirectURL": "http://host.com/admin/message",
+  "passwordResetURL": "http://host.com/admin/password-reset-form",
+  "userCollection": "users",
   "sessionCollection": "sessions",
   "approvedDomains": [ "webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1" ],
-  "secret":  "",
-	"portHTTP": 80,
-	"portHTTPS": 443,
+  "secret": "",
+  "portHTTP": 80,
+  "portHTTPS": 443,
   "databaseHost": "127.0.0.1",
   "databasePort": 27017,
   "ssl": false,
@@ -34,7 +34,6 @@
     "email": "root_email@host.com",
     "password": "CHANGE_THIS_PASSWORD"
   },
-
   "bucket": {
     "keyFile": "",
     "projectId": "",
@@ -42,5 +41,14 @@
     "filesCollection": "files",
     "statsCollection": "storageAPI",
     "cacheLifetime": 2592000000
+  },
+  "websocket": {
+    "port": 8080,
+    "clients": [
+      {
+        "origin": "",
+        "eventListeners": [ ]
+      }
+    ]
   }
 }

@@ -1,12 +1,21 @@
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var events_1 = require("events");
 /**
 * A class that manages session data for active users
 */
-var SessionManager = (function () {
+var SessionManager = (function (_super) {
+    __extends(SessionManager, _super);
     /**
     * Creates an instance of a session manager
     * @param { mongodb.Collection} sessionCollection The mongoDB collection to use for saving sessions
     */
     function SessionManager(dbCollection, options) {
+        _super.call(this);
         this._dbCollection = dbCollection;
         this._cleanupProxy = this.cleanup.bind(this);
         this._timeout = 0;
@@ -66,7 +75,6 @@ var SessionManager = (function () {
             if (sId != "") {
                 // We have a session ID, lets try to find it in the DB
                 that._dbCollection.findOne({ sessionId: sId }, function (err, sessionDB) {
-                    // Cant seem to find any session - so create a new one
                     if (err)
                         reject(err);
                     else {
@@ -75,6 +83,7 @@ var SessionManager = (function () {
                         session.expiration = -1;
                         // Adds / updates the DB with the new session
                         that._dbCollection.remove({ sessionId: session.sessionId }, function (err, result) {
+                            that.emit("sessionRemoved", sId);
                             if (err)
                                 reject(err);
                             else {
@@ -122,7 +131,8 @@ var SessionManager = (function () {
                                 if (!that._timeout)
                                     that._timeout = setTimeout(that._cleanupProxy, 60000);
                                 // Set the session cookie header
-                                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+                                if (response)
+                                    response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
                                 // Resolve the request
                                 resolve(session);
                             }
@@ -135,36 +145,6 @@ var SessionManager = (function () {
                 resolve(null);
         });
     };
-    ///**
-    //* Attempts to renew a session, giving it a new expiration time
-    //* @param {Session} session
-    //* @param {http.ServerRequest} request
-    //* @param {http.ServerResponse} response
-    //* @returns {Promise<Session>} Returns a session or null if none can be found
-    //*/
-    //renewSession(session: Session, request: http.ServerRequest, response: http.ServerResponse): Promise<Session>
-    //{
-    //	var that = this;
-    //	return new Promise<Session>((resolve, reject) =>
-    //	{
-    //		// Adds / updates the DB with the new session
-    //		that._dbCollection.update({ sessionId: session.sessionId }, session.save(), null, function (err: Error, result: any)
-    //		{
-    //			if (err)
-    //				reject(err);
-    //			else
-    //			{
-    //				// make sure a timeout is pending for the expired session reaper
-    //				if (!that._timeout)
-    //					that._timeout = setTimeout(that._cleanupProxy, 60000);
-    //				// Set the session cookie header
-    //				response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
-    //				// Resolve the request
-    //				resolve(session);
-    //			}
-    //		});
-    //	});
-    //}
     /**
     * Attempts to create a session from the request object of the client
     * @param {http.ServerRequest} request
@@ -187,80 +167,6 @@ var SessionManager = (function () {
             });
         });
     };
-    ///**
-    //* Creates or fetches a session object by looking at the headers of a request
-    //* @returns {Session}
-    //*/
-    //lookupOrCreate(request: http.ServerRequest, opts: { sessionID?: string; }, callback: (err: string, session: Session) => void): Promise<Session>
-    //{
-    //	var that = this;
-    //	var session: Session;
-    //	var that = this;
-    //	opts = opts || {};
-    //	return new Promise<Session>(function (resolve, reject)
-    //	{
-    //		var sessionCreated = function (session: Session, dbEntry?: any)
-    //		{
-    //			if (!session)
-    //				session = new Session(opts.sessionID ? opts.sessionID : that.createID(), opts);
-    //			// If it was loaded in the DB, then set its properties from the saved results
-    //			if (dbEntry)
-    //				session.open(dbEntry);
-    //			// Reset the expiration date for the session
-    //			session.expiration = (new Date(Date.now() + session.lifetime * 1000)).getTime();
-    //			callback(null, session);
-    //			if (!session.data)
-    //			{
-    //				// Adds / updates the DB with the new session
-    //				that._dbCollection.remove({ id: session.id }, function (err: Error, result: any)
-    //				{
-    //					if (err)
-    //						colors.log(colors.red(`Could not remove session : '${err}'"`));
-    //					else if (result === 0)
-    //						colors.log(colors.red(`No Sessions were deleted"`));
-    //				});
-    //			}
-    //			else
-    //			{
-    //				// Adds / updates the DB with the new session
-    //				that._dbCollection.update({ id: session.id }, session.save(), { upsert: true }, function (err: Error, result: any)
-    //				{
-    //					if (err || !result)
-    //						colors.log(colors.red(`Could not save session to the model: '${err}'"`));
-    //					else
-    //					{
-    //						// make sure a timeout is pending for the expired session reaper
-    //						if (!that._timeout)
-    //							that._timeout = setTimeout(that._cleanupProxy, 60000);
-    //					}
-    //				});
-    //			}
-    //		}
-    //		// See if the client has a session id - then get the session data stored in the model
-    //		var sessionId: string = that.getIDFromRequest(request);
-    //		if (sessionId != "")
-    //		{
-    //			that._dbCollection.find({ id: sessionId }, function (err: Error, result: mongodb.Cursor)
-    //			{
-    //				// Cant seem to find any session - so create a new one
-    //				if (err || !result)
-    //					sessionCreated(null);
-    //				else
-    //				{
-    //					result.nextObject(function (err: Error, sessionEntry: any)
-    //					{
-    //						if (err || !result)
-    //							sessionCreated(null);
-    //						else
-    //							sessionCreated(new Session(sessionId, opts), sessionEntry);
-    //					});
-    //				}
-    //			});
-    //		}
-    //		else
-    //			sessionCreated(null);
-    //	});
-    //}
     /**
     * Each time a session is created, a timer is started to check all sessions in the DB.
     * Once the lifetime of a session is up its then removed from the DB and we check for any remaining sessions.
@@ -288,7 +194,7 @@ var SessionManager = (function () {
                             var expiration = parseFloat(sessions[i].expiration.toString());
                             // If the session's time is up
                             if (expiration < now || force)
-                                toRemoveQuery.$or.push({ _id: sessions[i]._id });
+                                toRemoveQuery.$or.push({ _id: sessions[i]._id, sessionId: sessions[i].sessionId });
                             else
                                 // Session time is not up, but may be the next time target
                                 next = next < expiration ? next : expiration;
@@ -296,6 +202,8 @@ var SessionManager = (function () {
                         // Check if we need to remove sessions - if we do, then remove them :)
                         if (toRemoveQuery.$or.length > 0) {
                             that._dbCollection.remove(toRemoveQuery, function (err, result) {
+                                for (var i = 0, l = toRemoveQuery.$or.length; i < l; i++)
+                                    that.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId);
                                 if (next < Infinity)
                                     that._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
                             });
@@ -343,7 +251,7 @@ var SessionManager = (function () {
         return ret;
     };
     return SessionManager;
-})();
+})(events_1.EventEmitter);
 exports.SessionManager = SessionManager;
 /**
 * A class to represent session data
