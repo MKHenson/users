@@ -119,10 +119,7 @@ export interface IWebsocketClient
 {
     /*Where is the client origin expected from*/
     origin: string;
-
-    /*Where is the client host expected from*/
-    host: string;
-
+    
     /*Which events is it registered to listen for*/
     eventListeners: Array<number>;
 }

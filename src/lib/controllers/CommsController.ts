@@ -123,8 +123,7 @@ export class CommsController
             var clientApproved = false;
             for (var i = 0, l = cfg.websocket.clients.length; i < l; i++)
             {
-                if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.clients[i].origin))) ||
-                    (headers.host && headers.host.match(new RegExp(cfg.websocket.clients[i].host))))
+                if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.clients[i].origin))))
                 {
                     new ClientConnection(ws, cfg.websocket.clients[i]);
                     clientApproved = true;
