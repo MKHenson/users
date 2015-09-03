@@ -6,7 +6,6 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var express = require("express");
 var bodyParser = require('body-parser');
-var def = require("webinate-users");
 var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
@@ -531,9 +530,9 @@ var UserController = (function (_super) {
         var that = this;
         var token = req.body;
         // Set default privileges
-        token.privileges = token.privileges ? token.privileges : def.UserPrivileges.Regular;
+        token.privileges = token.privileges ? token.privileges : Users_1.UserPrivileges.Regular;
         // Not allowed to create super users
-        if (token.privileges == def.UserPrivileges.SuperAdmin)
+        if (token.privileges == Users_1.UserPrivileges.SuperAdmin)
             return res.end(JSON.stringify({
                 message: "You cannot create a user with super admin permissions",
                 error: true

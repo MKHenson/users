@@ -4,7 +4,7 @@ import bodyParser = require('body-parser');
 // NEW ES6 METHOD
 import * as http from "http";
 import * as def from "webinate-users";
-import {UserManager, User} from "./Users";
+import {UserManager, User, UserPrivileges} from "./Users";
 
 export var secret = { key : "" };
 
@@ -18,7 +18,7 @@ export var secret = { key : "" };
 export function ownerRights(req: def.AuthRequest, res: express.Response, next: Function): any
 {
     var username = req.params.username || req.params.user;
-    requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user)
+    requestHasPermission(UserPrivileges.Admin, req, res, username).then(function (user)
     {
         next();
 
@@ -51,7 +51,7 @@ export function adminRights(req: def.AuthRequest, res: express.Response, next: F
         var secretKey = (req.body ? req.body.secret : null)
         if (secretKey && secretKey == secret.key)
             next();
-        else if (user.dbEntry.privileges > def.UserPrivileges.Admin)
+        else if (user.dbEntry.privileges > UserPrivileges.Admin)
             return res.end(JSON.stringify(<def.IResponse>{ message: "You don't have permission to make this request", error: true }));
         else
             next();
@@ -94,7 +94,7 @@ export function identifyUser(req: def.AuthRequest, res: express.Response, next: 
 * @param {string} existingUser [Optional] If specified this also checks if the authenticated user is the user making the request
 * @param {Function} next
 */
-export function requestHasPermission(level: def.UserPrivileges, req: def.AuthRequest, res: express.Response, existingUser?: string): Promise<boolean>
+export function requestHasPermission(level: UserPrivileges, req: def.AuthRequest, res: express.Response, existingUser?: string): Promise<boolean>
 {
     return new Promise(function (resolve, reject)
     {

@@ -15,21 +15,6 @@ declare module UsersInterface
         export interface IEvent
         {
             eventType: number;
-        }
-
-        /*
-        * The token used for logging in
-        */
-        export interface ILogin extends IEvent
-        {
-            username: string;
-        }
-
-        /*
-        * The token used for logging out
-        */
-        export interface ILogout extends IEvent
-        {
             username: string;
         }
     }
@@ -47,7 +32,7 @@ declare module UsersInterface
         sessionId?: string;
         createdOn?: number;
         lastLoggedIn?: number;
-        privileges?: UserPrivileges;
+        privileges?: number;
         passwordTag?: string;
         meta?: any;
     }
@@ -271,16 +256,6 @@ declare module UsersInterface
         challenge?: string;
         meta?: any;
         privileges?: number;
-    }
-
-    /*
-    * Describes what kind of privileges the user has
-    */
-    export enum UserPrivileges
-    {
-        SuperAdmin = 1,
-        Admin = 2,
-        Regular = 3
     }
 
     /*

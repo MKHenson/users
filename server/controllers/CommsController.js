@@ -47,6 +47,8 @@ var ClientConnection = (function () {
 (function (EventType) {
     EventType[EventType["Login"] = 0] = "Login";
     EventType[EventType["Logout"] = 1] = "Logout";
+    EventType[EventType["Activated"] = 2] = "Activated";
+    EventType[EventType["Removed"] = 3] = "Removed";
 })(exports.EventType || (exports.EventType = {}));
 var EventType = exports.EventType;
 /**

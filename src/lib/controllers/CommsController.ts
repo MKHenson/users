@@ -71,7 +71,9 @@ class ClientConnection
 export enum EventType
 {
     Login,
-    Logout
+    Logout,
+    Activated,
+    Removed
 }
 
 /**

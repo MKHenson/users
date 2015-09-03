@@ -7,7 +7,7 @@ import * as entities from "entities";
 import * as def from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
-import {UserManager, User} from "../Users";
+import {UserManager, User, UserPrivileges} from "../Users";
 import {ownerRights, adminRights, secret} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
@@ -690,10 +690,10 @@ export class UserController extends Controller
         var token: def.IRegisterToken = req.body;
         
         // Set default privileges
-        token.privileges = token.privileges ? token.privileges : def.UserPrivileges.Regular;
+        token.privileges = token.privileges ? token.privileges : UserPrivileges.Regular;
 
 		// Not allowed to create super users
-		if (token.privileges == def.UserPrivileges.SuperAdmin)
+		if (token.privileges == UserPrivileges.SuperAdmin)
 			return res.end(JSON.stringify(<def.IResponse>{
 				message: "You cannot create a user with super admin permissions",
 				error: true

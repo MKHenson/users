@@ -14,6 +14,17 @@ import {SessionManager, Session} from "./Session";
 import {BucketManager} from "./BucketManager";
 
 /*
+* Describes what kind of privileges the user has
+*/
+export enum UserPrivileges
+{
+    SuperAdmin = 1,
+    Admin = 2,
+    Regular = 3
+}
+
+
+/*
 * Class that represents a user and its database entry
 */
 export class User
@@ -68,7 +79,7 @@ export class User
             lastLoggedIn: Date.now(),
             createdOn: Date.now(),
 			password: this.dbEntry.password,
-			registerKey: (this.dbEntry.privileges == def.UserPrivileges.SuperAdmin ? "" : this.generateKey(10) ),
+			registerKey: (this.dbEntry.privileges == UserPrivileges.SuperAdmin ? "" : this.generateKey(10) ),
 			sessionId: this.dbEntry.sessionId,
 			username: this.dbEntry.username,
             privileges: this.dbEntry.privileges,
@@ -155,11 +166,11 @@ export class UserManager
             if (useEntry)
             {
                 // Send logged in event to socket
-                var sEvent: def.SocketEvents.ILogout = { username: useEntry.username, eventType: EventType.Logout };
+                var sEvent: def.SocketEvents.IEvent = { username: useEntry.username, eventType: EventType.Logout };
                 CommsController.singleton.broadcastEvent(sEvent).then(function ()
                 {
                     winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
-                })
+                });
             }
         });
     }
@@ -192,7 +203,7 @@ export class UserManager
                 }).catch(function (error: Error)
                 {
                     // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, def.UserPrivileges.SuperAdmin, {}, true).then(function (newUser)
+                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, UserPrivileges.SuperAdmin, {}, true).then(function (newUser)
                     {
                         resolve();
 
@@ -251,7 +262,7 @@ export class UserManager
                         if (!captchaResult.is_valid)
                             return reject( new Error("Your captcha code seems to be wrong. Please try another."));
 
-                        that.createUser(username, email, pass, origin, def.UserPrivileges.Regular, meta).then(function (user)
+                        that.createUser(username, email, pass, origin, UserPrivileges.Regular, meta).then(function (user)
                         {
                             newUser = user;
                             return resolve(newUser);
@@ -318,11 +329,22 @@ export class UserManager
 			{
 				// Clear the user's activation
 				that._userCollection.update({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }, function (error: Error, result: mongodb.WriteResult<any>)
-				{
-					if (error)
-						return reject(error);
+                {
+                    if (error)
+                        return reject(error);
 
-					return resolve();
+                    // Send activated event
+                    var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Activated };
+                    CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                    {
+                        winston.info(`User '${username}' has been activated`, { process: process.pid });
+                        return resolve();
+
+                    }).catch(function (err: Error)
+                    {
+                        return reject(error);
+
+                    });
 				});
 			});
 		});
@@ -606,10 +628,19 @@ export class UserManager
 				that._userCollection.update(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
 				{
 					if (error)
-						return reject(error);
+                        return reject(error);
 
-					// All done :)
-					resolve(true);
+                    // Send activated event
+                    var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Activated };
+                    CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                    {
+                        winston.info(`User '${username}' has been activated`, { process: process.pid });
+                        return resolve(true);
+
+                    }).catch(function (err: Error)
+                    {
+                        return reject(error);
+                    });
 				});
 
 			}).catch(function (error: Error)
@@ -697,7 +728,7 @@ export class UserManager
 
 	* @returns {Promise<User>}
 	*/
-    createUser(user: string, email: string, password: string, origin: string, privilege: def.UserPrivileges = def.UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
+    createUser(user: string, email: string, password: string, origin: string, privilege: UserPrivileges = UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
 	{
 		var that = this;
 		
@@ -710,7 +741,7 @@ export class UserManager
 			if (!validator.isEmail(email)) return reject(new Error("Email must be valid"));
 			if (!password || validator.trim(password) == "") return reject(new Error("Password cannot be empty"));
 			if (privilege > 3) return reject(new Error("Privilege type is unrecognised"));
-            if (privilege == def.UserPrivileges.SuperAdmin && allowAdmin == false ) return reject(new Error("You cannot create a super user"));
+            if (privilege == UserPrivileges.SuperAdmin && allowAdmin == false ) return reject(new Error("You cannot create a super user"));
             var hashedPsw : string;
 
 			// Check if the user already exists
@@ -793,6 +824,7 @@ export class UserManager
 	removeUser(user: string): Promise<void>
 	{
 		var that = this;
+        var username: string = "";
 
 		return new Promise<void>(function (resolve, reject)
         {
@@ -805,8 +837,10 @@ export class UserManager
                 if (!user)
                     return Promise.reject(new Error("Could not find any users with those credentials"));
 
-                if (user.dbEntry.privileges == def.UserPrivileges.SuperAdmin)
+                if (user.dbEntry.privileges == UserPrivileges.SuperAdmin)
                     return Promise.reject(new Error("You cannot remove a super user"));
+
+                username = user.dbEntry.username;
 
                 return BucketManager.get.removeUser(user.dbEntry.username);
 
@@ -819,6 +853,13 @@ export class UserManager
 
                     if (result.result.n == 0)
                         return reject(new Error("Could not remove the user from the database"));
+
+                    // Send event to sockets
+                    var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Removed };
+                    CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                    {
+                        winston.info(`User '${username}' has been removed`, { process: process.pid });
+                    });
 
                     return resolve();
                 });
@@ -929,7 +970,7 @@ export class UserManager
                                 if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
                                 // Send logged in event to socket
-                                var sEvent: def.SocketEvents.ILogin = { username: username, eventType: EventType.Login };
+                                var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Login };
                                 CommsController.singleton.broadcastEvent(sEvent).then(function ()
                                 {
                                     return resolve(user);

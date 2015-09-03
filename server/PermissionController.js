@@ -1,4 +1,3 @@
-var def = require("webinate-users");
 var Users_1 = require("./Users");
 exports.secret = { key: "" };
 /**
@@ -9,7 +8,7 @@ exports.secret = { key: "" };
 */
 function ownerRights(req, res, next) {
     var username = req.params.username || req.params.user;
-    requestHasPermission(def.UserPrivileges.Admin, req, res, username).then(function (user) {
+    requestHasPermission(Users_1.UserPrivileges.Admin, req, res, username).then(function (user) {
         next();
     }).catch(function (error) {
         res.setHeader('Content-Type', 'application/json');
@@ -35,7 +34,7 @@ function adminRights(req, res, next) {
         var secretKey = (req.body ? req.body.secret : null);
         if (secretKey && secretKey == exports.secret.key)
             next();
-        else if (user.dbEntry.privileges > def.UserPrivileges.Admin)
+        else if (user.dbEntry.privileges > Users_1.UserPrivileges.Admin)
             return res.end(JSON.stringify({ message: "You don't have permission to make this request", error: true }));
         else
             next();
