@@ -163,10 +163,9 @@ var BucketManager = (function () {
         var that = this;
         var stats = this._stats;
         return new Promise(function (resolve, reject) {
-            Promise.all([
-                that.removeUserStats(user),
-                that.removeBucketsByUser(user)
-            ]).then(function (data) {
+            that.removeBucketsByUser(user).then(function (result) {
+                return that.removeUserStats(user);
+            }).then(function (data) {
                 return resolve();
             }).catch(function (err) {
                 return reject(err);
@@ -239,6 +238,7 @@ var BucketManager = (function () {
                     if (err)
                         return reject(err);
                     var attempts = 0;
+                    var error = null;
                     for (var i = 0, l = buckets.length; i < l; i++) {
                         that.deleteBucket(buckets[i]).then(function (bucket) {
                             attempts++;
@@ -246,9 +246,11 @@ var BucketManager = (function () {
                             if (attempts == l)
                                 resolve(toRemove);
                         }).catch(function (err) {
+                            if (err)
+                                error = err;
                             attempts++;
                             if (attempts == l)
-                                resolve(toRemove);
+                                reject(error);
                         });
                     }
                     // If no buckets
@@ -291,10 +293,14 @@ var BucketManager = (function () {
         var files = this._files;
         var stats = this._stats;
         return new Promise(function (resolve, reject) {
+            // First remove all bucket files
             that.removeFilesByBucket(bucketEntry.identifier).then(function (files) {
+                // Now remove the bucket itself
                 var bucket = gcs.bucket(bucketEntry.identifier);
                 bucket.delete(function (err, apiResponse) {
-                    if (err)
+                    // If there is an error then return - but not if the file is not found. More than likely
+                    // it was removed by an admin
+                    if (err && err.code != 404)
                         return reject(new Error("Could not remove bucket from storage system: '" + err.message + "'"));
                     else {
                         // Remove the bucket entry
@@ -327,7 +333,9 @@ var BucketManager = (function () {
                 var bucket = gcs.bucket(bucketEntry.identifier);
                 // Get the bucket and delete the file
                 bucket.file(fileEntry.identifier).delete(function (err, apiResponse) {
-                    if (err)
+                    // If there is an error then return - but not if the file is not found. More than likely
+                    // it was removed by an admin
+                    if (err && err.code != 404)
                         return reject(new Error("Could not remove file '" + fileEntry.identifier + "' from storage system: '" + err.toString() + "'"));
                     // Update the bucket data usage
                     bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: -fileEntry.size } }, function (err, result) {
@@ -372,6 +380,7 @@ var BucketManager = (function () {
                     return reject(err);
                 // For each file entry
                 cursor.toArray(function (err, fileEntries) {
+                    var error = null;
                     for (var i = 0, l = fileEntries.length; i < l; i++) {
                         that.deleteFile(fileEntries[i]).then(function (fileEntry) {
                             attempts++;
@@ -379,9 +388,11 @@ var BucketManager = (function () {
                             if (attempts == l)
                                 resolve(filesRemoved);
                         }).catch(function (err) {
+                            if (err)
+                                error = err;
                             attempts++;
                             if (attempts == l)
-                                resolve(filesRemoved);
+                                reject(error);
                         });
                     }
                     if (fileEntries.length == 0)
@@ -650,7 +661,7 @@ var BucketManager = (function () {
                 // Pipe the file to the bucket
                 stream.on("error", function (err) {
                     return reject(new Error("Could not upload the file '" + part.filename + "' to bucket: " + err.toString()));
-                }).on('complete', function () {
+                }).on('finish', function () {
                     bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: part.byteCount } }, function (err, result) {
                         statCollection.update({ user: user }, { $inc: { memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result) {
                             that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file) {

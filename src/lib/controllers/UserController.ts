@@ -654,11 +654,12 @@ export class UserController extends Controller
         if (!toRemove)
             return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
         
-        that._userManager.removeUser(toRemove).then(function ()
-        {
-            return BucketManager.get.removeBucketsByUser(toRemove);
-
-        }).then(function()
+        that._userManager.removeUser(toRemove)//.then(function ()
+        //{
+        //    return BucketManager.get.removeBucketsByUser(toRemove);
+        //
+        //})
+            .then(function ()
 		{
 			var token: def.IResponse = {
 				error: false,

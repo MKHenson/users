@@ -1,15 +1,13 @@
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var express = require("express");
 var bodyParser = require('body-parser');
 var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
-var BucketManager_1 = require("../BucketManager");
 var compression = require("compression");
 /**
 * Main class to use for managing users
@@ -503,9 +501,8 @@ var UserController = (function (_super) {
         var toRemove = req.params.user;
         if (!toRemove)
             return res.end(JSON.stringify({ message: "No user found", error: true }));
-        that._userManager.removeUser(toRemove).then(function () {
-            return BucketManager_1.BucketManager.get.removeBucketsByUser(toRemove);
-        }).then(function () {
+        that._userManager.removeUser(toRemove) //.then(function ()
+            .then(function () {
             var token = {
                 error: false,
                 message: "User " + toRemove + " has been removed"

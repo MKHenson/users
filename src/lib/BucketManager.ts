@@ -230,12 +230,11 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            Promise.all<any>([
+            that.removeBucketsByUser(user).then(function(result)
+            {
+                return that.removeUserStats(user);
 
-                that.removeUserStats(user),
-                that.removeBucketsByUser(user)
-
-            ]).then(function(data)
+            }).then(function(data)
             {
                 return resolve();
 
@@ -334,6 +333,7 @@ export class BucketManager
                         return reject(err);
 
                     var attempts = 0;
+                    var error: Error = null;
 
                     for (var i = 0, l = buckets.length; i < l; i++)
                     {
@@ -346,9 +346,12 @@ export class BucketManager
 
                         }).catch(function (err)
                         {
+                            if (err)
+                                error = err;
+
                             attempts++;
                             if (attempts == l)
-                                resolve(toRemove);
+                                reject(error);
                         });
                     }
 
@@ -402,12 +405,16 @@ export class BucketManager
 
         return new Promise<users.IBucketEntry>(function (resolve, reject)
         {
+            // First remove all bucket files
             that.removeFilesByBucket(bucketEntry.identifier).then(function (files)
             {
+                // Now remove the bucket itself
                 var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.identifier);
                 bucket.delete(function (err: Error, apiResponse: any)
                 {
-                    if (err)
+                    // If there is an error then return - but not if the file is not found. More than likely
+                    // it was removed by an admin
+                    if (err && (<any>err).code != 404)
                         return reject(new Error(`Could not remove bucket from storage system: '${err.message}'`));
                     else
                     {
@@ -453,7 +460,9 @@ export class BucketManager
                 // Get the bucket and delete the file
                 bucket.file(fileEntry.identifier).delete(function (err, apiResponse)
                 {
-                    if (err)
+                    // If there is an error then return - but not if the file is not found. More than likely
+                    // it was removed by an admin
+                    if (err && (<any>err).code != 404)
                         return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`));
                                    
                     // Update the bucket data usage
@@ -514,6 +523,8 @@ export class BucketManager
                 // For each file entry
                 cursor.toArray(function (err, fileEntries: Array<users.IFileEntry>)
                 {
+                    var error: Error = null;
+
                     for (var i = 0, l = fileEntries.length; i < l; i++)
                     {
                        that.deleteFile(fileEntries[i]).then(function(fileEntry)
@@ -526,10 +537,13 @@ export class BucketManager
 
                         }).catch(function (err)
                         {
+                            if (err)
+                                error = err;
+
                             attempts++;
 
                             if (attempts == l)
-                                resolve(filesRemoved);
+                                reject(error);
                         });
                     }
 
@@ -881,7 +895,7 @@ export class BucketManager
                 {
                     return reject(new Error(`Could not upload the file '${part.filename}' to bucket: ${err.toString() }`))
 
-                }).on('complete', function ()
+                }).on('finish', function ()
                 {
                     bucketCollection.update(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: part.byteCount } }, function (err, result)
                     {

@@ -130,10 +130,10 @@ export class UserManager
         UserManager._singleton = this;
 
 		// Create the transport object which will be sending the emails
-		if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
-			this._transport = nodemailer.createTransport({
+        if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
+            this._transport = nodemailer.createTransport(<ITransportOptions>{
 				service: config.emailService,
-				auth: {
+                auth: <NodemailerSMTPTransportOptions>{
 					user: config.emailServiceUser,
 					pass: config.emailServicePassword
 				}

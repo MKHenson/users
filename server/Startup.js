@@ -12,29 +12,32 @@ var CommsController_1 = require("./controllers/CommsController");
 var ErrorController_1 = require("./controllers/ErrorController");
 var yargs = require("yargs");
 var mongodb = require("mongodb");
-var arguments = yargs.argv;
+var args = yargs.argv;
+winston.addColors({ debug: 'green', info: 'cyan', silly: 'magenta', warn: 'yellow', error: 'red' });
+winston.remove(winston.transports.Console);
+winston.add(winston.transports.Console, { level: 'debug', colorize: true });
 // Saves logs to file
-if (arguments.logFile && arguments.logFile.trim() != "")
-    winston.add(winston.transports.File, { filename: arguments.logFile, maxsize: 50000000, maxFiles: 1, tailable: true });
+if (args.logFile && args.logFile.trim() != "")
+    winston.add(winston.transports.File, { filename: args.logFile, maxsize: 50000000, maxFiles: 1, tailable: true });
 // If no logging - remove all transports
-if (arguments.logging && arguments.logging.toLowerCase().trim() == "false") {
+if (args.logging && args.logging.toLowerCase().trim() == "false") {
     winston.remove(winston.transports.File);
     winston.remove(winston.transports.Console);
 }
 // Create the express app
 var app = express();
 // Make sure the argument is there
-if (!arguments.config || arguments.config.trim() == "") {
+if (!args.config || args.config.trim() == "") {
     winston.error("Error! No config file specified. Please start Users with the config file in the command line. Eg: node users.js --config=\"./config.js\"", { process: process.pid });
     process.exit();
 }
 // Make sure the file exists
-if (!fs.existsSync(arguments.config)) {
-    winston.error("Could not locate the config file at '" + arguments.config + "'", { process: process.pid });
+if (!fs.existsSync(args.config)) {
+    winston.error("Could not locate the config file at '" + args.config + "'", { process: process.pid });
     process.exit();
 }
 // Load the file
-var jsonConfig = fs.readFileSync(arguments.config, "utf8");
+var jsonConfig = fs.readFileSync(args.config, "utf8");
 try {
     // Parse the config
     console.log("Parsing file config...");
