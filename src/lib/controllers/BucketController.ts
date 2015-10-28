@@ -456,11 +456,18 @@ export class BucketController extends Controller
         var numFiles = 0;
         var index = parseInt(req.query.index);
         var limit = parseInt(req.query.limit);
+        
         var bucketEntry: users.IBucketEntry;
 
         if (!req.params.bucket || req.params.bucket.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid bucket name", error: true }));
 
+        var searchTerm: RegExp;
+
+        // Check for keywords
+        if (req.query.search)
+            searchTerm = new RegExp(req.query.search, "i");
+        
         manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket)
         {
             if (!bucket)
@@ -472,7 +479,7 @@ export class BucketController extends Controller
         }).then(function (count)
         {
             numFiles = count;
-            return manager.getFilesByBucket(bucketEntry, index, limit);
+            return manager.getFilesByBucket(bucketEntry, index, limit, searchTerm);
 
         }).then(function (files)
         {
@@ -506,8 +513,13 @@ export class BucketController extends Controller
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var numBuckets = 1;
+        var searchTerm: RegExp;
 
-        manager.getBucketEntries(user).then(function (buckets)
+        // Check for keywords
+        if (req.query.search)
+            searchTerm = new RegExp(req.query.search, "i");
+
+        manager.getBucketEntries(user, searchTerm).then(function (buckets)
         {
             return res.end(JSON.stringify(<users.IGetBuckets>{
                 message: `Found [${buckets.length}] buckets`,

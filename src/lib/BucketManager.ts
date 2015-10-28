@@ -42,19 +42,23 @@ export class BucketManager
     /**
     * Fetches all bucket entries from the database
     * @param {string} user [Optional] Specify the user. If none provided, then all buckets are retrieved
+    * @param {RegExp} searchTerm [Optional] Specify a search term
     * @returns {Promise<Array<def.IBucketEntry>>}
     */
-    getBucketEntries(user? : string): Promise<Array<users.IBucketEntry>>
+    getBucketEntries(user?: string, searchTerm?: RegExp): Promise<Array<users.IBucketEntry>>
     {
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
-
+        
         return new Promise(function (resolve, reject)
         {
             var search: users.IBucketEntry = {};
             if (user)
                 search.user = user;
+
+            if (searchTerm)
+                (<any>search).name = searchTerm;
 
             // Save the new entry into the database
             bucketCollection.find(search, function (err, result)
@@ -131,11 +135,18 @@ export class BucketManager
     /**
     * Fetches all file entries from the database for a given bucket
     * @param {IBucketEntry} bucket Specify the bucket from which he files belong to
+    * @param {number} startIndex Specify the start index
+    * @param {number} limit Specify the number of files to retrieve
+    * @param {RegExp} searchTerm Specify a search term
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    getFilesByBucket(bucket: users.IBucketEntry, startIndex?: number, limit?: number): Promise<Array<users.IFileEntry>>
+    getFilesByBucket(bucket: users.IBucketEntry, startIndex?: number, limit?: number, searchTerm?: RegExp): Promise<Array<users.IFileEntry>>
     {
         var searchQuery: users.IFileEntry = { bucketId: bucket.identifier };
+
+        if (searchTerm)
+            (<any>searchQuery).name = searchTerm;
+
         return this.getFiles(searchQuery, startIndex, limit);
     }
 
@@ -933,9 +944,10 @@ export class BucketManager
     * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
     * @param {string} user Optionally specify the user of the file
+    * @param {RegExp} searchTerm Specify a search term
     * @returns {Promise<IFileEntry>}
     */
-    getFile(fileID: string, user? : string ): Promise<users.IFileEntry>
+    getFile(fileID: string, user?: string, searchTerm?: RegExp ): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -946,6 +958,9 @@ export class BucketManager
             var searchQuery: users.IFileEntry = { identifier: fileID };
             if (user)
                 searchQuery.user = user;
+
+            if (searchTerm)
+                (<any>searchQuery).name = searchTerm;
 
             files.findOne(searchQuery, function (err, result: users.IFileEntry)
             {

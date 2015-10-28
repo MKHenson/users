@@ -18,9 +18,10 @@ var BucketManager = (function () {
     /**
     * Fetches all bucket entries from the database
     * @param {string} user [Optional] Specify the user. If none provided, then all buckets are retrieved
+    * @param {RegExp} searchTerm [Optional] Specify a search term
     * @returns {Promise<Array<def.IBucketEntry>>}
     */
-    BucketManager.prototype.getBucketEntries = function (user) {
+    BucketManager.prototype.getBucketEntries = function (user, searchTerm) {
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
@@ -28,6 +29,8 @@ var BucketManager = (function () {
             var search = {};
             if (user)
                 search.user = user;
+            if (searchTerm)
+                search.name = searchTerm;
             // Save the new entry into the database
             bucketCollection.find(search, function (err, result) {
                 if (err)
@@ -85,10 +88,15 @@ var BucketManager = (function () {
     /**
     * Fetches all file entries from the database for a given bucket
     * @param {IBucketEntry} bucket Specify the bucket from which he files belong to
+    * @param {number} startIndex Specify the start index
+    * @param {number} limit Specify the number of files to retrieve
+    * @param {RegExp} searchTerm Specify a search term
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    BucketManager.prototype.getFilesByBucket = function (bucket, startIndex, limit) {
+    BucketManager.prototype.getFilesByBucket = function (bucket, startIndex, limit, searchTerm) {
         var searchQuery = { bucketId: bucket.identifier };
+        if (searchTerm)
+            searchQuery.name = searchTerm;
         return this.getFiles(searchQuery, startIndex, limit);
     };
     /**
@@ -689,9 +697,10 @@ var BucketManager = (function () {
     * Fetches a file by its ID
     * @param {string} fileID The file ID of the file on the bucket
     * @param {string} user Optionally specify the user of the file
+    * @param {RegExp} searchTerm Specify a search term
     * @returns {Promise<IFileEntry>}
     */
-    BucketManager.prototype.getFile = function (fileID, user) {
+    BucketManager.prototype.getFile = function (fileID, user, searchTerm) {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
@@ -699,6 +708,8 @@ var BucketManager = (function () {
             var searchQuery = { identifier: fileID };
             if (user)
                 searchQuery.user = user;
+            if (searchTerm)
+                searchQuery.name = searchTerm;
             files.findOne(searchQuery, function (err, result) {
                 if (err)
                     return reject(err);

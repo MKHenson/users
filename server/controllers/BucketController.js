@@ -348,6 +348,10 @@ var BucketController = (function (_super) {
         var bucketEntry;
         if (!req.params.bucket || req.params.bucket.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a valid bucket name", error: true }));
+        var searchTerm;
+        // Check for keywords
+        if (req.query.search)
+            searchTerm = new RegExp(req.query.search, "i");
         manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function (bucket) {
             if (!bucket)
                 return Promise.reject(new Error("Could not find the bucket '" + req.params.bucket + "'"));
@@ -355,7 +359,7 @@ var BucketController = (function (_super) {
             return manager.numFiles({ bucketId: bucket.identifier });
         }).then(function (count) {
             numFiles = count;
-            return manager.getFilesByBucket(bucketEntry, index, limit);
+            return manager.getFilesByBucket(bucketEntry, index, limit, searchTerm);
         }).then(function (files) {
             return res.end(JSON.stringify({
                 message: "Found [" + numFiles + "] files",
@@ -382,7 +386,11 @@ var BucketController = (function (_super) {
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager_1.BucketManager.get;
         var numBuckets = 1;
-        manager.getBucketEntries(user).then(function (buckets) {
+        var searchTerm;
+        // Check for keywords
+        if (req.query.search)
+            searchTerm = new RegExp(req.query.search, "i");
+        manager.getBucketEntries(user, searchTerm).then(function (buckets) {
             return res.end(JSON.stringify({
                 message: "Found [" + buckets.length + "] buckets",
                 error: false,
