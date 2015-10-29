@@ -73,7 +73,9 @@ export enum EventType
     Login,
     Logout,
     Activated,
-    Removed
+    Removed,
+    FilesUploaded,
+    FilesRemoved
 }
 
 /**

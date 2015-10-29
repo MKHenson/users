@@ -11,6 +11,7 @@ var Controller_1 = require("./Controller");
 var BucketManager_1 = require("../BucketManager");
 var multiparty = require("multiparty");
 var compression = require("compression");
+var CommsController_1 = require("./CommsController");
 /**
 * Main class to use for managing users
 */
@@ -540,11 +541,15 @@ var BucketController = (function (_super) {
             // Checks if the connection is closed and all the parts have been uploaded
             var checkIfComplete = function () {
                 if (closed && completedParts == numParts) {
-                    return res.end(JSON.stringify({
-                        message: "Upload complete. [" + successfulParts + "] Files have been saved.",
-                        error: false,
-                        tokens: uploadedTokens
-                    }));
+                    // Send file added events to sockets
+                    var fEvent = { username: username, eventType: CommsController_1.EventType.FilesUploaded, tokens: uploadedTokens };
+                    CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                        return res.end(JSON.stringify({
+                            message: "Upload complete. [" + successfulParts + "] Files have been saved.",
+                            error: false,
+                            tokens: uploadedTokens
+                        }));
+                    });
                 }
             };
             // Close emitted after form parsed

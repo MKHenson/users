@@ -13,6 +13,9 @@ import * as multiparty from "multiparty";
 import * as validator from "validator";
 import * as compression from "compression";
 
+import {CommsController, EventType} from "./CommsController";
+import * as def from "webinate-users";
+
 /**
 * Main class to use for managing users
 */
@@ -711,11 +714,17 @@ export class BucketController extends Controller
             {
                 if (closed && completedParts == numParts)
                 {
-                    return res.end(JSON.stringify(<users.IUploadResponse>{
-                        message: `Upload complete. [${successfulParts}] Files have been saved.`,
-                        error: false,
-                        tokens: uploadedTokens
-                    }));
+                    // Send file added events to sockets
+                    var fEvent: def.SocketEvents.IFileEvent = { username: username, eventType: EventType.FilesUploaded, tokens: <any>uploadedTokens };
+                    CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                    {
+                        return res.end(JSON.stringify(<users.IUploadResponse>{
+                            message: `Upload complete. [${successfulParts}] Files have been saved.`,
+                            error: false,
+                            tokens: uploadedTokens
+                        }));
+
+                    });                    
                 }
             }
 
