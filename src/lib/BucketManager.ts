@@ -304,7 +304,14 @@ export class BucketManager
                                 // Increments the API calls
                                 stats.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } }, function (err, result)
                                 {
-                                    return resolve(bucket);
+                                    // Send bucket added events to sockets
+                                    var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: bucket, username: user };
+                                    CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                                    {
+                                        return resolve(bucket);
+                                    });
+
+                                    
                                 });
                             }
                         });
@@ -355,16 +362,23 @@ export class BucketManager
                             attempts++;
                             toRemove.push(bucket.identifier);
                             if (attempts == l)
-                                resolve(toRemove);
+                            {
+                                // Send events to sockets
+                                var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket };
+                                CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                                {
+                                    resolve(toRemove);
+                                });
+                            }
 
-                        }).catch(function (err)
+                        }).catch(function (err : Error)
                         {
                             if (err)
                                 error = err;
 
                             attempts++;
                             if (attempts == l)
-                                reject(error);
+                                reject(new Error(`Could not delete bucket: ${error.message}`));
                         });
                     }
 
@@ -377,11 +391,11 @@ export class BucketManager
     }
 
     /**
-   * Attempts to remove buckets by id
-   * @param {Array<string>} buckets An array of bucket IDs to remove
+    * Attempts to remove buckets by id
+    * @param {Array<string>} buckets An array of bucket IDs to remove
     * @param {string} user The user to whome these buckets belong
-   * @returns {Promise<string>} An array of ID's of the buckets removed
-   */
+    * @returns {Promise<string>} An array of ID's of the buckets removed
+    */
     removeBucketsByName(buckets: Array<string>, user : string ): Promise<Array<string>>
     {
         if (buckets.length == 0)

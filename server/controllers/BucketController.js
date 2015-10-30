@@ -443,7 +443,7 @@ var BucketController = (function (_super) {
         });
     };
     BucketController.prototype.alphaNumericDashSpace = function (str) {
-        if (!str.match(/^[0-9a-zA-Z -_]+$/i))
+        if (!str.match(/^[0-9A-Z _\-]+$/i))
             return false;
         else
             return true;
@@ -530,7 +530,7 @@ var BucketController = (function (_super) {
                     if (!that.alphaNumericDashSpace(newUpload.field)) {
                         completedParts++;
                         newUpload.error = true;
-                        newUpload.errorMsg = "Please only use alphanumeric, dash or space characters";
+                        newUpload.errorMsg = "Please only use safe characters";
                         part.resume();
                         checkIfComplete();
                     }

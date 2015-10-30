@@ -75,7 +75,9 @@ export enum EventType
     Activated,
     Removed,
     FilesUploaded,
-    FilesRemoved
+    FilesRemoved,
+    BucketUploaded,
+    BucketRemoved
 }
 
 /**

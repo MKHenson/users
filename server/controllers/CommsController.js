@@ -51,6 +51,8 @@ var ClientConnection = (function () {
     EventType[EventType["Removed"] = 3] = "Removed";
     EventType[EventType["FilesUploaded"] = 4] = "FilesUploaded";
     EventType[EventType["FilesRemoved"] = 5] = "FilesRemoved";
+    EventType[EventType["BucketUploaded"] = 6] = "BucketUploaded";
+    EventType[EventType["BucketRemoved"] = 7] = "BucketRemoved";
 })(exports.EventType || (exports.EventType = {}));
 var EventType = exports.EventType;
 /**

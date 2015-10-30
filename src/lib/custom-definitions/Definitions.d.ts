@@ -42,6 +42,23 @@ declare module UsersInterface
         {
             files: Array<string>;
         }
+
+        /*
+        * Interface for a bucket being added
+        */
+        export interface IBucketAddedEvent extends IEvent
+        {
+            username: string;
+            bucket: IBucketEntry
+        }
+
+        /*
+        * Interface for a bucket being removed
+        */
+        export interface IBucketRemovedEvent extends IEvent
+        {
+            bucket: IBucketEntry
+        }
     }
 
     /*

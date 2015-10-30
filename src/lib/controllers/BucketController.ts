@@ -584,7 +584,7 @@ export class BucketController extends Controller
 
     private alphaNumericDashSpace(str: string): boolean
     {
-        if (!str.match(/^[0-9a-zA-Z -_]+$/i))
+        if (!str.match(/^[0-9A-Z _\-]+$/i))
             return false;
         else
             return true;
@@ -695,7 +695,7 @@ export class BucketController extends Controller
                     {
                         completedParts++;
                         newUpload.error = true;
-                        newUpload.errorMsg = "Please only use alphanumeric, dash or space characters";
+                        newUpload.errorMsg = "Please only use safe characters";
                         part.resume();
                         checkIfComplete();
                     }

@@ -38,7 +38,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body).hasProperty("message")
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Checking login with admin user', function(){	
@@ -54,7 +54,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body).hasProperty("message")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not log in with bad credentials', function(done){
 			agent
@@ -67,7 +67,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body).hasProperty("message")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not log in with false credentials', function(done){
 			agent
@@ -80,7 +80,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body).hasProperty("message")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not log in with a valid username but invalid password', function(done){
 			agent
@@ -133,7 +133,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.user).hasProperty("passwordTag")					
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('should be logged in with visible user details', function(done){
 			agent
@@ -157,7 +157,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.user).hasProperty("passwordTag")					
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Getting user data with admin cookie', function(){	
@@ -181,7 +181,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.data).hasProperty("passwordTag")					
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('should get admin user with details', function(done){
 			agent
@@ -203,7 +203,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.data).hasProperty("passwordTag")					
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('should get admin user by email without details', function(done){
 			agent
@@ -225,7 +225,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.data).hasProperty("passwordTag")					
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('should get admin user by email with details', function(done){
 			agent
@@ -247,7 +247,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.data).hasProperty("passwordTag")					
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did set user meta data of myself', function(done){
 			agent
@@ -261,7 +261,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("User's data has been updated")			
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did get user meta "sister"', function(done){
 			agent
@@ -272,7 +272,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body).is("sam")			
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did get user meta "brother"', function(done){
 			agent
@@ -283,7 +283,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body).is("mat")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did update user meta "brother" to john', function(done){
 			agent
@@ -297,7 +297,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Value 'brother' has been updated")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did get user meta "brother" and its john', function(done){
 			agent
@@ -308,7 +308,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body).is("john")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did set clear all user data', function(done){
 			agent
@@ -321,7 +321,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("User's data has been updated")			
 					done();
 				});	
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Logging out', function(){	
@@ -335,7 +335,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body).hasProperty("message")
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Checking authentication with stale session', function(){	
@@ -350,7 +350,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body).hasProperty("message")
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 	
 	describe('When not logged in', function(){	
@@ -364,7 +364,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You must be logged in to make this request")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should get no user with email or verbose', function(done){
 			agent
 				.get('/users/users/' + config.adminUser.email + "?verbose=true").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -375,7 +376,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You must be logged in to make this request")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should get no group of users', function(done){
 			agent
 				.get('/users/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -386,7 +388,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You must be logged in to make this request")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should get no sessions', function(done){
 			agent
 				.get('/users/sessions').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -397,7 +400,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You must be logged in to make this request")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not be able to create a new user', function(done){
 			agent
 				.post('/users/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -409,7 +413,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You must be logged in to make this request")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('should not be able to get user meta data', function(done){
 			agent
@@ -421,7 +425,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You must be logged in to make this request")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 	})
 	
 	describe('Registering as a new user', function(){	
@@ -436,7 +441,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Please enter a valid username")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with existing username', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -448,7 +454,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("That username or email is already in use; please choose another or login.")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with blank username', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -460,7 +467,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Please enter a valid username")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with blank password', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -472,7 +480,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Password cannot be null or empty")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with bad characters', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -484,7 +493,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Please only use alpha numeric characters for your username")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with valid information but no email', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -496,7 +506,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Email cannot be null or empty")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with valid information but invalid email', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -508,7 +519,8 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Please use a valid email address")
 					done();
 				});
-		})
+		}).timeout(20000)
+		
 		it('should not register with valid information, email & no captcha', function(done){
 			agent
 				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -520,7 +532,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Captcha cannot be null or empty")
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Create a new user when logged in as admin', function(){	
@@ -537,7 +549,7 @@ describe('Testing user API functions', function(){
 					adminCookie = res.headers["set-cookie"][0].split(";")[0];
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		
 		
@@ -553,7 +565,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Username cannot be empty")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user without a password', function(done){
 			agent
@@ -567,7 +579,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Password cannot be empty")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user with invalid characters', function(done){
 			agent
@@ -581,7 +593,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Username must be alphanumeric")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user without email', function(done){
 			agent
@@ -595,7 +607,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Email cannot be empty")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user with invalid email', function(done){
 			agent
@@ -609,7 +621,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Email must be valid")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user with invalid privilege', function(done){
 			agent
@@ -623,7 +635,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Privilege type is unrecognised")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user with an existing username', function(done){
 			agent
@@ -637,7 +649,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("A user with that name or email already exists")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user with an existing email', function(done){
 			agent
@@ -651,7 +663,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("A user with that name or email already exists")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not create user george with super admin privileges', function(done){
 			agent
@@ -665,7 +677,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You cannot create a user with super admin permissions")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did create regular user george with valid details', function(done){
 			agent
@@ -701,7 +713,7 @@ describe('Testing user API functions', function(){
 					activation = res.body.data.registerKey
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did active george2 through the admin', function(done){
 			agent
@@ -712,7 +724,7 @@ describe('Testing user API functions', function(){
 					test.bool(res.body.error).isFalse()
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('admin did logout', function(done){
 			agent
@@ -721,7 +733,7 @@ describe('Testing user API functions', function(){
 					if (err) return done(err);
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Checking user login with activation code present', function(){	
@@ -738,7 +750,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("Please authorise your account by clicking on the link that was sent to your email")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not resend an activation with an invalid user', function(done){
 			agent
@@ -750,7 +762,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("No user exists with the specified details")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did resend an activation email with a valid user', function(done){
 			agent
@@ -772,7 +784,7 @@ describe('Testing user API functions', function(){
 					test.string(res.headers["location"]).contains("error")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not activate with an valid username and no key', function(done){
 			agent
@@ -782,7 +794,7 @@ describe('Testing user API functions', function(){
 					test.string(res.headers["location"]).contains("error")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did not activate with an valid username and invalid key', function(done){
 			agent
@@ -832,7 +844,7 @@ describe('Testing user API functions', function(){
 					test.string(res.headers["location"]).contains("success")
 					done();
 				});
-		})
+		}).timeout(20000)
 		
 		it('did log in with valid details and an activated account', function(done){
 			agent
@@ -847,7 +859,7 @@ describe('Testing user API functions', function(){
 					done();
 				});
 		})
-	})
+	}).timeout(20000)
 	
 	describe('Getting/Setting data when a regular user', function(){	
 	
@@ -862,7 +874,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get details other users (no permission)', function(done){
 			agent
@@ -875,7 +887,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get sessions (no permission)', function(done){
 			agent
@@ -888,7 +900,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not remove the admin user (no permission)', function(done){
 			agent
@@ -901,7 +913,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not approve activation (no permission)', function(done){
 			agent
@@ -914,7 +926,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create a new user (no permission)', function(done){
 			agent
@@ -927,7 +939,7 @@ describe('Testing user API functions', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did get user data of myself', function(done){
 			agent
@@ -949,7 +961,7 @@ describe('Testing user API functions', function(){
 					test.object(res.body.data).hasProperty("passwordTag")					
 					done();
 				});	
-		})
+		}).timeout(20000)
 	})
 })
 
@@ -968,7 +980,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get stats for admin', function(done){
 			agent
@@ -981,7 +993,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get buckets for admin', function(done){
 			agent
@@ -994,7 +1006,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get buckets for all users', function(done){
 			agent
@@ -1007,7 +1019,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create stats for admin', function(done){
 			agent
@@ -1020,7 +1032,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage calls for admin', function(done){
 			agent
@@ -1033,7 +1045,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage memory for admin', function(done){
 			agent
@@ -1046,7 +1058,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage allocated calls for admin', function(done){
 			agent
@@ -1059,7 +1071,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage allocated memory for admin', function(done){
 			agent
@@ -1072,7 +1084,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage calls for itself', function(done){
 			agent
@@ -1085,7 +1097,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage memory for itself', function(done){
 			agent
@@ -1098,7 +1110,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage allocated calls for itself', function(done){
 			agent
@@ -1111,7 +1123,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create storage allocated memory for itself', function(done){
 			agent
@@ -1124,7 +1136,7 @@ describe('Checking media API', function(){
 					test.string(res.body.message).is("You don't have permission to make this request")
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did get stats for itself', function(done){
 			agent
@@ -1143,7 +1155,7 @@ describe('Checking media API', function(){
 					test.number(res.body.data.memoryUsed).is(0)
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did get buckets for itself', function(done){
 			agent
@@ -1158,7 +1170,7 @@ describe('Checking media API', function(){
 					test.number(res.body.count).is(0)
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get files for another user\'s bucket', function(done){
 			agent
@@ -1166,12 +1178,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("You don't have permission to make this request")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not get files for a non existant bucket', function(done){
 			agent
@@ -1179,12 +1192,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Error: Could not find the bucket 'test'")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create a bucket for another user', function(done){
 			agent
@@ -1192,25 +1206,27 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("You don't have permission to make this request")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not create a bucket with bad characters', function(done){
 			agent
-				.post("/media/create-bucket/george/__BAD__CHARS").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post("/media/create-bucket/george/£BAD!CHARS").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Please only use safe characters")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did create a new bucket called dinosaurs', function(done){
 			agent
@@ -1218,9 +1234,9 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Bucket 'dinosaurs' created")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1230,10 +1246,10 @@ describe('Checking media API', function(){
 				.post("/media/create-bucket/george/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
-					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					if (err) return done(err);					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Error: A Bucket with the name 'dinosaurs' has already been registered")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
 		})
@@ -1244,9 +1260,9 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Bucket 'dinosaurs2' created")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1257,10 +1273,10 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Removed [0] buckets")
 					test.array(res.body.data).isEmpty()
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		})
@@ -1271,13 +1287,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Found [2] buckets")
 					test.array(res.body.data).hasLength(2)
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not upload a file to a bucket that does not exist', function(done){
 			agent
@@ -1286,11 +1302,11 @@ describe('Checking media API', function(){
 				.attach('"£$^&&', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("tokens")
 					test.string(res.body.message).is("No bucket exists with the name 'dinosaurs3'")
 					test.array(res.body.tokens).hasLength(0)
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1302,16 +1318,16 @@ describe('Checking media API', function(){
 				.attach('"£$^&&', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("tokens")
-					test.string(res.body.message).is("Upload complete. [0] Files have been saved.")
+					test.string(res.body.message).is("Please only use safe characters")
 					test.array(res.body.tokens).hasLength(1)
 					test.string(res.body.tokens[0].field).is("")
 					test.string(res.body.tokens[0].filename).is("file.png")
 					test.bool(res.body.tokens[0].error).isTrue()
-					test.string(res.body.tokens[0].errorMsg).is("Please use safe characters")
+					test.string(res.body.tokens[0].errorMsg).is("Please only use safe characters")
 					test.string(res.body.tokens[0].file).is("")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1323,7 +1339,6 @@ describe('Checking media API', function(){
 				.attach('small-image', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("tokens")
 					test.string(res.body.message).is("Upload complete. [1] Files have been saved.")
@@ -1333,6 +1348,7 @@ describe('Checking media API', function(){
 					test.bool(res.body.tokens[0].error).isNotTrue()
 					test.string(res.body.tokens[0].errorMsg).is("")
 					test.object(res.body.tokens[0]).hasProperty("file")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1344,7 +1360,6 @@ describe('Checking media API', function(){
 				.attach('small-image', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("data")
 					test.string(res.body.message).is("Found [1] files")
@@ -1363,6 +1378,7 @@ describe('Checking media API', function(){
 					
 					fileId = res.body.data[0].identifier
 					publicURL = res.body.data[0].publicURL
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1373,9 +1389,9 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("File '123' does not exist")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
 		})
@@ -1386,9 +1402,9 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("File '123' does not exist")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
 		})
@@ -1399,9 +1415,10 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("File is now public")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1422,9 +1439,10 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("File is now private")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1444,12 +1462,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.number(res.body.data.apiCallsUsed).is(5)
 					test.number(res.body.data.memoryUsed).is(226)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did upload another file to dinosaurs2', function(done){
 			agent
@@ -1458,7 +1477,7 @@ describe('Checking media API', function(){
 				.attach('small-image', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("tokens")
 					test.string(res.body.message).is("Upload complete. [1] Files have been saved.")
@@ -1468,6 +1487,7 @@ describe('Checking media API', function(){
 					test.bool(res.body.tokens[0].error).isNotTrue()
 					test.string(res.body.tokens[0].errorMsg).is("")
 					test.object(res.body.tokens[0]).hasProperty("file")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1478,12 +1498,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.number(res.body.data.apiCallsUsed).is(6)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not download a file with an invalid id anonomously', function(done){
 			agent
@@ -1492,7 +1513,7 @@ describe('Checking media API', function(){
 					if (err) return done(err);
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did download an image file with a valid id anonomously', function(done){
 			agent
@@ -1509,11 +1530,12 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.number(res.body.data.apiCallsUsed).is(7)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did upload another file to dinosaurs2', function(done){
 			agent
@@ -1522,7 +1544,7 @@ describe('Checking media API', function(){
 				.attach('small-image', "file.png")
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("tokens")
 					test.string(res.body.message).is("Upload complete. [1] Files have been saved.")
@@ -1532,6 +1554,7 @@ describe('Checking media API', function(){
 					test.bool(res.body.tokens[0].error).isNotTrue()
 					test.string(res.body.tokens[0].errorMsg).is("")
 					test.object(res.body.tokens[0]).hasProperty("file")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
 		}).timeout(20000)
@@ -1546,7 +1569,7 @@ describe('Checking media API', function(){
 					fileId = res.body.data[1].identifier
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not rename an incorrect file to testy', function(done){
 			agent
@@ -1556,12 +1579,13 @@ describe('Checking media API', function(){
 				.send({name:"testy"})
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("File '123' does not exist")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not rename a correct file with an empty name', function(done){
 			agent
@@ -1571,12 +1595,13 @@ describe('Checking media API', function(){
 				.send({name:""})
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Please specify the new name of the file")
+					test.bool(res.body.error).isTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did rename a correct file to testy', function(done){
 			agent
@@ -1586,12 +1611,13 @@ describe('Checking media API', function(){
 				.send({name:"testy"})
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Renamed file to 'testy'")
+					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not remove a file from dinosaurs2 with a bad id', function(done){
 			agent
@@ -1599,13 +1625,14 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Removed [0] files")
 					test.array(res.body.data).hasLength(0)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did remove a file from dinosaurs2 with a valid id', function(done){
 			agent
@@ -1613,13 +1640,14 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Removed [1] files")
 					test.array(res.body.data).hasLength(1)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('updated its stats to reflect a file was deleted', function(done){
 			agent
@@ -1627,12 +1655,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.number(res.body.data.apiCallsUsed).is(10)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not remove a bucket with a bad name', function(done){
 			agent
@@ -1640,13 +1669,14 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Removed [0] buckets")
 					test.array(res.body.data).hasLength(0)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did not remove the bucket dinosaurs2', function(done){
 			agent
@@ -1654,10 +1684,11 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.object(res.body).hasProperty("message")
 					test.string(res.body.message).is("Removed [1] buckets")
 					test.array(res.body.data).hasLength(1)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
 		}).timeout(20000)
@@ -1668,12 +1699,13 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.number(res.body.data.apiCallsUsed).is(12)
 					test.number(res.body.data.memoryUsed).is(226)
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
-		})
+		}).timeout(20000)
 	})
 	
 	describe('Checking permission data for another regular user', function(){
@@ -1684,13 +1716,14 @@ describe('Checking media API', function(){
 				.send({username: "george2", password: "password" })
 				.end(function(err, res){
 					if (err) return done(err);
-					test.bool(res.body.error).isNotTrue()
+					
 					test.bool(res.body.authenticated).isNotFalse()
 					test.object(res.body).hasProperty("message")
 					george2Cookie = res.headers["set-cookie"][0].split(";")[0];
+					test.bool(res.body.error).isNotTrue()
 					done();
 				});
-		})
+		}).timeout(20000)
 	})
 })
 

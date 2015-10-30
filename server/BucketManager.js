@@ -216,7 +216,11 @@ var BucketManager = (function () {
                             else {
                                 // Increments the API calls
                                 stats.update({ user: user }, { $inc: { apiCallsUsed: 1 } }, function (err, result) {
-                                    return resolve(bucket);
+                                    // Send bucket added events to sockets
+                                    var fEvent = { eventType: CommsController_1.EventType.BucketUploaded, bucket: bucket, username: user };
+                                    CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                                        return resolve(bucket);
+                                    });
                                 });
                             }
                         });
@@ -252,14 +256,19 @@ var BucketManager = (function () {
                         that.deleteBucket(buckets[i]).then(function (bucket) {
                             attempts++;
                             toRemove.push(bucket.identifier);
-                            if (attempts == l)
-                                resolve(toRemove);
+                            if (attempts == l) {
+                                // Send events to sockets
+                                var fEvent = { eventType: CommsController_1.EventType.BucketRemoved, bucket: bucket };
+                                CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                                    resolve(toRemove);
+                                });
+                            }
                         }).catch(function (err) {
                             if (err)
                                 error = err;
                             attempts++;
                             if (attempts == l)
-                                reject(error);
+                                reject(new Error("Could not delete bucket: " + error.message));
                         });
                     }
                     // If no buckets
@@ -270,11 +279,11 @@ var BucketManager = (function () {
         });
     };
     /**
-   * Attempts to remove buckets by id
-   * @param {Array<string>} buckets An array of bucket IDs to remove
+    * Attempts to remove buckets by id
+    * @param {Array<string>} buckets An array of bucket IDs to remove
     * @param {string} user The user to whome these buckets belong
-   * @returns {Promise<string>} An array of ID's of the buckets removed
-   */
+    * @returns {Promise<string>} An array of ID's of the buckets removed
+    */
     BucketManager.prototype.removeBucketsByName = function (buckets, user) {
         if (buckets.length == 0)
             return Promise.resolve();
@@ -676,7 +685,6 @@ var BucketManager = (function () {
                 stream.on("error", function (err) {
                     return reject(new Error("Could not upload the file '" + part.filename + "' to bucket: " + err.toString()));
                 }).on('finish', function () {
-                    part.resume();
                     bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: part.byteCount } }, function (err, result) {
                         statCollection.update({ user: user }, { $inc: { memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result) {
                             that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file) {
