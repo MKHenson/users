@@ -159,8 +159,7 @@ export class CommsController
             for (var i = 0, l = that._server.clients.length; i < l; i++)
             {
                 var client: ISocketClient = <ISocketClient>that._server.clients[i];
-                if ( client.clientConnection.clientType.eventListeners.indexOf(event.eventType) != -1 )
-                    releventClients.push(client);
+                releventClients.push(client);
             }
 
             // Now go through each client and let them know about the event

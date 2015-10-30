@@ -8,6 +8,8 @@ import {User} from "./Users"
 import * as zlib from "zlib"
 import * as compressible from "compressible"
 import express = require("express");
+import {CommsController, EventType} from "./controllers/CommsController";
+import * as def from "webinate-users";
 
 /**
 * Class responsible for managing buckets and uploads to Google storage
@@ -542,9 +544,16 @@ export class BucketManager
                        {
                             attempts++;
                             filesRemoved.push(fileEntry.identifier);
-
+                           
                             if (attempts == l)
-                                resolve(filesRemoved);
+                            {
+                                // Update any listeners on the sockets
+                                var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved };
+                                CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                                {
+                                    resolve(filesRemoved);
+                                });
+                            }
 
                         }).catch(function (err)
                         {

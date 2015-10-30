@@ -11,6 +11,7 @@ var Controller_1 = require("./Controller");
 var BucketManager_1 = require("../BucketManager");
 var multiparty = require("multiparty");
 var compression = require("compression");
+var winston = require("winston");
 var CommsController_1 = require("./CommsController");
 /**
 * Main class to use for managing users
@@ -97,6 +98,7 @@ var BucketController = (function (_super) {
         manager.updateStorage(req._target.dbEntry.username, { apiCallsUsed: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user API calls to [" + value + "]", error: false }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
     };
@@ -114,6 +116,7 @@ var BucketController = (function (_super) {
         manager.updateStorage(req._target.dbEntry.username, { memoryUsed: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user memory to [" + value + "] bytes", error: false }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
     };
@@ -131,6 +134,7 @@ var BucketController = (function (_super) {
         manager.updateStorage(req._target.dbEntry.username, { apiCallsAllocated: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user API calls to [" + value + "]", error: false }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
     };
@@ -148,6 +152,7 @@ var BucketController = (function (_super) {
         manager.updateStorage(req._target.dbEntry.username, { memoryAllocated: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user memory to [" + value + "] bytes", error: false }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
     };
@@ -172,6 +177,7 @@ var BucketController = (function (_super) {
                 data: numRemoved
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -202,6 +208,7 @@ var BucketController = (function (_super) {
                 error: false
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -229,6 +236,7 @@ var BucketController = (function (_super) {
                 data: numRemoved
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -252,6 +260,7 @@ var BucketController = (function (_super) {
                 data: stats
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -280,6 +289,7 @@ var BucketController = (function (_super) {
             manager.downloadFile(req, res, file);
             manager.incrementAPI(file.user);
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.status(404).send('File not found');
         });
     };
@@ -302,6 +312,7 @@ var BucketController = (function (_super) {
         }).then(function (iFile) {
             return res.end(JSON.stringify({ message: "File is now public", error: false, data: iFile }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -327,6 +338,7 @@ var BucketController = (function (_super) {
         }).then(function (iFile) {
             return res.end(JSON.stringify({ message: "File is now private", error: false, data: iFile }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -369,6 +381,7 @@ var BucketController = (function (_super) {
                 count: numFiles
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -399,6 +412,7 @@ var BucketController = (function (_super) {
                 count: buckets.length
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -421,6 +435,7 @@ var BucketController = (function (_super) {
                 error: false
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -428,7 +443,7 @@ var BucketController = (function (_super) {
         });
     };
     BucketController.prototype.alphaNumericDashSpace = function (str) {
-        if (!str.match(/^[0-9A-Z -]+$/i))
+        if (!str.match(/^[0-9a-zA-Z -_]+$/i))
             return false;
         else
             return true;
@@ -466,6 +481,7 @@ var BucketController = (function (_super) {
                 error: false
             }));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: err.toString(),
                 error: true
@@ -514,7 +530,7 @@ var BucketController = (function (_super) {
                     if (!that.alphaNumericDashSpace(newUpload.field)) {
                         completedParts++;
                         newUpload.error = true;
-                        newUpload.errorMsg = "Please use safe characters";
+                        newUpload.errorMsg = "Please only use alphanumeric, dash or space characters";
                         part.resume();
                         checkIfComplete();
                     }
@@ -544,11 +560,19 @@ var BucketController = (function (_super) {
                     // Send file added events to sockets
                     var fEvent = { username: username, eventType: CommsController_1.EventType.FilesUploaded, tokens: uploadedTokens };
                     CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
-                        return res.end(JSON.stringify({
-                            message: "Upload complete. [" + successfulParts + "] Files have been saved.",
-                            error: false,
-                            tokens: uploadedTokens
-                        }));
+                        var error = false;
+                        var errorMsg = "Upload complete. [" + successfulParts + "] Files have been saved.";
+                        for (var i = 0, l = uploadedTokens.length; i < l; i++)
+                            if (uploadedTokens[i].error) {
+                                error = true;
+                                errorMsg = uploadedTokens[i].errorMsg;
+                                break;
+                            }
+                        if (error)
+                            winston.error(errorMsg, { process: process.pid });
+                        else
+                            winston.info(errorMsg, { process: process.pid });
+                        return res.end(JSON.stringify({ message: errorMsg, error: error, tokens: uploadedTokens }));
                     });
                 }
             };
@@ -560,6 +584,7 @@ var BucketController = (function (_super) {
             // Parse req
             form.parse(req);
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true, tokens: [] }));
         });
     };
@@ -591,7 +616,7 @@ var BucketController = (function (_super) {
             }
             part.on('error', function (err) {
                 // decide what to do
-                console.log('Error on part event: ' + err);
+                winston.error(err.toString(), { process: process.pid });
             });
         });
         form.on('progress', function (bytesReceived, bytesExpected) {

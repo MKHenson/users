@@ -15,15 +15,32 @@ declare module UsersInterface
         export interface IEvent
         {
             eventType: number;
+        }
+
+        /*
+        * The socket user event
+        */
+        export interface IUserEvent extends IEvent
+        {
+            eventType: number;
             username: string;
         }
 
         /*
-        * Interface for file events
+        * Interface for file added events
         */
-        export interface IFileEvent extends IEvent
+        export interface IFilesAddedEvent extends IEvent
         {
+            username: string;
             tokens: Array<IUploadToken>;
+        }
+
+        /*
+        * Interface for file removed events
+        */
+        export interface IFilesRemovedEvent extends IEvent
+        {
+            files: Array<string>;
         }
     }
 
@@ -120,9 +137,6 @@ declare module UsersInterface
     {
         /*Where is the client origin expected from*/
         origin: string;
-    
-        /*Which events is it registered to listen for*/
-        eventListeners: Array<number>;
     }
 
     /*

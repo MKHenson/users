@@ -108,8 +108,7 @@ var CommsController = (function () {
             // First find all listening clients that need to be notified when this event happens
             for (var i = 0, l = that._server.clients.length; i < l; i++) {
                 var client = that._server.clients[i];
-                if (client.clientConnection.clientType.eventListeners.indexOf(event.eventType) != -1)
-                    releventClients.push(client);
+                releventClients.push(client);
             }
             // Now go through each client and let them know about the event
             var clientLength = releventClients.length;

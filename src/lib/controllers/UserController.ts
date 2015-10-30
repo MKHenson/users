@@ -12,6 +12,7 @@ import {ownerRights, adminRights, secret} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
 import * as compression from "compression";
+import * as winston from "winston";
 
 /**
 * Main class to use for managing users
@@ -142,6 +143,7 @@ export class UserController extends Controller
 
         }).catch(function(err)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
         });
     }
@@ -184,6 +186,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -221,7 +224,8 @@ export class UserController extends Controller
 			return res.end(JSON.stringify(token));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -251,7 +255,8 @@ export class UserController extends Controller
 			return res.end(JSON.stringify(token));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -276,6 +281,7 @@ export class UserController extends Controller
 		
 		}).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             res.redirect(`${redirectURL}?message=${encodeURIComponent(error.message) }&status=error&origin=${encodeURIComponent(req.query.origin)}`);
 		});
 	}
@@ -300,7 +306,8 @@ export class UserController extends Controller
 			}));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -330,6 +337,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -366,6 +374,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -393,7 +402,8 @@ export class UserController extends Controller
 			}));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -424,7 +434,8 @@ export class UserController extends Controller
 			}));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,
@@ -452,7 +463,8 @@ export class UserController extends Controller
 			}));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -482,6 +494,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{ message: error.message,  error: true }));
         });
     }
@@ -509,7 +522,8 @@ export class UserController extends Controller
 			}));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,
@@ -544,6 +558,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -575,6 +590,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -603,6 +619,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -631,6 +648,7 @@ export class UserController extends Controller
 
         }).catch(function (error: Error)
         {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify(<def.IResponse>{
                 message: error.message,
                 error: true
@@ -669,7 +687,8 @@ export class UserController extends Controller
 			return res.end(JSON.stringify(token));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
 			return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -712,7 +731,8 @@ export class UserController extends Controller
             return res.end(JSON.stringify(token));
 
         }).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
 			return res.end(JSON.stringify(<def.IResponse>{
 				message: error.message,
 				error: true
@@ -742,7 +762,8 @@ export class UserController extends Controller
 			}));
 
 		}).catch(function (error: Error)
-		{
+        {
+            winston.error(error.toString(), { process: process.pid });
 			return res.end(JSON.stringify(<def.IAuthenticationResponse>{
 				message: error.message,
 				authenticated: false,

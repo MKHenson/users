@@ -12,6 +12,7 @@ import {BucketManager} from "../BucketManager";
 import * as multiparty from "multiparty";
 import * as validator from "validator";
 import * as compression from "compression";
+import * as winston from "winston";
 
 import {CommsController, EventType} from "./CommsController";
 import * as def from "webinate-users";
@@ -127,6 +128,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
@@ -150,6 +152,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
@@ -173,6 +176,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
@@ -196,6 +200,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
         });
     }
@@ -228,6 +233,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -268,6 +274,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -303,6 +310,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -332,6 +340,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -369,6 +378,7 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.status(404).send('File not found');
         })
     }
@@ -402,6 +412,7 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -438,6 +449,7 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -495,6 +507,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -533,6 +546,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -560,6 +574,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -569,7 +584,7 @@ export class BucketController extends Controller
 
     private alphaNumericDashSpace(str: string): boolean
     {
-        if (!str.match(/^[0-9A-Z -]+$/i))
+        if (!str.match(/^[0-9a-zA-Z -_]+$/i))
             return false;
         else
             return true;
@@ -619,6 +634,7 @@ export class BucketController extends Controller
 
         }).catch(function (err: Error)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IResponse>{
                 message: err.toString(),
                 error: true
@@ -679,7 +695,7 @@ export class BucketController extends Controller
                     {
                         completedParts++;
                         newUpload.error = true;
-                        newUpload.errorMsg = "Please use safe characters";
+                        newUpload.errorMsg = "Please only use alphanumeric, dash or space characters";
                         part.resume();
                         checkIfComplete();
                     }
@@ -715,15 +731,25 @@ export class BucketController extends Controller
                 if (closed && completedParts == numParts)
                 {
                     // Send file added events to sockets
-                    var fEvent: def.SocketEvents.IFileEvent = { username: username, eventType: EventType.FilesUploaded, tokens: <any>uploadedTokens };
+                    var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, tokens: <any>uploadedTokens };
                     CommsController.singleton.broadcastEvent(fEvent).then(function ()
                     {
-                        return res.end(JSON.stringify(<users.IUploadResponse>{
-                            message: `Upload complete. [${successfulParts}] Files have been saved.`,
-                            error: false,
-                            tokens: uploadedTokens
-                        }));
+                        var error = false;
+                        var errorMsg = `Upload complete. [${successfulParts}] Files have been saved.`;
+                        for (var i = 0, l = uploadedTokens.length; i < l; i++)
+                            if (uploadedTokens[i].error)
+                            {
+                                error = true;
+                                errorMsg = uploadedTokens[i].errorMsg;
+                                break;
+                            }
 
+                        if (error)
+                            winston.error(errorMsg, { process: process.pid });
+                        else
+                            winston.info(errorMsg, { process: process.pid });
+
+                        return res.end(JSON.stringify(<users.IUploadResponse>{ message: errorMsg, error: error, tokens: uploadedTokens }));
                     });                    
                 }
             }
@@ -740,6 +766,7 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify(<users.IUploadResponse>{ message: err.toString(), error: true, tokens: [] }));
         });
     }
@@ -778,7 +805,7 @@ export class BucketController extends Controller
             part.on('error', function (err: Error)
             {
                 // decide what to do
-                console.log('Error on part event: ' + err);
+                winston.error(err.toString(), { process: process.pid });
             });
         });
 

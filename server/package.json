@@ -29,7 +29,7 @@
 		"validator": "~3.39.0",
 		"bcryptjs": "~2.2.0",
 		"yargs": "~3.12.0",
-		"gcloud": "~0.23.0",
+		"gcloud": "~0.24.1",
     "multiparty": "~4.1.2",
     "compression": "~1.5.1",
     "compressible": "~2.0.4",

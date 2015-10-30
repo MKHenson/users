@@ -9,6 +9,7 @@ var Users_1 = require("../Users");
 var PermissionController_1 = require("../PermissionController");
 var Controller_1 = require("./Controller");
 var compression = require("compression");
+var winston = require("winston");
 /**
 * Main class to use for managing users
 */
@@ -107,6 +108,7 @@ var UserController = (function (_super) {
             };
             return res.end(JSON.stringify(token));
         }).catch(function (err) {
+            winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
     };
@@ -139,6 +141,7 @@ var UserController = (function (_super) {
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -168,6 +171,7 @@ var UserController = (function (_super) {
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -191,6 +195,7 @@ var UserController = (function (_super) {
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -209,6 +214,7 @@ var UserController = (function (_super) {
         this._userManager.checkActivation(req.query.user, req.query.key).then(function (success) {
             res.redirect(redirectURL + "?message=" + encodeURIComponent("Your account has been activated!") + "&status=success&origin=" + encodeURIComponent(req.query.origin));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             res.redirect(redirectURL + "?message=" + encodeURIComponent(error.message) + "&status=error&origin=" + encodeURIComponent(req.query.origin));
         });
     };
@@ -228,6 +234,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -250,6 +257,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -279,6 +287,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -301,6 +310,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -325,6 +335,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 authenticated: false,
@@ -347,6 +358,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -368,6 +380,7 @@ var UserController = (function (_super) {
         this._userManager.sendAdminEmail(token.message, token.name, token.from).then(function () {
             return res.end(JSON.stringify({ message: "Your message has been sent to the support team", error: false }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: error.message, error: true }));
         });
     };
@@ -389,6 +402,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 authenticated: false,
@@ -416,6 +430,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -440,6 +455,7 @@ var UserController = (function (_super) {
                 error: false
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -461,6 +477,7 @@ var UserController = (function (_super) {
         that._userManager.getMetaVal(user, name).then(function (val) {
             return res.end(JSON.stringify(val));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -482,6 +499,7 @@ var UserController = (function (_super) {
         that._userManager.getMetaData(user).then(function (val) {
             return res.end(JSON.stringify(val));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -509,6 +527,7 @@ var UserController = (function (_super) {
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -542,6 +561,7 @@ var UserController = (function (_super) {
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 error: true
@@ -566,6 +586,7 @@ var UserController = (function (_super) {
                 user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {})
             }));
         }).catch(function (error) {
+            winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({
                 message: error.message,
                 authenticated: false,

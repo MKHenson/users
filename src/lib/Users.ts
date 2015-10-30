@@ -166,7 +166,7 @@ export class UserManager
             if (useEntry)
             {
                 // Send logged in event to socket
-                var sEvent: def.SocketEvents.IEvent = { username: useEntry.username, eventType: EventType.Logout };
+                var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout };
                 CommsController.singleton.broadcastEvent(sEvent).then(function ()
                 {
                     winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
@@ -334,7 +334,7 @@ export class UserManager
                         return reject(error);
 
                     // Send activated event
-                    var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Activated };
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
                     CommsController.singleton.broadcastEvent(sEvent).then(function ()
                     {
                         winston.info(`User '${username}' has been activated`, { process: process.pid });
@@ -631,7 +631,7 @@ export class UserManager
                         return reject(error);
 
                     // Send activated event
-                    var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Activated };
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
                     CommsController.singleton.broadcastEvent(sEvent).then(function ()
                     {
                         winston.info(`User '${username}' has been activated`, { process: process.pid });
@@ -855,7 +855,7 @@ export class UserManager
                         return reject(new Error("Could not remove the user from the database"));
 
                     // Send event to sockets
-                    var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Removed };
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed };
                     CommsController.singleton.broadcastEvent(sEvent).then(function ()
                     {
                         winston.info(`User '${username}' has been removed`, { process: process.pid });
@@ -970,7 +970,7 @@ export class UserManager
                                 if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
                                 // Send logged in event to socket
-                                var sEvent: def.SocketEvents.IEvent = { username: username, eventType: EventType.Login };
+                                var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login };
                                 CommsController.singleton.broadcastEvent(sEvent).then(function ()
                                 {
                                     return resolve(user);

@@ -1,6 +1,7 @@
 var gcloud = require("gcloud");
 var zlib = require("zlib");
 var compressible = require("compressible");
+var CommsController_1 = require("./controllers/CommsController");
 /**
 * Class responsible for managing buckets and uploads to Google storage
 */
@@ -393,8 +394,13 @@ var BucketManager = (function () {
                         that.deleteFile(fileEntries[i]).then(function (fileEntry) {
                             attempts++;
                             filesRemoved.push(fileEntry.identifier);
-                            if (attempts == l)
-                                resolve(filesRemoved);
+                            if (attempts == l) {
+                                // Update any listeners on the sockets
+                                var fEvent = { eventType: CommsController_1.EventType.FilesRemoved, files: filesRemoved };
+                                CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                                    resolve(filesRemoved);
+                                });
+                            }
                         }).catch(function (err) {
                             if (err)
                                 error = err;
@@ -670,6 +676,7 @@ var BucketManager = (function () {
                 stream.on("error", function (err) {
                     return reject(new Error("Could not upload the file '" + part.filename + "' to bucket: " + err.toString()));
                 }).on('finish', function () {
+                    part.resume();
                     bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: part.byteCount } }, function (err, result) {
                         statCollection.update({ user: user }, { $inc: { memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result) {
                             that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file) {
