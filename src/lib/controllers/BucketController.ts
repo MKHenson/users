@@ -691,17 +691,16 @@ export class BucketController extends Controller
                     uploadedTokens.push(newUpload);
                     numParts++;
 
-                    if (!that.alphaNumericDashSpace(newUpload.field))
-                    {
-                        completedParts++;
-                        newUpload.error = true;
-                        newUpload.errorMsg = "Please only use safe characters";
-                        part.resume();
-                        checkIfComplete();
-                    }
-                    else
-                    {
-
+                    //if (!that.alphaNumericDashSpace(newUpload.field))
+                    //{
+                    //    completedParts++;
+                    //    newUpload.error = true;
+                    //    newUpload.errorMsg = "Please only use safe characters";
+                    //    part.resume();
+                    //    checkIfComplete();
+                    //}
+                    //else
+                    //{
                         // Upload the file part to the cloud
                         manager.uploadStream(part, bucketEntry, username).then(function (file)
                         {
@@ -719,7 +718,7 @@ export class BucketController extends Controller
                             part.resume();
                             checkIfComplete();
                         });
-                    }
+                    //}
                 }
                 else
                     part.resume();

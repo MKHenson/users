@@ -527,29 +527,30 @@ var BucketController = (function (_super) {
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
                     numParts++;
-                    if (!that.alphaNumericDashSpace(newUpload.field)) {
+                    //if (!that.alphaNumericDashSpace(newUpload.field))
+                    //{
+                    //    completedParts++;
+                    //    newUpload.error = true;
+                    //    newUpload.errorMsg = "Please only use safe characters";
+                    //    part.resume();
+                    //    checkIfComplete();
+                    //}
+                    //else
+                    //{
+                    // Upload the file part to the cloud
+                    manager.uploadStream(part, bucketEntry, username).then(function (file) {
                         completedParts++;
-                        newUpload.error = true;
-                        newUpload.errorMsg = "Please only use safe characters";
+                        successfulParts++;
+                        newUpload.file = file.identifier;
                         part.resume();
                         checkIfComplete();
-                    }
-                    else {
-                        // Upload the file part to the cloud
-                        manager.uploadStream(part, bucketEntry, username).then(function (file) {
-                            completedParts++;
-                            successfulParts++;
-                            newUpload.file = file.identifier;
-                            part.resume();
-                            checkIfComplete();
-                        }).catch(function (err) {
-                            completedParts++;
-                            newUpload.error = true;
-                            newUpload.errorMsg = err.toString();
-                            part.resume();
-                            checkIfComplete();
-                        });
-                    }
+                    }).catch(function (err) {
+                        completedParts++;
+                        newUpload.error = true;
+                        newUpload.errorMsg = err.toString();
+                        part.resume();
+                        checkIfComplete();
+                    });
                 }
                 else
                     part.resume();
