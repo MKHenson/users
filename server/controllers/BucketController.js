@@ -504,6 +504,7 @@ var BucketController = (function (_super) {
         var manager = BucketManager_1.BucketManager.get;
         var that = this;
         var username = req._user.dbEntry.username;
+        var filesUploaded = [];
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var bucketName = req.params.bucket;
@@ -527,18 +528,9 @@ var BucketController = (function (_super) {
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
                     numParts++;
-                    //if (!that.alphaNumericDashSpace(newUpload.field))
-                    //{
-                    //    completedParts++;
-                    //    newUpload.error = true;
-                    //    newUpload.errorMsg = "Please only use safe characters";
-                    //    part.resume();
-                    //    checkIfComplete();
-                    //}
-                    //else
-                    //{
                     // Upload the file part to the cloud
                     manager.uploadStream(part, bucketEntry, username).then(function (file) {
+                        filesUploaded.push(file);
                         completedParts++;
                         successfulParts++;
                         newUpload.file = file.identifier;
@@ -559,7 +551,7 @@ var BucketController = (function (_super) {
             var checkIfComplete = function () {
                 if (closed && completedParts == numParts) {
                     // Send file added events to sockets
-                    var fEvent = { username: username, eventType: CommsController_1.EventType.FilesUploaded, tokens: uploadedTokens };
+                    var fEvent = { username: username, eventType: CommsController_1.EventType.FilesUploaded, files: filesUploaded };
                     CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
                         var error = false;
                         var errorMsg = "Upload complete. [" + successfulParts + "] Files have been saved.";

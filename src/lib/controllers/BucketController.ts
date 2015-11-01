@@ -659,6 +659,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         var that = this;
         var username = req._user.dbEntry.username;
+        var filesUploaded: Array<UsersInterface.IFileEntry> = [];
 
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -690,35 +691,25 @@ export class BucketController extends Controller
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
                     numParts++;
+                    
+                    // Upload the file part to the cloud
+                    manager.uploadStream(part, bucketEntry, username).then(function (file)
+                    {
+                        filesUploaded.push(file);
+                        completedParts++;
+                        successfulParts++;
+                        newUpload.file = file.identifier;
+                        part.resume();
+                        checkIfComplete();
 
-                    //if (!that.alphaNumericDashSpace(newUpload.field))
-                    //{
-                    //    completedParts++;
-                    //    newUpload.error = true;
-                    //    newUpload.errorMsg = "Please only use safe characters";
-                    //    part.resume();
-                    //    checkIfComplete();
-                    //}
-                    //else
-                    //{
-                        // Upload the file part to the cloud
-                        manager.uploadStream(part, bucketEntry, username).then(function (file)
-                        {
-                            completedParts++;
-                            successfulParts++;
-                            newUpload.file = file.identifier;
-                            part.resume();
-                            checkIfComplete();
-
-                        }).catch(function (err: Error)
-                        {
-                            completedParts++;
-                            newUpload.error = true;
-                            newUpload.errorMsg = err.toString();
-                            part.resume();
-                            checkIfComplete();
-                        });
-                    //}
+                    }).catch(function (err: Error)
+                    {
+                        completedParts++;
+                        newUpload.error = true;
+                        newUpload.errorMsg = err.toString();
+                        part.resume();
+                        checkIfComplete();
+                    });
                 }
                 else
                     part.resume();
@@ -730,7 +721,7 @@ export class BucketController extends Controller
                 if (closed && completedParts == numParts)
                 {
                     // Send file added events to sockets
-                    var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, tokens: <any>uploadedTokens };
+                    var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, files: filesUploaded };
                     CommsController.singleton.broadcastEvent(fEvent).then(function ()
                     {
                         var error = false;
