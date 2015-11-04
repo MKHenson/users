@@ -544,6 +544,16 @@ var BucketController = (function (_super) {
                         checkIfComplete();
                     });
                 }
+                else if (part.name == "meta") {
+                    var string = '';
+                    part.setEncoding('utf8');
+                    part.on('data', function (chunk) {
+                        string += chunk;
+                    });
+                    part.on('end', function () {
+                        console.log('final output ' + string);
+                    });
+                }
                 else
                     part.resume();
             });

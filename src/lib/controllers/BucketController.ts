@@ -702,13 +702,29 @@ export class BucketController extends Controller
                         part.resume();
                         checkIfComplete();
 
-                    }).catch(function (err: Error)
+                    }).catch(function(err: Error)
                     {
                         completedParts++;
                         newUpload.error = true;
                         newUpload.errorMsg = err.toString();
                         part.resume();
                         checkIfComplete();
+                    });
+                }
+                else if (part.name == "meta")
+                {
+                    var string = '';
+
+                    part.setEncoding('utf8');
+                    part.on('data', function (chunk)
+                    {
+                        string += chunk;
+                    })
+
+
+                    part.on('end', function ()
+                    {
+                        console.log('final output ' + string);
                     });
                 }
                 else
