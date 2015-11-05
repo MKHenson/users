@@ -90,6 +90,7 @@ declare module UsersInterface
         user?: string;
         created?: number;
         memoryUsed?: number;
+        meta?: any;
     }
 
     /**
@@ -121,6 +122,7 @@ declare module UsersInterface
         mimeType?: string;
         isPublic?: boolean;
         numDownloads?: number;
+        meta?: any;
     }
 
     /**

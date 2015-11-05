@@ -24,7 +24,8 @@ export class BucketController extends Controller
 {
     private _bucketManager: BucketManager;
     private _config: users.IConfig;
-    
+    private _allowedFileTypes: Array<string>;
+
 	/**
 	* Creates an instance of the user manager
 	* @param {mongodb.Collection} userCollection The mongo collection that stores the users
@@ -36,6 +37,8 @@ export class BucketController extends Controller
         super();
 
         this._config = config;
+
+        this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff"];
 		
         // Setup the rest calls
         var router = express.Router();
@@ -643,6 +646,34 @@ export class BucketController extends Controller
     }
 
     /**
+	* Checks if a part is allowed to be uploaded
+    * @returns {boolean}
+	*/
+    private isFileTypeAllowed(part: multiparty.Part): boolean
+    {
+        if (!part.headers)
+            return false;
+
+        if (!part.headers["content-type"])
+            return false;
+
+        var allowedTypes = this._allowedFileTypes;
+        var type = part.headers["content-type"].toLowerCase();
+        var found = false;
+        for (var i = 0, l = allowedTypes.length; i < l; i++)
+            if (allowedTypes[i] == type)
+            {
+                found = true;
+                break;
+            }
+        
+        if (!found)
+            return false;
+
+        return true;
+    }
+
+    /**
 	* Attempts to upload a file to the user's bucket
 	* @param {express.Request} req
 	* @param {express.Response} res
@@ -650,7 +681,7 @@ export class BucketController extends Controller
 	*/
     private uploadUserFiles(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        var form = new multiparty.Form();
+        var form = new multiparty.Form({ maxFields: 8, maxFieldsSize: 5 * 1024 * 1024, maxFilesSize: 10 * 1024 * 1024 });
         var successfulParts = 0;
         var numParts = 0;
         var completedParts = 0;
@@ -673,6 +704,8 @@ export class BucketController extends Controller
             if (!bucketEntry)
                 return res.end(JSON.stringify(<users.IUploadResponse>{ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }));
 
+            var metaJson : any;
+
             // Parts are emitted when parsing the form
             form.on('part', function (part: multiparty.Part)
             {
@@ -684,10 +717,28 @@ export class BucketController extends Controller
                     error: false,
                     errorMsg: ""
                 }
+
+                // Deal with error logic
+                var errFunc = function (errMsg : string)
+                {
+                    completedParts++;
+                    newUpload.error = true;
+                    newUpload.errorMsg = errMsg;
+                    part.resume();
+                    checkIfComplete();
+                }
                 
                 // This part is a file - so we act on it
                 if (!!part.filename)
                 {
+                    // Is file type allowed
+                    if (!that.isFileTypeAllowed(part))
+                    {
+                        numParts++;
+                        uploadedTokens.push(newUpload);
+                        errFunc(`Please only use approved file types '${that._allowedFileTypes.join(", ")}'`);
+                    }
+
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
                     numParts++;
@@ -704,27 +755,37 @@ export class BucketController extends Controller
 
                     }).catch(function(err: Error)
                     {
-                        completedParts++;
-                        newUpload.error = true;
-                        newUpload.errorMsg = err.toString();
-                        part.resume();
-                        checkIfComplete();
+                        errFunc(err.toString());
                     });
                 }
+                // Check if we have any optional meta data
                 else if (part.name == "meta")
                 {
-                    var string = '';
-
+                    numParts++;
+                    var metaString = '';
+                    uploadedTokens.push(newUpload);
                     part.setEncoding('utf8');
-                    part.on('data', function (chunk)
+                    part.on('data', function (chunk) { metaString += chunk; })
+                    part.on('error', function (err: Error)
                     {
-                        string += chunk;
+                        metaJson = null;
+                        errFunc("Could not download meta: " + err.toString());
                     })
-
-
                     part.on('end', function ()
-                    {
-                        console.log('final output ' + string);
+                    {   
+                        try {
+                            metaJson = JSON.parse(metaString);
+                        }
+                        catch (err)
+                        {
+                            metaJson = null;
+                            newUpload.error = true;
+                            newUpload.errorMsg = "Meta data is not a valid JSON: " + err.toString();
+                        }
+
+                        part.resume();
+                        completedParts++;
+                        checkIfComplete();
                     });
                 }
                 else
@@ -736,27 +797,65 @@ export class BucketController extends Controller
             {
                 if (closed && completedParts == numParts)
                 {
-                    // Send file added events to sockets
-                    var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, files: filesUploaded };
-                    CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                    var promise: Promise<boolean>;
+
+                    // If we have any meta, then update the file entries with it
+                    if (metaJson && filesUploaded.length > 0)
+                    {
+                        var query = { $or: [] };
+                        for (var i = 0, l = filesUploaded.length; i < l; i++)
+                        {
+                            query.$or.push(<users.IFileEntry>{ _id: new mongodb.ObjectID(filesUploaded[i]._id) });
+
+                            // Manually add the meta to the files
+                            filesUploaded[i].meta = metaJson;
+                        }
+                        promise = manager.setMeta(query, metaJson);
+                    }
+                    else
+                        promise = Promise.resolve(true);
+
+                    // Once meta is updated
+                    promise.then(function ()
+                    {
+                        var promise: Promise<boolean>;
+
+                        if (filesUploaded.length > 0)
+                        {
+                            // Send file added events to sockets
+                            var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, files: filesUploaded };
+                            promise = CommsController.singleton.broadcastEvent(fEvent)
+                        }
+                        else
+                            promise = Promise.resolve(true);
+                        
+                        return promise;
+
+                    }).then(function(val)
                     {
                         var error = false;
-                        var errorMsg = `Upload complete. [${successfulParts}] Files have been saved.`;
+                        var msg = `Upload complete. [${successfulParts}] Files have been saved.`;
                         for (var i = 0, l = uploadedTokens.length; i < l; i++)
                             if (uploadedTokens[i].error)
                             {
                                 error = true;
-                                errorMsg = uploadedTokens[i].errorMsg;
+                                msg = uploadedTokens[i].errorMsg;
                                 break;
                             }
 
                         if (error)
-                            winston.error(errorMsg, { process: process.pid });
+                            winston.error(msg, { process: process.pid });
                         else
-                            winston.info(errorMsg, { process: process.pid });
+                            winston.info(msg, { process: process.pid });
 
-                        return res.end(JSON.stringify(<users.IUploadResponse>{ message: errorMsg, error: error, tokens: uploadedTokens }));
-                    });                    
+                        return res.end(JSON.stringify(<users.IUploadResponse>{ message: msg, error: error, tokens: uploadedTokens }));
+
+                    }).catch(function (err: Error)
+                    {
+                        // Something happened while updating the meta
+                        winston.error( "Could not update file meta: " + err.toString(), { process: process.pid });
+                        return res.end(JSON.stringify(<users.IUploadResponse>{ message: "Could not update files meta: " +  err.toString(), error: true, tokens: [] }));
+                    });
                 }
             }
 

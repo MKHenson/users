@@ -87,6 +87,24 @@ var BucketManager = (function () {
         });
     };
     /**
+    * Updates all file entries for a given search criteria with custom meta data
+    * @param {any} searchQuery The search query to idenfify files
+    * @param {any} meta Optional meta data to associate with the files
+    * @returns {Promise<boolean>}
+    */
+    BucketManager.prototype.setMeta = function (searchQuery, meta) {
+        var files = this._files;
+        return new Promise(function (resolve, reject) {
+            // Save the new entry into the database
+            files.update(searchQuery, { $set: { meta: meta } }, function (err, result) {
+                if (err)
+                    return reject(err);
+                else
+                    return resolve(true);
+            });
+        });
+    };
+    /**
     * Fetches all file entries from the database for a given bucket
     * @param {IBucketEntry} bucket Specify the bucket from which he files belong to
     * @param {number} startIndex Specify the start index
