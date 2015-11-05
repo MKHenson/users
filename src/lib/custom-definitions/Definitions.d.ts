@@ -251,6 +251,22 @@ declare module UsersInterface
     }
 
     /*
+    * A POST request that returns the details of a text upload
+    */
+    export interface IUploadTextResponse extends IResponse
+    {
+        token: IUploadToken;
+    }
+
+    /*
+    * A POST request that returns the details of a binary upload
+    */
+    export interface IUploadBinaryResponse extends IResponse
+    {
+        token: IUploadToken;
+    }
+
+    /*
     * A POST request that returns the details of a multipart form upload
     */
     export interface IUploadResponse extends IResponse

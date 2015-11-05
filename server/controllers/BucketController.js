@@ -28,7 +28,7 @@ var BucketController = (function (_super) {
     function BucketController(e, config) {
         _super.call(this);
         this._config = config;
-        this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff"];
+        this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff", "text/plain", "text/json", "application/octet-stream"];
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
@@ -494,6 +494,22 @@ var BucketController = (function (_super) {
     * Checks if a part is allowed to be uploaded
     * @returns {boolean}
     */
+    BucketController.prototype.isPartAllowed = function (part) {
+        if (!part.headers)
+            return false;
+        if (!part.headers["content-type"])
+            return false;
+        var type = part.headers["content-type"].toLowerCase();
+        var found = false;
+        if (type == "text/plain" || type == "application/octet-stream")
+            return true;
+        else
+            return false;
+    };
+    /**
+    * Checks if a file part is allowed to be uploaded
+    * @returns {boolean}
+    */
     BucketController.prototype.isFileTypeAllowed = function (part) {
         if (!part.headers)
             return false;
@@ -534,8 +550,10 @@ var BucketController = (function (_super) {
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a bucket", error: true, tokens: [] }));
         manager.getIBucket(bucketName, username).then(function (bucketEntry) {
-            if (!bucketEntry)
+            if (!bucketEntry) {
+                winston.error("No bucket exists with the name '" + bucketName + "'", { process: process.pid });
                 return res.end(JSON.stringify({ message: "No bucket exists with the name '" + bucketName + "'", error: true, tokens: [] }));
+            }
             var metaJson;
             // Parts are emitted when parsing the form
             form.on('part', function (part) {
@@ -562,6 +580,7 @@ var BucketController = (function (_super) {
                         numParts++;
                         uploadedTokens.push(newUpload);
                         errFunc("Please only use approved file types '" + that._allowedFileTypes.join(", ") + "'");
+                        return;
                     }
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
@@ -600,6 +619,22 @@ var BucketController = (function (_super) {
                         part.resume();
                         completedParts++;
                         checkIfComplete();
+                    });
+                }
+                else if (that.isPartAllowed(part)) {
+                    // Add the token to the upload array we are sending back to the user
+                    uploadedTokens.push(newUpload);
+                    numParts++;
+                    // Upload the file part to the cloud
+                    manager.uploadStream(part, bucketEntry, username).then(function (file) {
+                        filesUploaded.push(file);
+                        completedParts++;
+                        successfulParts++;
+                        newUpload.file = file.identifier;
+                        part.resume();
+                        checkIfComplete();
+                    }).catch(function (err) {
+                        errFunc(err.toString());
                     });
                 }
                 else
@@ -661,8 +696,8 @@ var BucketController = (function (_super) {
             // Parse req
             form.parse(req);
         }).catch(function (err) {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify({ message: err.toString(), error: true, tokens: [] }));
+            winston.error("Could not get bucket: " + err.toString(), { process: process.pid });
+            return res.end(JSON.stringify({ message: "Could not get bucket: " + err.toString(), error: true, tokens: [] }));
         });
     };
     /**

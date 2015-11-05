@@ -633,7 +633,7 @@ var BucketManager = (function () {
         var files = this._files;
         return new Promise(function (resolve, reject) {
             var entry = {
-                name: part.filename,
+                name: part.name,
                 user: user,
                 identifier: fileID,
                 bucketId: bucket.identifier,
@@ -696,7 +696,7 @@ var BucketManager = (function () {
                 // Check if the stream content type is something that can be compressed - if so, then compress it before sending it to
                 // Google and set the content encoding
                 if (compressible(part.headers["content-type"]))
-                    stream = part.pipe(that._zipper).pipe(rawFile.createWriteStream({ metadata: { metadata: { encoded: true } } }));
+                    stream = part.pipe(that._zipper).pipe(rawFile.createWriteStream({ metadata: { contentEncoding: 'gzip', contentType: part.headers["content-type"], metadata: { encoded: true } } }));
                 else
                     stream = part.pipe(rawFile.createWriteStream());
                 // Pipe the file to the bucket

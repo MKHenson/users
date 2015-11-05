@@ -38,7 +38,7 @@ export class BucketController extends Controller
 
         this._config = config;
 
-        this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff"];
+        this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff", "text/plain", "text/json", "application/octet-stream"];
 		
         // Setup the rest calls
         var router = express.Router();
@@ -649,6 +649,27 @@ export class BucketController extends Controller
 	* Checks if a part is allowed to be uploaded
     * @returns {boolean}
 	*/
+    private isPartAllowed(part: multiparty.Part): boolean
+    {
+        if (!part.headers)
+            return false;
+
+        if (!part.headers["content-type"])
+            return false;
+
+        var type = part.headers["content-type"].toLowerCase();
+        var found = false;
+
+        if (type == "text/plain" || type == "application/octet-stream")
+            return true;
+        else
+            return false;
+    }
+
+    /**
+	* Checks if a file part is allowed to be uploaded
+    * @returns {boolean}
+	*/
     private isFileTypeAllowed(part: multiparty.Part): boolean
     {
         if (!part.headers)
@@ -671,7 +692,7 @@ export class BucketController extends Controller
             return false;
 
         return true;
-    }
+    }            
 
     /**
 	* Attempts to upload a file to the user's bucket
@@ -702,7 +723,10 @@ export class BucketController extends Controller
         manager.getIBucket(bucketName, username).then(function (bucketEntry)
         {
             if (!bucketEntry)
+            {
+                winston.error(`No bucket exists with the name '${bucketName}'`, { process: process.pid });
                 return res.end(JSON.stringify(<users.IUploadResponse>{ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }));
+            }
 
             var metaJson : any;
 
@@ -736,7 +760,8 @@ export class BucketController extends Controller
                     {
                         numParts++;
                         uploadedTokens.push(newUpload);
-                        errFunc(`Please only use approved file types '${that._allowedFileTypes.join(", ")}'`);
+                        errFunc(`Please only use approved file types '${that._allowedFileTypes.join(", ") }'`);
+                        return;
                     }
 
                     // Add the token to the upload array we are sending back to the user
@@ -758,7 +783,7 @@ export class BucketController extends Controller
                         errFunc(err.toString());
                     });
                 }
-                // Check if we have any optional meta data
+                // Check if this part is a meta tag
                 else if (part.name == "meta")
                 {
                     numParts++;
@@ -786,6 +811,28 @@ export class BucketController extends Controller
                         part.resume();
                         completedParts++;
                         checkIfComplete();
+                    });
+                }
+                // Check if this part is a meta tag
+                else if (that.isPartAllowed(part))
+                {
+                    // Add the token to the upload array we are sending back to the user
+                    uploadedTokens.push(newUpload);
+                    numParts++;
+                    
+                    // Upload the file part to the cloud
+                    manager.uploadStream(part, bucketEntry, username).then(function (file)
+                    {
+                        filesUploaded.push(file);
+                        completedParts++;
+                        successfulParts++;
+                        newUpload.file = file.identifier;
+                        part.resume();
+                        checkIfComplete();
+
+                    }).catch(function (err: Error)
+                    {
+                        errFunc(err.toString());
                     });
                 }
                 else
@@ -871,8 +918,8 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IUploadResponse>{ message: err.toString(), error: true, tokens: [] }));
+            winston.error("Could not get bucket: " + err.toString(), { process: process.pid });
+            return res.end(JSON.stringify(<users.IUploadResponse>{ message: "Could not get bucket: " + err.toString(), error: true, tokens: [] }));
         });
     }
 
