@@ -5,7 +5,7 @@ import * as entities from "entities";
 import * as users from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../Session";
-import {UserManager, User} from "../Users";
+import {UserManager, User, UserPrivileges} from "../Users";
 import {ownerRights, identifyUser} from "../PermissionController";
 import {Controller} from "./Controller"
 import {BucketManager} from "../BucketManager";
@@ -614,21 +614,28 @@ export class BucketController extends Controller
         if (!this.alphaNumericDashSpace(bucketName))
             return res.end(JSON.stringify(<users.IResponse>{ message: "Please only use safe characters", error: true }));
 
+        
         UserManager.get.getUser(username).then(function(user)
         {
-            if (user)
-                return manager.withinAPILimit(username);
-            else
-                return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
-
-        }).then(function( inLimits )
-        {
-            if (!inLimits)
-                return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
+            if (user.dbEntry.privileges != UserPrivileges.SuperAdmin)
+                return Promise.reject(new Error(`Only admin users can create buckets`));
+            
+            //if (user)
+            //    return manager.withinAPILimit(username);
+            //else
+            //    return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
 
             return manager.createBucket(bucketName, username);
 
-        }).then(function (bucket)
+        })//.then(function( inLimits )
+        //{
+        //    if (!inLimits)
+        //        return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
+
+        //    return manager.createBucket(bucketName, username);
+
+        //})
+        .then(function (bucket)
         {
             return res.end(JSON.stringify(<users.IResponse>{
                 message: `Bucket '${bucketName}' created`,
@@ -720,7 +727,7 @@ export class BucketController extends Controller
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify(<users.IUploadResponse>{ message: `Please specify a bucket`, error: true, tokens: [] }));
 
-        manager.getIBucket(bucketName, username).then(function (bucketEntry)
+        manager.getIBucket(bucketName).then(function (bucketEntry)
         {
             if (!bucketEntry)
             {

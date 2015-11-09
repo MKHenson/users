@@ -290,7 +290,7 @@ export class BucketManager
     {
         var that = this;
         var gcs = this._gcs;
-        var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
+        //var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
         var bucketCollection = this._buckets;
         var stats = this._stats;
 
@@ -302,15 +302,15 @@ export class BucketManager
                     return reject(new Error(`A Bucket with the name '${name}' has already been registered`));
 
                 // Attempt to create a new Google bucket
-                gcs.createBucket(bucketID, <gcloud.IMeta>{ location: "EU" }, function (err: Error, bucket: gcloud.IBucket)
+                gcs.createBucket(name, <gcloud.IMeta>{ location: "EU" }, function (err: Error, bucket: gcloud.IBucket)
                 {
                     if (err)
-                        return reject(new Error(`Could not connect to storage system: '${err.message}'`));
+                        return reject(new Error(`Could not create a new bucket: '${err.message}'`));
                     else
                     {
                         var newEntry: users.IBucketEntry = {
                             name: name,
-                            identifier: bucketID,
+                            identifier: name,
                             created: Date.now(),
                             user: user,
                             memoryUsed: 0
@@ -944,7 +944,7 @@ export class BucketManager
                 if (compressible(part.headers["content-type"]))
                     stream = part.pipe(that._zipper).pipe(rawFile.createWriteStream(<any>{ metadata: { contentEncoding: 'gzip', contentType: part.headers["content-type"], metadata: { encoded: true } } }));
                 else
-                    stream = part.pipe(rawFile.createWriteStream());
+                    stream = part.pipe(rawFile.createWriteStream(<any>{ metadata: { contentType: part.headers["content-type"] } }));
 
                 // Pipe the file to the bucket
                 stream.on("error", function (err: Error)

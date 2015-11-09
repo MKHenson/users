@@ -208,7 +208,7 @@ var BucketManager = (function () {
     BucketManager.prototype.createBucket = function (name, user) {
         var that = this;
         var gcs = this._gcs;
-        var bucketID = "webinate-bucket-" + that.generateRandString(8).toLowerCase();
+        //var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
         var bucketCollection = this._buckets;
         var stats = this._stats;
         return new Promise(function (resolve, reject) {
@@ -216,13 +216,13 @@ var BucketManager = (function () {
                 if (bucket)
                     return reject(new Error("A Bucket with the name '" + name + "' has already been registered"));
                 // Attempt to create a new Google bucket
-                gcs.createBucket(bucketID, { location: "EU" }, function (err, bucket) {
+                gcs.createBucket(name, { location: "EU" }, function (err, bucket) {
                     if (err)
-                        return reject(new Error("Could not connect to storage system: '" + err.message + "'"));
+                        return reject(new Error("Could not create a new bucket: '" + err.message + "'"));
                     else {
                         var newEntry = {
                             name: name,
-                            identifier: bucketID,
+                            identifier: name,
                             created: Date.now(),
                             user: user,
                             memoryUsed: 0
@@ -698,7 +698,7 @@ var BucketManager = (function () {
                 if (compressible(part.headers["content-type"]))
                     stream = part.pipe(that._zipper).pipe(rawFile.createWriteStream({ metadata: { contentEncoding: 'gzip', contentType: part.headers["content-type"], metadata: { encoded: true } } }));
                 else
-                    stream = part.pipe(rawFile.createWriteStream());
+                    stream = part.pipe(rawFile.createWriteStream({ metadata: { contentType: part.headers["content-type"] } }));
                 // Pipe the file to the bucket
                 stream.on("error", function (err) {
                     return reject(new Error("Could not upload the file '" + part.filename + "' to bucket: " + err.toString()));
