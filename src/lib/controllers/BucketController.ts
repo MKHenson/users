@@ -616,26 +616,20 @@ export class BucketController extends Controller
 
         
         UserManager.get.getUser(username).then(function(user)
+        {            
+            if (user)
+                return manager.withinAPILimit(username);
+            else
+                return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
+
+        }).then(function( inLimits )
         {
-            if (user.dbEntry.privileges != UserPrivileges.SuperAdmin)
-                return Promise.reject(new Error(`Only admin users can create buckets`));
-            
-            //if (user)
-            //    return manager.withinAPILimit(username);
-            //else
-            //    return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
+            if (!inLimits)
+                return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
 
             return manager.createBucket(bucketName, username);
 
-        })//.then(function( inLimits )
-        //{
-        //    if (!inLimits)
-        //        return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
-
-        //    return manager.createBucket(bucketName, username);
-
-        //})
-        .then(function (bucket)
+        }).then(function (bucket)
         {
             return res.end(JSON.stringify(<users.IResponse>{
                 message: `Bucket '${bucketName}' created`,
@@ -727,7 +721,7 @@ export class BucketController extends Controller
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify(<users.IUploadResponse>{ message: `Please specify a bucket`, error: true, tokens: [] }));
 
-        manager.getIBucket(bucketName).then(function (bucketEntry)
+        manager.getIBucket(bucketName, username).then(function (bucketEntry)
         {
             if (!bucketEntry)
             {

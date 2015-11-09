@@ -290,7 +290,7 @@ export class BucketManager
     {
         var that = this;
         var gcs = this._gcs;
-        //var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
+        var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
         var bucketCollection = this._buckets;
         var stats = this._stats;
 
@@ -302,7 +302,7 @@ export class BucketManager
                     return reject(new Error(`A Bucket with the name '${name}' has already been registered`));
 
                 // Attempt to create a new Google bucket
-                gcs.createBucket(name, <gcloud.IMeta>{ location: "EU" }, function (err: Error, bucket: gcloud.IBucket)
+                gcs.createBucket(bucketID, <gcloud.IMeta>{ location: "EU" }, function (err: Error, bucket: gcloud.IBucket)
                 {
                     if (err)
                         return reject(new Error(`Could not create a new bucket: '${err.message}'`));
@@ -310,7 +310,7 @@ export class BucketManager
                     {
                         var newEntry: users.IBucketEntry = {
                             name: name,
-                            identifier: name,
+                            identifier: bucketID,
                             created: Date.now(),
                             user: user,
                             memoryUsed: 0
@@ -613,7 +613,7 @@ export class BucketManager
     /**
    * Attempts to remove files from the cloud and database
    * @param {Array<string>} fileIDs The file IDs to remove
-    * @param {string} user Optionally pass in the user to refine the search
+   * @param {string} user Optionally pass in the user to refine the search
    * @returns {Promise<string>} Returns the file IDs of the files removed
    */
     removeFilesById(fileIDs: Array<string>, user? : string): Promise<Array<string>>

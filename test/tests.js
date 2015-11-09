@@ -1151,7 +1151,7 @@ describe('Checking media API', function(){
 					test.string(res.body.data.user).is("george")
 					test.number(res.body.data.apiCallsAllocated).is(20000)
 					test.number(res.body.data.memoryAllocated).is(500000000)
-					test.number(res.body.data.apiCallsUsed).is(0)
+					test.number(res.body.data.apiCallsUsed).is(1)
 					test.number(res.body.data.memoryUsed).is(0)
 					done();
 				});	
@@ -1167,7 +1167,7 @@ describe('Checking media API', function(){
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("count")
 					test.object(res.body).hasProperty("data")
-					test.number(res.body.count).is(0)
+					test.number(res.body.count).is(1)
 					done();
 				});	
 		}).timeout(20000)
@@ -1288,8 +1288,8 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Found [2] buckets")
-					test.array(res.body.data).hasLength(2)
+					test.string(res.body.message).is("Found [3] buckets")
+					test.array(res.body.data).hasLength(3)
 					test.bool(res.body.error).isNotTrue()
 					done()
 				});	
@@ -1310,28 +1310,7 @@ describe('Checking media API', function(){
 					done()
 				});	
 		}).timeout(20000)
-		
-		it('did not upload a file to dinosaurs with unsafe characters', function(done){
-			agent
-				.post("/media/upload/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', georgeCookie)
-				.attach('"£$^&&', "file.png")
-				.end(function(err, res){
-					if (err) return done(err);
-					test.object(res.body).hasProperty("message")
-					test.object(res.body).hasProperty("tokens")
-					test.string(res.body.message).is("Please only use safe characters")
-					test.array(res.body.tokens).hasLength(1)
-					test.string(res.body.tokens[0].field).is("")
-					test.string(res.body.tokens[0].filename).is("file.png")
-					test.bool(res.body.tokens[0].error).isTrue()
-					test.string(res.body.tokens[0].errorMsg).is("Please only use safe characters")
-					test.string(res.body.tokens[0].file).is("")
-					test.bool(res.body.error).isTrue()
-					done()
-				});	
-		}).timeout(20000)
-		
+				
 		it('did upload a file to dinosaurs', function(done){
 			agent
 				.post("/media/upload/dinosaurs").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -1463,7 +1442,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					
-					test.number(res.body.data.apiCallsUsed).is(5)
+					test.number(res.body.data.apiCallsUsed).is(6)
 					test.number(res.body.data.memoryUsed).is(226)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -1499,7 +1478,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					
-					test.number(res.body.data.apiCallsUsed).is(6)
+					test.number(res.body.data.apiCallsUsed).is(7)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -1522,7 +1501,7 @@ describe('Checking media API', function(){
 					//if (err) return done(err);
 					done();
 				});	
-		})
+		}).timeout(20000)
 		
 		it('did update the api calls to 5', function(done){
 			agent
@@ -1531,7 +1510,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					
-					test.number(res.body.data.apiCallsUsed).is(7)
+					test.number(res.body.data.apiCallsUsed).is(8)
 					test.bool(res.body.error).isNotTrue()
 					done();
 				});	
@@ -1656,7 +1635,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					
-					test.number(res.body.data.apiCallsUsed).is(10)
+					test.number(res.body.data.apiCallsUsed).is(11)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -1700,7 +1679,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					
-					test.number(res.body.data.apiCallsUsed).is(12)
+					test.number(res.body.data.apiCallsUsed).is(13)
 					test.number(res.body.data.memoryUsed).is(226)
 					test.bool(res.body.error).isNotTrue()
 					done();

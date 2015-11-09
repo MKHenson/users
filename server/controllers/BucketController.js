@@ -469,15 +469,15 @@ var BucketController = (function (_super) {
         if (!this.alphaNumericDashSpace(bucketName))
             return res.end(JSON.stringify({ message: "Please only use safe characters", error: true }));
         Users_1.UserManager.get.getUser(username).then(function (user) {
-            if (user.dbEntry.privileges != Users_1.UserPrivileges.SuperAdmin)
-                return Promise.reject(new Error("Only admin users can create buckets"));
-            //if (user)
-            //    return manager.withinAPILimit(username);
-            //else
-            //    return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
+            if (user)
+                return manager.withinAPILimit(username);
+            else
+                return Promise.reject(new Error("Could not find a user with the name '" + username + "'"));
+        }).then(function (inLimits) {
+            if (!inLimits)
+                return Promise.reject(new Error("You have run out of API calls, please contact one of our sales team or upgrade your account."));
             return manager.createBucket(bucketName, username);
-        }) //.then(function( inLimits )
-            .then(function (bucket) {
+        }).then(function (bucket) {
             return res.end(JSON.stringify({
                 message: "Bucket '" + bucketName + "' created",
                 error: false
@@ -549,7 +549,7 @@ var BucketController = (function (_super) {
         var bucketName = req.params.bucket;
         if (!bucketName || bucketName.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a bucket", error: true, tokens: [] }));
-        manager.getIBucket(bucketName).then(function (bucketEntry) {
+        manager.getIBucket(bucketName, username).then(function (bucketEntry) {
             if (!bucketEntry) {
                 winston.error("No bucket exists with the name '" + bucketName + "'", { process: process.pid });
                 return res.end(JSON.stringify({ message: "No bucket exists with the name '" + bucketName + "'", error: true, tokens: [] }));

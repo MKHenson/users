@@ -547,7 +547,6 @@ var UserManager = (function () {
     * @param {UserPrivileges} privilege The type of privileges the user has. Defaults to regular
     * @param {any} meta Any optional data associated with this user
     * @param {boolean} allowAdmin Should this be allowed to create a super user
-
     * @returns {Promise<User>}
     */
     UserManager.prototype.createUser = function (user, email, password, origin, privilege, meta, allowAdmin) {
@@ -608,7 +607,11 @@ var UserManager = (function () {
                     that._transport.sendMail(mailOptions, function (error, info) {
                         if (error)
                             return reject(new Error("Could not send email to user: " + error.message));
+                        // All users have default stats created for them
                         BucketManager_1.BucketManager.get.createUserStats(newUser.dbEntry.username).then(function () {
+                            // All users have a bucket created for them
+                            return BucketManager_1.BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
+                        }).then(function (bucket) {
                             return resolve(newUser);
                         }).catch(function (err) {
                             return reject(err);
