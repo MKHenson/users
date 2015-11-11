@@ -215,8 +215,26 @@ var BucketManager = (function () {
             that.getIBucket(name, user).then(function (bucket) {
                 if (bucket)
                     return reject(new Error("A Bucket with the name '" + name + "' has already been registered"));
+                var cors = {
+                    location: "EU",
+                    cors: [
+                        {
+                            "origin": [
+                                //"webinate.net", "webinate-test.net"
+                                "*"
+                            ],
+                            "method": [
+                                "GET", "OPTIONS"
+                            ],
+                            "responseHeader": [
+                                "content-type", "authorization", "content-length", "x-requested-with", "x-mime-type", "x-file-name", "cache-control"
+                            ],
+                            "maxAgeSeconds": 1
+                        }
+                    ]
+                };
                 // Attempt to create a new Google bucket
-                gcs.createBucket(bucketID, { location: "EU" }, function (err, bucket) {
+                gcs.createBucket(bucketID, cors, function (err, bucket) {
                     if (err)
                         return reject(new Error("Could not create a new bucket: '" + err.message + "'"));
                     else {
