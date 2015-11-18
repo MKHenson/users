@@ -578,7 +578,7 @@ export class BucketManager
         var files = this._files;
         var stats = this._stats;
         var attempts: number = 0;
-        var filesRemoved: Array<string> = [];
+        var filesRemoved: Array<users.IFileEntry> = [];
         
         return new Promise(function (resolve, reject)
         {
@@ -598,7 +598,7 @@ export class BucketManager
                        that.deleteFile(fileEntries[i]).then(function(fileEntry)
                        {
                             attempts++;
-                            filesRemoved.push(fileEntry.identifier);
+                            filesRemoved.push(fileEntry);
                            
                             if (attempts == l)
                             {
@@ -643,7 +643,7 @@ export class BucketManager
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)
-            searchQuery.$or.push(<users.IFileEntry>{ identifier: fileIDs[i] });
+            searchQuery.$or.push(<users.IFileEntry>{ identifier: fileIDs[i] }, <users.IFileEntry>{ parentFile: fileIDs[i] });
 
         if (user)
             (<users.IFileEntry>searchQuery).user = user;
@@ -872,9 +872,11 @@ export class BucketManager
     * @param {string} bucketID The id of the bucket this file belongs to
     * @param {multiparty.Part} part
     * @param {string} user The username
+    * @param {boolean} isPublic IF true, the file will be set as public
+    * @param {string} parentFile Sets an optional parent file - if the parent is removed, then so is this one
     * @returns {Promise<IFileEntry>}
     */
-    private registerFile(fileID: string, bucket: users.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean): Promise<users.IFileEntry>
+    private registerFile(fileID: string, bucket: users.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean, parentFile: string): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -888,6 +890,7 @@ export class BucketManager
                 identifier: fileID,
                 bucketId: bucket.identifier,
                 bucketName: bucket.name,
+                parentFile: (parentFile ? parentFile : null),
                 created: Date.now(),
                 numDownloads: 0,
                 size: part.byteCount,
@@ -923,9 +926,10 @@ export class BucketManager
     * @param {string} bucket The bucket to which we are uploading to
     * @param {string} user The username
     * @param {string} makePublic Makes this uploaded file public to the world
+    * @param {string} parentFile [Optional] Set a parent file which when deleted will detelete this upload as well
     * @returns {Promise<any>}
     */
-    uploadStream(part: multiparty.Part, bucketEntry: users.IBucketEntry, user: string, makePublic: boolean = true ): Promise<users.IFileEntry>
+    uploadStream(part: multiparty.Part, bucketEntry: users.IBucketEntry, user: string, makePublic: boolean = true, parentFile? : string ): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
@@ -976,7 +980,7 @@ export class BucketManager
                     {
                         statCollection.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
                         {
-                            that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file)
+                            that.registerFile(fileID, bucketEntry, part, user, makePublic, parentFile).then(function (file)
                             {
                                 if (makePublic)
                                     rawFile.makePublic(function (err, api)

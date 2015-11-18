@@ -438,7 +438,7 @@ var BucketManager = (function () {
                     for (var i = 0, l = fileEntries.length; i < l; i++) {
                         that.deleteFile(fileEntries[i]).then(function (fileEntry) {
                             attempts++;
-                            filesRemoved.push(fileEntry.identifier);
+                            filesRemoved.push(fileEntry);
                             if (attempts == l) {
                                 // Update any listeners on the sockets
                                 var fEvent = { eventType: CommsController_1.EventType.FilesRemoved, files: filesRemoved };
@@ -472,7 +472,7 @@ var BucketManager = (function () {
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)
-            searchQuery.$or.push({ identifier: fileIDs[i] });
+            searchQuery.$or.push({ identifier: fileIDs[i] }, { parentFile: fileIDs[i] });
         if (user)
             searchQuery.user = user;
         return this.removeFiles(searchQuery);
@@ -643,9 +643,11 @@ var BucketManager = (function () {
     * @param {string} bucketID The id of the bucket this file belongs to
     * @param {multiparty.Part} part
     * @param {string} user The username
+    * @param {boolean} isPublic IF true, the file will be set as public
+    * @param {string} parentFile Sets an optional parent file - if the parent is removed, then so is this one
     * @returns {Promise<IFileEntry>}
     */
-    BucketManager.prototype.registerFile = function (fileID, bucket, part, user, isPublic) {
+    BucketManager.prototype.registerFile = function (fileID, bucket, part, user, isPublic, parentFile) {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
@@ -656,6 +658,7 @@ var BucketManager = (function () {
                 identifier: fileID,
                 bucketId: bucket.identifier,
                 bucketName: bucket.name,
+                parentFile: (parentFile ? parentFile : null),
                 created: Date.now(),
                 numDownloads: 0,
                 size: part.byteCount,
@@ -684,9 +687,10 @@ var BucketManager = (function () {
     * @param {string} bucket The bucket to which we are uploading to
     * @param {string} user The username
     * @param {string} makePublic Makes this uploaded file public to the world
+    * @param {string} parentFile [Optional] Set a parent file which when deleted will detelete this upload as well
     * @returns {Promise<any>}
     */
-    BucketManager.prototype.uploadStream = function (part, bucketEntry, user, makePublic) {
+    BucketManager.prototype.uploadStream = function (part, bucketEntry, user, makePublic, parentFile) {
         if (makePublic === void 0) { makePublic = true; }
         var that = this;
         var gcs = this._gcs;
@@ -723,7 +727,7 @@ var BucketManager = (function () {
                 }).on('finish', function () {
                     bucketCollection.update({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: part.byteCount } }, function (err, result) {
                         statCollection.update({ user: user }, { $inc: { memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result) {
-                            that.registerFile(fileID, bucketEntry, part, user, makePublic).then(function (file) {
+                            that.registerFile(fileID, bucketEntry, part, user, makePublic, parentFile).then(function (file) {
                                 if (makePublic)
                                     rawFile.makePublic(function (err, api) {
                                         if (err)

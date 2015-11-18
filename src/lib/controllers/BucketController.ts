@@ -54,7 +54,7 @@ export class BucketController extends Controller
         router.get("/get-buckets/:user?", <any>[ownerRights, this.getBuckets.bind(this)]);
         router.delete("/remove-buckets/:buckets", <any>[identifyUser, this.removeBuckets.bind(this)]);
         router.delete("/remove-files/:files", <any>[identifyUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket", <any>[identifyUser, this.uploadUserFiles.bind(this)]);
+        router.post("/upload/:bucket/:parentFile?", <any>[identifyUser, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:user/:name", <any>[ownerRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", <any>[ownerRights, this.createStats.bind(this)]);
         router.put("/storage-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
@@ -712,6 +712,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         var that = this;
         var username = req._user.dbEntry.username;
+        var parentFile = req.params.parentFile;
         var filesUploaded: Array<UsersInterface.IFileEntry> = [];
 
         // Set the content type
@@ -740,7 +741,8 @@ export class BucketController extends Controller
                     field: (!part.name ? "" : part.name),
                     filename: part.filename,
                     error: false,
-                    errorMsg: ""
+                    errorMsg: "",
+                    url: ""
                 }
 
                 // Deal with error logic
@@ -770,12 +772,13 @@ export class BucketController extends Controller
                     numParts++;
                     
                     // Upload the file part to the cloud
-                    manager.uploadStream(part, bucketEntry, username).then(function (file)
+                    manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
                     {
                         filesUploaded.push(file);
                         completedParts++;
                         successfulParts++;
                         newUpload.file = file.identifier;
+                        newUpload.url = file.publicURL;
                         part.resume();
                         checkIfComplete();
 
@@ -822,12 +825,13 @@ export class BucketController extends Controller
                     numParts++;
                     
                     // Upload the file part to the cloud
-                    manager.uploadStream(part, bucketEntry, username).then(function (file)
+                    manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
                     {
                         filesUploaded.push(file);
                         completedParts++;
                         successfulParts++;
                         newUpload.file = file.identifier;
+                        newUpload.url = file.publicURL;
                         part.resume();
                         checkIfComplete();
 

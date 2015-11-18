@@ -41,7 +41,7 @@ var BucketController = (function (_super) {
         router.get("/get-buckets/:user?", [PermissionController_1.ownerRights, this.getBuckets.bind(this)]);
         router.delete("/remove-buckets/:buckets", [PermissionController_1.identifyUser, this.removeBuckets.bind(this)]);
         router.delete("/remove-files/:files", [PermissionController_1.identifyUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket", [PermissionController_1.identifyUser, this.uploadUserFiles.bind(this)]);
+        router.post("/upload/:bucket/:parentFile?", [PermissionController_1.identifyUser, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:user/:name", [PermissionController_1.ownerRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", [PermissionController_1.ownerRights, this.createStats.bind(this)]);
         router.put("/storage-calls/:target/:value", [PermissionController_1.ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
@@ -543,6 +543,7 @@ var BucketController = (function (_super) {
         var manager = BucketManager_1.BucketManager.get;
         var that = this;
         var username = req._user.dbEntry.username;
+        var parentFile = req.params.parentFile;
         var filesUploaded = [];
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -563,7 +564,8 @@ var BucketController = (function (_super) {
                     field: (!part.name ? "" : part.name),
                     filename: part.filename,
                     error: false,
-                    errorMsg: ""
+                    errorMsg: "",
+                    url: ""
                 };
                 // Deal with error logic
                 var errFunc = function (errMsg) {
@@ -586,11 +588,12 @@ var BucketController = (function (_super) {
                     uploadedTokens.push(newUpload);
                     numParts++;
                     // Upload the file part to the cloud
-                    manager.uploadStream(part, bucketEntry, username).then(function (file) {
+                    manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file) {
                         filesUploaded.push(file);
                         completedParts++;
                         successfulParts++;
                         newUpload.file = file.identifier;
+                        newUpload.url = file.publicURL;
                         part.resume();
                         checkIfComplete();
                     }).catch(function (err) {
@@ -626,11 +629,12 @@ var BucketController = (function (_super) {
                     uploadedTokens.push(newUpload);
                     numParts++;
                     // Upload the file part to the cloud
-                    manager.uploadStream(part, bucketEntry, username).then(function (file) {
+                    manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file) {
                         filesUploaded.push(file);
                         completedParts++;
                         successfulParts++;
                         newUpload.file = file.identifier;
+                        newUpload.url = file.publicURL;
                         part.resume();
                         checkIfComplete();
                     }).catch(function (err) {
