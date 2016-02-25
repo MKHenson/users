@@ -3,12 +3,12 @@ var ts = require('gulp-typescript');
 
 // CONFIG
 // ==============================
-var outDir = "server";
+var outDir = "dist";
 
 // Builds each of the ts files into JS files in the output folder
 gulp.task('ts-code', function() {
 
-    return gulp.src(['references.d.ts', 'lib/**/*.ts', 'lib/**/*.json'], { base: "lib" })
+    return gulp.src(['references.d.ts', 'src/**/*.ts', 'src/**/*.json'], { base: "src/lib" })
         .pipe(ts({
             "module": "commonjs",
             "removeComments": false,
