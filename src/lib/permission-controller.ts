@@ -4,7 +4,7 @@ import bodyParser = require('body-parser');
 // NEW ES6 METHOD
 import * as http from "http";
 import * as def from "webinate-users";
-import {UserManager, User, UserPrivileges} from "./Users";
+import {UserManager, User, UserPrivileges} from "./users";
 
 export var secret = { key : "" };
 

@@ -1,7 +1,7 @@
 ﻿import * as mongodb from "mongodb";
 import * as http from "http";
 import {IConfig} from "webinate-users";
-import {Controller} from "./Controller"
+import {Controller} from "./controller"
 import express = require("express");
 
 /**
@@ -43,7 +43,7 @@ export class CORSController extends Controller
                 if (!matched)
                     console.log(`${(<http.ServerRequest>req).headers.origin} Does not have permission. Add it to the allowed `);
             }
-         
+
             if (req.method === 'OPTIONS')
             {
                 res.status(200);
@@ -55,7 +55,7 @@ export class CORSController extends Controller
     }
 
     /**
-     * All controllers must successfully return a promise for its initialization phase. 
+     * All controllers must successfully return a promise for its initialization phase.
      */
     initialize(db: mongodb.Db): Promise<void>
     {

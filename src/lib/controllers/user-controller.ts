@@ -6,11 +6,11 @@ import * as http from "http";
 import * as entities from "entities";
 import * as def from "webinate-users";
 import * as mongodb from "mongodb";
-import {Session} from "../Session";
-import {UserManager, User, UserPrivileges} from "../Users";
-import {ownerRights, adminRights, secret} from "../PermissionController";
-import {Controller} from "./Controller"
-import {BucketManager} from "../BucketManager";
+import {Session} from "../session";
+import {UserManager, User, UserPrivileges} from "../users";
+import {ownerRights, adminRights, secret} from "../permission-controller";
+import {Controller} from "./controller"
+import {BucketManager} from "../bucket-manager";
 import * as compression from "compression";
 import * as winston from "winston";
 
@@ -21,7 +21,7 @@ export class UserController extends Controller
 {
 	private _userManager: UserManager;
     private _config: def.IConfig;
-    
+
 
 	/**
 	* Creates an instance of the user manager
@@ -35,14 +35,14 @@ export class UserController extends Controller
 
         this._config = config;
         secret.key = config.secret;
-		
+
 		// Setup the rest calls
         var router = express.Router();
         router.use(compression());
 		router.use(bodyParser.urlencoded({ 'extended': true }));
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
-        
+
         router.get("/meta/:user", <any>[ownerRights, this.getData.bind(this)]);
         router.get("/meta/:user/:name", <any>[ownerRights, this.getVal.bind(this)]);
         router.get("/users/:username", <any>[ownerRights, this.getUser.bind(this)]);
@@ -51,7 +51,7 @@ export class UserController extends Controller
 		router.get("/authenticated", this.authenticated.bind(this));
         router.get("/sessions", <any>[ownerRights, this.getSessions.bind(this)]);
 		router.get("/logout", this.logout.bind(this));
-		router.get("/resend-activation/:user", this.resendActivation.bind(this));		
+		router.get("/resend-activation/:user", this.resendActivation.bind(this));
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
         router.delete("/sessions/:id", <any>[ownerRights, this.deleteSession.bind(this)]);
@@ -61,7 +61,7 @@ export class UserController extends Controller
         router.post("/create-user", <any>[ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
         router.post("/meta/:user/:name", <any>[adminRights, this.setVal.bind(this)]);
-        router.post("/meta/:user", <any>[adminRights, this.setData.bind(this)]);	
+        router.post("/meta/:user", <any>[adminRights, this.setData.bind(this)]);
         router.put("/approve-activation/:user", <any>[ownerRights, this.approveActivation.bind(this)]);
         router.put("/password-reset", this.passwordReset.bind(this));
 
@@ -76,7 +76,7 @@ export class UserController extends Controller
     initialize(db: mongodb.Db): Promise<void>
 	{
         var that = this;
-       
+
 		return new Promise<void>(function (resolve, reject)
         {
             var userCollection;
@@ -162,7 +162,7 @@ export class UserController extends Controller
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         var totalNumUsers: number = 0;
-        
+
         that._userManager.numUsers(new RegExp(req.query.search)).then(function(numUsers)
         {
             totalNumUsers = numUsers;
@@ -181,7 +181,7 @@ export class UserController extends Controller
                 data: sanitizedData,
                 count: totalNumUsers
             };
-            
+
             return res.end(JSON.stringify(token));
 
         }).catch(function (error: Error)
@@ -232,7 +232,7 @@ export class UserController extends Controller
 			}));
 		});
 	}
-	
+
 	/**
 	* Resends the activation link to the user
 	* @param {express.Request} req
@@ -244,7 +244,7 @@ export class UserController extends Controller
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
-		
+
         that._userManager.sessionManager.clearSession(req.params.id, req, res ).then(function (result)
 		{
             var token: def.IResponse = {
@@ -278,7 +278,7 @@ export class UserController extends Controller
 		this._userManager.checkActivation(req.query.user, req.query.key).then(function (success: boolean)
 		{
             res.redirect(`${redirectURL}?message=${encodeURIComponent("Your account has been activated!") }&status=success&origin=${encodeURIComponent(req.query.origin)}`);
-		
+
 		}).catch(function (error: Error)
         {
             winston.error(error.toString(), { process: process.pid });
@@ -410,7 +410,7 @@ export class UserController extends Controller
 			}));
 		});
 	}
-	
+
 	/**
 	* Attempts to log the user in. Expects the username, password and rememberMe parameters be set.
 	* @param {express.Request} req
@@ -454,7 +454,7 @@ export class UserController extends Controller
 	{
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
-		
+
 		this._userManager.logOut(req, res).then(function( result )
 		{
             return res.end(JSON.stringify(<def.IResponse>{
@@ -498,7 +498,7 @@ export class UserController extends Controller
             return res.end(JSON.stringify(<def.IResponse>{ message: error.message,  error: true }));
         });
     }
-	
+
 	/**
 	* Attempts to register a new user
 	* @param {express.Request} req
@@ -509,9 +509,9 @@ export class UserController extends Controller
 	{
 		// Set the content type
 		res.setHeader('Content-Type', 'application/json');
-        
+
         var token: def.IRegisterToken = req.body;
-        
+
         this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res).then(function (user)
 		{
             return res.end(JSON.stringify(<def.IAuthenticationResponse>{
@@ -580,7 +580,7 @@ export class UserController extends Controller
 
         var user = req._user.dbEntry;
         var name = req.params.name;
-        
+
         that._userManager.setMetaVal(user, name, req.body.value ).then(function()
         {
             return res.end(JSON.stringify(<def.IResponse>{
@@ -671,7 +671,7 @@ export class UserController extends Controller
         var toRemove = req.params.user;
         if (!toRemove)
             return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
-        
+
         that._userManager.removeUser(toRemove)//.then(function ()
         //{
         //    return BucketManager.get.removeBucketsByUser(toRemove);
@@ -694,7 +694,7 @@ export class UserController extends Controller
 				error: true
 			}));
 		});
-    }    
+    }
 
 	/**
 	* Allows an admin to create a new user without registration
@@ -708,7 +708,7 @@ export class UserController extends Controller
 		res.setHeader('Content-Type', 'application/json');
 		var that = this;
         var token: def.IRegisterToken = req.body;
-        
+
         // Set default privileges
         token.privileges = token.privileges ? token.privileges : UserPrivileges.Regular;
 
@@ -718,7 +718,7 @@ export class UserController extends Controller
 				message: "You cannot create a user with super admin permissions",
 				error: true
 			}));
-			
+
 
         that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user)
         {
@@ -727,7 +727,7 @@ export class UserController extends Controller
                 message: `User ${user.dbEntry.username} has been created`,
                 data: user.dbEntry
             };
-            
+
             return res.end(JSON.stringify(token));
 
         }).catch(function (error: Error)

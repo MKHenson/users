@@ -5,7 +5,7 @@ import * as https from "https";
 import * as http from "http";
 import * as fs from "fs";
 import * as winston from "winston";
-import {UserManager, User} from "../Users";
+import {UserManager, User} from "../users";
 
 interface ISocketClient extends WS.WebSocket
 {
@@ -87,7 +87,7 @@ export class CommsController
 {
     public static singleton: CommsController;
     private _server: WS.Server;
-    
+
     /**
 	* Creates an instance of the Communication server
     * @param {IConfig} cfg
@@ -115,9 +115,9 @@ export class CommsController
             httpsServer = https.createServer({ key: privkey, cert: theCert, passphrase: cfg.sslPassPhrase, ca: caChain }, processRequest);
             httpsServer.listen(cfg.websocket.port);
         }
-        
+
         winston.info(`Websockets listening on HTTP port ${cfg.websocket.port}`, { process: process.pid });
-        
+
         // Create the web socket server
         this._server = new ws.Server({ port: cfg.websocket.port, server: httpsServer });
 
@@ -141,7 +141,7 @@ export class CommsController
                 winston.error(`A connection was made by ${headers.host || headers.origin} but it is not on the approved domain list`);
                 ws.terminate();
             }
-        });  
+        });
     }
 
     /**
@@ -156,7 +156,7 @@ export class CommsController
             var numResponded = 0,
                 errorOccurred = false,
                 releventClients: Array<ISocketClient>  = [];
-            
+
             // First find all listening clients that need to be notified when this event happens
             for (var i = 0, l = that._server.clients.length; i < l; i++)
             {

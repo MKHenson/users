@@ -7,11 +7,11 @@ import * as methodOverride from "method-override";
 
 import {IConfig} from "webinate-users";
 import * as winston from "winston";
-import {BucketController} from "./controllers/BucketController";
-import {UserController} from "./controllers/UserController";
-import {CORSController} from "./controllers/CORSController";
-import {CommsController} from "./controllers/CommsController";
-import {ErrorController} from "./controllers/ErrorController";
+import {BucketController} from "./controllers/bucket-controller";
+import {UserController} from "./controllers/user-controller";
+import {CORSController} from "./controllers/cors-controller";
+import {CommsController} from "./controllers/comms-controller";
+import {ErrorController} from "./controllers/error-controller";
 import * as yargs from "yargs";
 import * as mongodb from "mongodb";
 
@@ -73,7 +73,7 @@ openDB(config).then(function (db)
     return Promise.all([
         new CommsController(config).initialize(db),
         new CORSController(app, config).initialize(db),
-        new BucketController(app, config).initialize(db),        
+        new BucketController(app, config).initialize(db),
         new UserController(app, config).initialize(db),
         new ErrorController(app, config).initialize(db)
     ]);
@@ -83,8 +83,8 @@ openDB(config).then(function (db)
     // Use middlewares
     app.use(morgan('dev'));
     app.use(methodOverride());
-    
-    // Start node server.js 
+
+    // Start node server.js
     var httpServer = http.createServer(app);
     httpServer.listen(config.portHTTP);
     winston.info(`Listening on HTTP port ${config.portHTTP}`, { process: process.pid });
@@ -144,7 +144,7 @@ openDB(config).then(function (db)
 
 
 /**
-* Connects to a mongo database 
+* Connects to a mongo database
 * @param {IConfig} config
 * @param {mongodb.ServerOptions} opts Any additional options
 * @returns {Promise<mongodb.Db>}

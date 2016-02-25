@@ -8,10 +8,10 @@ import * as bodyParser from "body-parser";
 import * as express from "express";
 import * as winston from "winston";
 
-import {CommsController, EventType} from "./controllers/CommsController";
+import {CommsController, EventType} from "./controllers/comms-controller";
 import * as def from "webinate-users";
-import {SessionManager, Session} from "./Session";
-import {BucketManager} from "./BucketManager";
+import {SessionManager, Session} from "./session";
+import {BucketManager} from "./bucket-manager";
 
 /*
 * Describes what kind of privileges the user has
@@ -41,7 +41,7 @@ export class User
     }
 
     /**
-	* Generates an object that can be sent to clients. 
+	* Generates an object that can be sent to clients.
     * @param {boolean} showPrivate If true, sensitive database data will be sent (things like passwords will still be safe - but hashed)
 	* @returns {IUserEntry}
 	*/
@@ -152,7 +152,7 @@ export class UserManager
         this.sessionManager.on("sessionRemoved", this.onSessionRemoved.bind(this));
     }
 
-    /** 
+    /**
 	* Called whenever a session is removed from the database
 	* @returns {Promise<void>}
 	*/
@@ -175,7 +175,7 @@ export class UserManager
         });
     }
 
-	/** 
+	/**
 	* Initializes the API
 	* @returns {Promise<void>}
 	*/
@@ -213,11 +213,11 @@ export class UserManager
                     });
                 })
             });
-			
+
 		});
 	}
 
-	/** 
+	/**
 	* Attempts to register a new user
 	* @param {string} username The username of the user
 	* @param {string} pass The users secret password
@@ -225,7 +225,7 @@ export class UserManager
 	* @param {string} captcha The captcha value the user guessed
 	* @param {string} captchaChallenge The captcha challenge
     * @param {any} meta Any optional data associated with this user
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
@@ -248,7 +248,7 @@ export class UserManager
                 if (!validator.isEmail(email)) throw new Error("Please use a valid email address");
                 if (request && (!captcha || captcha == "")) throw new Error("Captcha cannot be null or empty");
                 if (request && (!captchaChallenge || captchaChallenge == "")) throw new Error("Captcha challenge cannot be null or empty");
-			
+
                 // Check captcha details
                 return new Promise<User>(function (resolve, reject)
                 {
@@ -288,7 +288,7 @@ export class UserManager
         });
 	}
 
-	/** 
+	/**
 	* Creates the link to send to the user for activation
 	* @param {string} user The user we are activating
     * @param {string} origin The origin of where the activation link came from
@@ -299,7 +299,7 @@ export class UserManager
         return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) }${this._config.restURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
 	}
 
-	/** 
+	/**
 	* Creates the link to send to the user for password reset
 	* @param {string} username The username of the user
      * @param {string} origin The origin of where the activation link came from
@@ -310,7 +310,7 @@ export class UserManager
         return `${this._config.passwordResetURL}?key=${user.dbEntry.passwordTag}&user=${user.dbEntry.username}&origin=${origin}`;
     }
 
-	/** 
+	/**
 	* Approves a user's activation code so they can login without email validation
 	* @param {string} username The username or email of the user
 	* @returns {Promise<void>}
@@ -324,7 +324,7 @@ export class UserManager
 		{
 			if (!user)
 				return Promise.reject(new Error("No user exists with the specified details"));
-			
+
 			return new Promise<void>(function (resolve, reject)
 			{
 				// Clear the user's activation
@@ -350,7 +350,7 @@ export class UserManager
 		});
     }
 
-    /** 
+    /**
 	* Attempts to send the an email to the admin user
 	* @param {string} message The message body
     * @param {string} name The name of the sender
@@ -360,7 +360,7 @@ export class UserManager
     sendAdminEmail(message: string, name? : string, from? : string): Promise<any>
     {
         var that = this;
-        return new Promise<boolean>(function (resolve, reject) 
+        return new Promise<boolean>(function (resolve, reject)
         {
             // Setup e-mail data with unicode symbols
             var mailOptions: MailComposer = {
@@ -380,8 +380,8 @@ export class UserManager
             });
         });
     }
-    
-	/** 
+
+	/**
 	* Attempts to resend the activation link
 	* @param {string} username The username of the user
     * @param {string} origin The origin of where the request came from (this is emailed to the user)
@@ -391,10 +391,10 @@ export class UserManager
 	{
         var that = this;
 
-        return new Promise<boolean>(function (resolve, reject) 
+        return new Promise<boolean>(function (resolve, reject)
         {
             // Get the user
-            that.getUser(username).then(function (user: User) 
+            that.getUser(username).then(function (user: User)
             {
                 if (!user)
                    throw new Error("No user exists with the specified details");
@@ -445,7 +445,7 @@ export class UserManager
         });
     }
 
-    /** 
+    /**
 	* Sends the user an email with instructions on how to reset their password
 	* @param {string} username The username of the user
     * @param {string} origin The site where the request came from
@@ -455,14 +455,14 @@ export class UserManager
     {
         var that = this;
 
-        return new Promise<boolean>(function (resolve, reject) 
+        return new Promise<boolean>(function (resolve, reject)
         {
             // Get the user
-            that.getUser(username).then(function (user: User) 
+            that.getUser(username).then(function (user: User)
             {
                 if (!user)
                     throw new Error("No user exists with the specified details");
-                
+
                 var newKey = user.generateKey();
 
                 // Password token
@@ -508,7 +508,7 @@ export class UserManager
         });
     }
 
-    /** 
+    /**
 	* Creates a hashed password
 	* @param {string} pass The password to hash
 	* @returns {Promise<boolean>}
@@ -527,7 +527,7 @@ export class UserManager
         });
     }
 
-    /** 
+    /**
 	* Compares a password to the stored hash in the database
 	* @param {string} pass The password to test
     * @param {string} hash The hash stored in the DB
@@ -547,7 +547,7 @@ export class UserManager
         });
     }
 
-    /** 
+    /**
 	* Attempts to reset a user's password.
 	* @param {string} username The username of the user
     * @param {string} code The password code
@@ -599,7 +599,7 @@ export class UserManager
         });
     }
 
-	/** 
+	/**
 	* Checks the users activation code to see if its valid
 	* @param {string} username The username of the user
 	* @returns {Promise<boolean>}
@@ -623,7 +623,7 @@ export class UserManager
 				// Check key
 				if (user.dbEntry.registerKey != code)
 					return reject(new Error("Activation key is not valid. Please try send another."));
-				
+
 				// Update the key to be blank
 				that._userCollection.update(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
 				{
@@ -662,7 +662,7 @@ export class UserManager
 
 	/**
 	* Checks to see if a user is logged in
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @param {Promise<User>} Gets the user or null if the user is not logged in
 	*/
@@ -696,7 +696,7 @@ export class UserManager
 
 	/**
 	* Attempts to log the user out
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>}
 	*/
@@ -715,7 +715,7 @@ export class UserManager
 			});
 		});
 	}
-	
+
 	/**
 	* Creates a new user
 	* @param {string} user The unique username
@@ -730,7 +730,7 @@ export class UserManager
     createUser(user: string, email: string, password: string, origin: string, privilege: UserPrivileges = UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
 	{
 		var that = this;
-		
+
 		return new Promise<User>(function (resolve, reject)
 		{
 			// Basic checks
@@ -875,7 +875,7 @@ export class UserManager
 			});
 		});
 	}
-    
+
 	/**
 	* Gets a user by a username or email
 	* @param {string} user The username or email of the user to get
@@ -887,7 +887,7 @@ export class UserManager
 		var that = this;
 
 		email = email != undefined ? email : user;
-		
+
 		return new Promise<User>(function( resolve, reject)
 		{
 			// Validate user string
@@ -896,7 +896,7 @@ export class UserManager
 			if (!validator.isAlphanumeric(user) && !validator.isEmail(user)) return reject(new Error("Please only use alpha numeric characters for your username"));
 
 			var target = [{ email: email }, { username: user }];
-			
+
 			// Search the collection for the user
 			that._userCollection.findOne({ $or: target }, function (error: Error, userEntry: def.IUserEntry)
 			{
@@ -912,7 +912,7 @@ export class UserManager
 	* @param {string} username The username or email of the user
 	* @param {string} pass The password of the user
 	* @param {boolean} rememberMe True if the cookie persistence is required
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
@@ -936,11 +936,11 @@ export class UserManager
                 if (!user)
                     return Promise.reject(new Error("The username or password is incorrect."));
 
-                // Validate password				
+                // Validate password
                 pass = validator.trim(pass);
                 if (!pass || pass == "")
                     return Promise.reject(new Error("Please enter a valid password"));
-				
+
                 // Check if the registration key has been removed yet
                 if (user.dbEntry.registerKey != "")
                     return Promise.reject(new Error("Please authorise your account by clicking on the link that was sent to your email"));
@@ -1003,7 +1003,7 @@ export class UserManager
 	/**
 	* Removes a user by his email or username
 	* @param {string} username The username or email of the user
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
 	*/
@@ -1033,14 +1033,14 @@ export class UserManager
 	* Sets the meta data associated with the user
 	* @param {IUserEntry} user The user
     * @param {any} data The meta data object to set
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
 	*/
     setMeta(user: def.IUserEntry, data?: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
     {
         var that = this;
-        
+
         return new Promise<boolean>(function (resolve, reject)
         {
             // There was no user
@@ -1063,14 +1063,14 @@ export class UserManager
 	* @param {IUserEntry} user The user
     * @param {any} name The name of the meta to set
     * @param {any} data The value of the meta to set
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
 	*/
     setMetaVal(user: def.IUserEntry, name : string, val: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
     {
         var that = this;
-        
+
         return new Promise<boolean>(function (resolve, reject)
         {
             // There was no user
@@ -1097,20 +1097,20 @@ export class UserManager
 	* Gets the value of user's meta by name
 	* @param {IUserEntry} user The user
     * @param {any} name The name of the meta to get
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<any>} The value to get
 	*/
     getMetaVal(user: def.IUserEntry, name: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<any>
     {
         var that = this;
-        
+
         return new Promise<any>(function (resolve, reject)
         {
             // There was no user
             if (!user)
                 return resolve(false);
-            
+
             // Remove the user from the DB
             that._userCollection.findOne( <def.IUserEntry>{ _id: user._id }, { _id: 0, meta: 1 }, function (error: Error, result: def.IUserEntry)
             {
@@ -1125,7 +1125,7 @@ export class UserManager
     /**
 	* Gets the meta data of a user
 	* @param {IUserEntry} user The user
-	* @param {http.ServerRequest} request 
+	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<any>} The value to get
 	*/
@@ -1138,7 +1138,7 @@ export class UserManager
             // There was no user
             if (!user)
                 return resolve(false);
-            
+
             // Remove the user from the DB
             that._userCollection.findOne(<def.IUserEntry>{ _id: user._id }, { _id: 0, meta: 1 }, function (error: Error, result: def.IUserEntry)
             {
@@ -1150,9 +1150,9 @@ export class UserManager
         });
     }
 
-    /** 
-	* Gets the total number of users 
-    * @param {RegExp} searchPhrases Search phrases 
+    /**
+	* Gets the total number of users
+    * @param {RegExp} searchPhrases Search phrases
 	* @returns {Promise<number>}
 	*/
     numUsers(searchPhrases?: RegExp): Promise<number>
@@ -1161,7 +1161,7 @@ export class UserManager
         return new Promise<number>(function (resolve, reject)
         {
             var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
-            
+
             that._userCollection.count(findToken, function (error: Error, result: number)
             {
                 if (error)
@@ -1172,11 +1172,11 @@ export class UserManager
         });
     }
 
-	/** 
+	/**
 	* Prints user objects from the database
 	* @param {number} limit The number of users to fetch
 	* @param {number} startIndex The starting index from where we are fetching users from
-    * @param {RegExp} searchPhrases Search phrases 
+    * @param {RegExp} searchPhrases Search phrases
 	* @returns {Promise<Array<User>>}
 	*/
     getUsers(startIndex: number = 0, limit: number = 0, searchPhrases?: RegExp): Promise<Array<User>>

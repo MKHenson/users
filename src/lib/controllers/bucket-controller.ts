@@ -4,17 +4,17 @@ import * as http from "http";
 import * as entities from "entities";
 import * as users from "webinate-users";
 import * as mongodb from "mongodb";
-import {Session} from "../Session";
-import {UserManager, User, UserPrivileges} from "../Users";
-import {ownerRights, identifyUser} from "../PermissionController";
-import {Controller} from "./Controller"
-import {BucketManager} from "../BucketManager";
+import {Session} from "../session";
+import {UserManager, User, UserPrivileges} from "../users";
+import {ownerRights, identifyUser} from "../permission-controller";
+import {Controller} from "./controller"
+import {BucketManager} from "../bucket-manager";
 import * as multiparty from "multiparty";
 import * as validator from "validator";
 import * as compression from "compression";
 import * as winston from "winston";
 
-import {CommsController, EventType} from "./CommsController";
+import {CommsController, EventType} from "./comms-controller";
 import * as def from "webinate-users";
 
 /**
@@ -39,7 +39,7 @@ export class BucketController extends Controller
         this._config = config;
 
         this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff", "text/plain", "text/json", "application/octet-stream"];
-		
+
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
@@ -48,7 +48,7 @@ export class BucketController extends Controller
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
         router.get("/download/:id", <any>[this.getFile.bind(this)]);
-        
+
         router.get("/get-files/:user/:bucket", <any>[ownerRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", <any>[ownerRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", <any>[ownerRights, this.getBuckets.bind(this)]);
@@ -68,7 +68,7 @@ export class BucketController extends Controller
         // Register the path
         e.use(`${config.mediaURL}`, router);
     }
-    
+
     /**
    * Makes sure the target user exists and the numeric value specified is valid
    * @param {express.Request} req
@@ -146,7 +146,7 @@ export class BucketController extends Controller
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var value = parseInt(req.params.value);        
+        var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
         manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ memoryUsed: value }).then(function ()
@@ -255,7 +255,7 @@ export class BucketController extends Controller
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
-        
+
         if (!req.params.file || req.params.file.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the file to rename", error: true }));
         if (!req.body || !req.body.name || req.body.name.trim() == "")
@@ -265,7 +265,7 @@ export class BucketController extends Controller
         {
             if (!file)
                 return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
-        
+
             return manager.renameFile(file, req.body.name);
 
         }).then(function (file)
@@ -367,7 +367,7 @@ export class BucketController extends Controller
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
 
-        
+
         manager.getFile(fileID).then(function (iFile)
         {
             file = iFile;
@@ -474,7 +474,7 @@ export class BucketController extends Controller
         var numFiles = 0;
         var index = parseInt(req.query.index);
         var limit = parseInt(req.query.limit);
-        
+
         var bucketEntry: users.IBucketEntry;
 
         if (!req.params.bucket || req.params.bucket.trim() == "")
@@ -485,7 +485,7 @@ export class BucketController extends Controller
         // Check for keywords
         if (req.query.search)
             searchTerm = new RegExp(req.query.search, "i");
-        
+
         manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket)
         {
             if (!bucket)
@@ -493,7 +493,7 @@ export class BucketController extends Controller
 
             bucketEntry = bucket;
             return manager.numFiles({ bucketId: bucket.identifier });
-            
+
         }).then(function (count)
         {
             numFiles = count;
@@ -614,9 +614,9 @@ export class BucketController extends Controller
         if (!this.alphaNumericDashSpace(bucketName))
             return res.end(JSON.stringify(<users.IResponse>{ message: "Please only use safe characters", error: true }));
 
-        
+
         UserManager.get.getUser(username).then(function(user)
-        {            
+        {
             if (user)
                 return manager.withinAPILimit(username);
             else
@@ -688,12 +688,12 @@ export class BucketController extends Controller
                 found = true;
                 break;
             }
-        
+
         if (!found)
             return false;
 
         return true;
-    }            
+    }
 
     /**
 	* Attempts to upload a file to the user's bucket
@@ -754,7 +754,7 @@ export class BucketController extends Controller
                     part.resume();
                     checkIfComplete();
                 }
-                
+
                 // This part is a file - so we act on it
                 if (!!part.filename)
                 {
@@ -770,7 +770,7 @@ export class BucketController extends Controller
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
                     numParts++;
-                    
+
                     // Upload the file part to the cloud
                     manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
                     {
@@ -801,7 +801,7 @@ export class BucketController extends Controller
                         errFunc("Could not download meta: " + err.toString());
                     })
                     part.on('end', function ()
-                    {   
+                    {
                         try {
                             metaJson = JSON.parse(metaString);
                         }
@@ -823,7 +823,7 @@ export class BucketController extends Controller
                     // Add the token to the upload array we are sending back to the user
                     uploadedTokens.push(newUpload);
                     numParts++;
-                    
+
                     // Upload the file part to the cloud
                     manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
                     {
@@ -880,7 +880,7 @@ export class BucketController extends Controller
                         }
                         else
                             promise = Promise.resolve(true);
-                        
+
                         return promise;
 
                     }).then(function(val)
@@ -938,7 +938,7 @@ export class BucketController extends Controller
     {
         var form = new multiparty.Form();
         var count = 0;
-        
+
         // Parts are emitted when parsing the form
         form.on('part', function (part: multiparty.Part)
         {
@@ -1013,7 +1013,7 @@ export class BucketController extends Controller
                 bucketsCollection = collections[0];
                 filesCollection = collections[1];
                 statsCollection = collections[2];
-                
+
                 return Promise.all([
                     that.ensureIndex(bucketsCollection, "name"),
                     that.ensureIndex(bucketsCollection, "user"),
@@ -1032,7 +1032,7 @@ export class BucketController extends Controller
             {
                 // Create the user manager
                 that._bucketManager = BucketManager.create(bucketsCollection, filesCollection, statsCollection, that._config);
-               
+
                 // Initialization is finished
                 resolve();
 

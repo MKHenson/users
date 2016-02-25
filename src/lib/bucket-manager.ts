@@ -4,11 +4,11 @@ import * as gcloud from "gcloud";
 import * as http from "http";
 import * as mongodb from "mongodb";
 import * as multiparty from "multiparty";
-import {User} from "./Users"
+import {User} from "./users"
 import * as zlib from "zlib"
 import * as compressible from "compressible"
 import express = require("express");
-import {CommsController, EventType} from "./controllers/CommsController";
+import {CommsController, EventType} from "./controllers/comms-controller";
 import * as def from "webinate-users";
 
 /**
@@ -40,7 +40,7 @@ export class BucketManager
         this._unzipper = zlib.createGunzip();
         this._deflater = zlib.createDeflate();
     }
-    
+
     /**
     * Fetches all bucket entries from the database
     * @param {string} user [Optional] Specify the user. If none provided, then all buckets are retrieved
@@ -52,7 +52,7 @@ export class BucketManager
         var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
-        
+
         return new Promise(function (resolve, reject)
         {
             var search: users.IBucketEntry = {};
@@ -96,7 +96,7 @@ export class BucketManager
             {
                 if (err)
                     return reject(err);
-              
+
                 return resolve(count);
             });
         });
@@ -352,7 +352,7 @@ export class BucketManager
                                         return resolve(bucket);
                                     });
 
-                                    
+
                                 });
                             }
                         });
@@ -441,7 +441,7 @@ export class BucketManager
     {
         if (buckets.length == 0)
             return Promise.resolve();
-        
+
         // Create the search query for each of the files
         var searchQuery = { $or: [], user: user };
         for (var i = 0, l = buckets.length; i < l; i++)
@@ -459,7 +459,7 @@ export class BucketManager
     {
         return this.removeBuckets(<users.IBucketEntry>{ user: user });
     }
-    
+
     /**
     * Deletes the bucket from storage and updates the databases
     */
@@ -532,7 +532,7 @@ export class BucketManager
                     // it was removed by an admin
                     if (err && (<any>err).code != 404)
                         return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`));
-                                   
+
                     // Update the bucket data usage
                     bucketCollection.update(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } }, function (err, result)
                     {
@@ -561,7 +561,7 @@ export class BucketManager
             {
                 if (err)
                     return reject(err);
-            })           
+            })
         });
     }
 
@@ -579,7 +579,7 @@ export class BucketManager
         var stats = this._stats;
         var attempts: number = 0;
         var filesRemoved: Array<users.IFileEntry> = [];
-        
+
         return new Promise(function (resolve, reject)
         {
             // Get the files
@@ -587,7 +587,7 @@ export class BucketManager
             {
                 if (err)
                     return reject(err);
-                
+
                 // For each file entry
                 cursor.toArray(function (err, fileEntries: Array<users.IFileEntry>)
                 {
@@ -599,7 +599,7 @@ export class BucketManager
                        {
                             attempts++;
                             filesRemoved.push(fileEntry);
-                           
+
                             if (attempts == l)
                             {
                                 // Update any listeners on the sockets
@@ -639,7 +639,7 @@ export class BucketManager
     {
         if (fileIDs.length == 0)
             return Promise.resolve();
-        
+
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)
@@ -660,7 +660,7 @@ export class BucketManager
     {
         if (!bucket || bucket.trim() == "")
             return Promise.reject(new Error("Please specify a valid bucket"));
-        
+
         // Create the search query for each of the files
         var searchQuery = { $or: <Array<users.IFileEntry>>[{ bucketId: bucket }, { bucketName: bucket }] };
         return this.removeFiles(searchQuery);
@@ -677,7 +677,7 @@ export class BucketManager
         var that = this;
         var bucketCollection = this._buckets;
         var searchQuery: users.IBucketEntry = {};
-        
+
         if (user)
         {
             searchQuery.user = user;
@@ -699,11 +699,11 @@ export class BucketManager
             });
         });
     }
-    
+
     /**
     * Checks to see the user's storage limits to see if they are allowed to upload data
     * @param {string} user The username
-    * @param {Part} part 
+    * @param {Part} part
     * @returns {Promise<def.IStorageStats>}
     */
     private canUpload(user: string, part: multiparty.Part): Promise<users.IStorageStats>
@@ -1005,7 +1005,7 @@ export class BucketManager
             {
                 return reject(err);
             });
-        });        
+        });
     }
 
     /**
@@ -1084,12 +1084,12 @@ export class BucketManager
         var files = this._files;
         var iBucket = that._gcs.bucket(file.bucketId);
         var iFile = iBucket.file(file.identifier);
-        
+
         iFile.getMetadata(function(err, meta)
         {
             if (err)
                 return response.status(500).send(err.toString());
-                
+
             // Get the client encoding support - if any
             var acceptEncoding = request.headers['accept-encoding'];
             if (!acceptEncoding)
@@ -1099,7 +1099,7 @@ export class BucketManager
             var encoded = false;
             if (meta.metadata)
                 encoded = meta.metadata.encoded;
-                        
+
             // Request is expecting a deflate
             if (acceptEncoding.match(/\bgzip\b/))
             {
@@ -1125,7 +1125,7 @@ export class BucketManager
             }
             else
             {
-                // No encoding supported 
+                // No encoding supported
                 // Unzip GZIP and send raw if already compressed
                 if (encoded)
                     stream.pipe(that._unzipper).pipe(response);
