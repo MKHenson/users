@@ -13,10 +13,10 @@ echo "Downloading latest version from github $(version)"
 
 #download latest
 wget https://github.com/MKHenson/webinate-users/archive/v$(version).zip
-unzip -o "v$(version).zip" "webinate-users-$(version)/server/*"
+unzip -o "v$(version).zip" "webinate-users-$(version)/dist/*"
 
-# Moves the server folder to the current directory
-cp -r webinate-users-$(version)/server/* .
+# Moves the dist folder to the current directory
+cp -r webinate-users-$(version)/dist/* .
 
 # Remove webinate users temp folder
 if [ -d "webinate-users-$(version)" ]; then

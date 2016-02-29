@@ -5,11 +5,11 @@ var express = require("express");
 var morgan = require("morgan");
 var methodOverride = require("method-override");
 var winston = require("winston");
-var BucketController_1 = require("./controllers/BucketController");
-var UserController_1 = require("./controllers/UserController");
-var CORSController_1 = require("./controllers/CORSController");
-var CommsController_1 = require("./controllers/CommsController");
-var ErrorController_1 = require("./controllers/ErrorController");
+var bucket_controller_1 = require("./controllers/bucket-controller");
+var user_controller_1 = require("./controllers/user-controller");
+var cors_controller_1 = require("./controllers/cors-controller");
+var comms_controller_1 = require("./controllers/comms-controller");
+var error_controller_1 = require("./controllers/error-controller");
 var yargs = require("yargs");
 var mongodb = require("mongodb");
 var args = yargs.argv;
@@ -52,17 +52,17 @@ winston.info("Opening the database...", { process: process.pid });
 openDB(config).then(function (db) {
     winston.info("Initializing controllers...", { process: process.pid });
     return Promise.all([
-        new CommsController_1.CommsController(config).initialize(db),
-        new CORSController_1.CORSController(app, config).initialize(db),
-        new BucketController_1.BucketController(app, config).initialize(db),
-        new UserController_1.UserController(app, config).initialize(db),
-        new ErrorController_1.ErrorController(app, config).initialize(db)
+        new comms_controller_1.CommsController(config).initialize(db),
+        new cors_controller_1.CORSController(app, config).initialize(db),
+        new bucket_controller_1.BucketController(app, config).initialize(db),
+        new user_controller_1.UserController(app, config).initialize(db),
+        new error_controller_1.ErrorController(app, config).initialize(db)
     ]);
 }).then(function () {
     // Use middlewares
     app.use(morgan('dev'));
     app.use(methodOverride());
-    // Start node server.js 
+    // Start node server.js
     var httpServer = http.createServer(app);
     httpServer.listen(config.portHTTP);
     winston.info("Listening on HTTP port " + config.portHTTP, { process: process.pid });

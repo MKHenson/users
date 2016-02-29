@@ -6,14 +6,14 @@ var __extends = (this && this.__extends) || function (d, b) {
 var express = require("express");
 var bodyParser = require('body-parser');
 var mongodb = require("mongodb");
-var Users_1 = require("../Users");
-var PermissionController_1 = require("../PermissionController");
-var Controller_1 = require("./Controller");
-var BucketManager_1 = require("../BucketManager");
+var users_1 = require("../users");
+var permission_controller_1 = require("../permission-controller");
+var controller_1 = require("./controller");
+var bucket_manager_1 = require("../bucket-manager");
 var multiparty = require("multiparty");
 var compression = require("compression");
 var winston = require("winston");
-var CommsController_1 = require("./CommsController");
+var comms_controller_1 = require("./comms-controller");
 /**
 * Main class to use for managing users
 */
@@ -36,21 +36,21 @@ var BucketController = (function (_super) {
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
         router.get("/download/:id", [this.getFile.bind(this)]);
-        router.get("/get-files/:user/:bucket", [PermissionController_1.ownerRights, this.getFiles.bind(this)]);
-        router.get("/get-stats/:user?", [PermissionController_1.ownerRights, this.getStats.bind(this)]);
-        router.get("/get-buckets/:user?", [PermissionController_1.ownerRights, this.getBuckets.bind(this)]);
-        router.delete("/remove-buckets/:buckets", [PermissionController_1.identifyUser, this.removeBuckets.bind(this)]);
-        router.delete("/remove-files/:files", [PermissionController_1.identifyUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket/:parentFile?", [PermissionController_1.identifyUser, this.uploadUserFiles.bind(this)]);
-        router.post("/create-bucket/:user/:name", [PermissionController_1.ownerRights, this.createBucket.bind(this)]);
-        router.post("/create-stats/:target", [PermissionController_1.ownerRights, this.createStats.bind(this)]);
-        router.put("/storage-calls/:target/:value", [PermissionController_1.ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
-        router.put("/storage-memory/:target/:value", [PermissionController_1.ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
-        router.put("/storage-allocated-calls/:target/:value", [PermissionController_1.ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
-        router.put("/storage-allocated-memory/:target/:value", [PermissionController_1.ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-        router.put("/rename-file/:file", [PermissionController_1.identifyUser, this.renameFile.bind(this)]);
-        router.put("/make-public/:id", [PermissionController_1.identifyUser, this.makePublic.bind(this)]);
-        router.put("/make-private/:id", [PermissionController_1.identifyUser, this.makePrivate.bind(this)]);
+        router.get("/get-files/:user/:bucket", [permission_controller_1.ownerRights, this.getFiles.bind(this)]);
+        router.get("/get-stats/:user?", [permission_controller_1.ownerRights, this.getStats.bind(this)]);
+        router.get("/get-buckets/:user?", [permission_controller_1.ownerRights, this.getBuckets.bind(this)]);
+        router.delete("/remove-buckets/:buckets", [permission_controller_1.identifyUser, this.removeBuckets.bind(this)]);
+        router.delete("/remove-files/:files", [permission_controller_1.identifyUser, this.removeFiles.bind(this)]);
+        router.post("/upload/:bucket/:parentFile?", [permission_controller_1.identifyUser, this.uploadUserFiles.bind(this)]);
+        router.post("/create-bucket/:user/:name", [permission_controller_1.ownerRights, this.createBucket.bind(this)]);
+        router.post("/create-stats/:target", [permission_controller_1.ownerRights, this.createStats.bind(this)]);
+        router.put("/storage-calls/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
+        router.put("/storage-memory/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
+        router.put("/storage-allocated-calls/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
+        router.put("/storage-allocated-memory/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
+        router.put("/rename-file/:file", [permission_controller_1.identifyUser, this.renameFile.bind(this)]);
+        router.put("/make-public/:id", [permission_controller_1.identifyUser, this.makePublic.bind(this)]);
+        router.put("/make-private/:id", [permission_controller_1.identifyUser, this.makePrivate.bind(this)]);
         // Register the path
         e.use("" + config.mediaURL, router);
     }
@@ -72,7 +72,7 @@ var BucketController = (function (_super) {
             return res.end(JSON.stringify({ message: "Please specify a valid value", error: true }));
         }
         // Make sure the user exists
-        Users_1.UserManager.get.getUser(req.params.target).then(function (user) {
+        users_1.UserManager.get.getUser(req.params.target).then(function (user) {
             if (!user) {
                 res.setHeader('Content-Type', 'application/json');
                 return res.end(JSON.stringify({ message: "Could not find the user '" + req.params.target + "'", error: true }));
@@ -96,7 +96,7 @@ var BucketController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { apiCallsUsed: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user API calls to [" + value + "]", error: false }));
         }).catch(function (err) {
@@ -114,7 +114,7 @@ var BucketController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { memoryUsed: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user memory to [" + value + "] bytes", error: false }));
         }).catch(function (err) {
@@ -132,7 +132,7 @@ var BucketController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { apiCallsAllocated: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user API calls to [" + value + "]", error: false }));
         }).catch(function (err) {
@@ -150,7 +150,7 @@ var BucketController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { memoryAllocated: value }).then(function () {
             return res.end(JSON.stringify({ message: "Updated the user memory to [" + value + "] bytes", error: false }));
         }).catch(function (err) {
@@ -167,7 +167,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.removeFiles = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var files = null;
         if (!req.params.files || req.params.files.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify the files to remove", error: true }));
@@ -195,7 +195,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.renameFile = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         if (!req.params.file || req.params.file.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify the file to rename", error: true }));
         if (!req.body || !req.body.name || req.body.name.trim() == "")
@@ -226,7 +226,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.removeBuckets = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var buckets = null;
         if (!req.params.buckets || req.params.buckets.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify the buckets to remove", error: true }));
@@ -254,7 +254,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.getStats = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         manager.getUserStats(req._user.dbEntry.username).then(function (stats) {
             return res.end(JSON.stringify({
                 message: "Successfully retrieved " + req._user.dbEntry.username + "'s stats",
@@ -276,7 +276,7 @@ var BucketController = (function (_super) {
    * @param {Function} next
    */
     BucketController.prototype.getFile = function (req, res, next) {
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
         var cache = this._config.bucket.cacheLifetime;
@@ -303,7 +303,7 @@ var BucketController = (function (_super) {
    */
     BucketController.prototype.makePublic = function (req, res, next) {
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
         var cache = this._config.bucket.cacheLifetime;
@@ -329,7 +329,7 @@ var BucketController = (function (_super) {
    */
     BucketController.prototype.makePrivate = function (req, res, next) {
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
         var cache = this._config.bucket.cacheLifetime;
@@ -356,7 +356,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.getFiles = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var numFiles = 0;
         var index = parseInt(req.query.index);
         var limit = parseInt(req.query.limit);
@@ -400,7 +400,7 @@ var BucketController = (function (_super) {
         var user = req.params.user;
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var numBuckets = 1;
         var searchTerm;
         // Check for keywords
@@ -430,7 +430,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.createStats = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         manager.createUserStats(req.params.target).then(function (stats) {
             return res.end(JSON.stringify({
                 message: "Stats for the user '" + req.params.target + "' have been created",
@@ -459,7 +459,7 @@ var BucketController = (function (_super) {
     BucketController.prototype.createBucket = function (req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var username = req.params.user;
         var bucketName = req.params.name;
         if (!username || username.trim() == "")
@@ -468,7 +468,7 @@ var BucketController = (function (_super) {
             return res.end(JSON.stringify({ message: "Please specify a valid name", error: true }));
         if (!this.alphaNumericDashSpace(bucketName))
             return res.end(JSON.stringify({ message: "Please only use safe characters", error: true }));
-        Users_1.UserManager.get.getUser(username).then(function (user) {
+        users_1.UserManager.get.getUser(username).then(function (user) {
             if (user)
                 return manager.withinAPILimit(username);
             else
@@ -540,7 +540,7 @@ var BucketController = (function (_super) {
         var completedParts = 0;
         var closed = false;
         var uploadedTokens = [];
-        var manager = BucketManager_1.BucketManager.get;
+        var manager = bucket_manager_1.BucketManager.get;
         var that = this;
         var username = req._user.dbEntry.username;
         var parentFile = req.params.parentFile;
@@ -665,8 +665,8 @@ var BucketController = (function (_super) {
                         var promise;
                         if (filesUploaded.length > 0) {
                             // Send file added events to sockets
-                            var fEvent = { username: username, eventType: CommsController_1.EventType.FilesUploaded, files: filesUploaded };
-                            promise = CommsController_1.CommsController.singleton.broadcastEvent(fEvent);
+                            var fEvent = { username: username, eventType: comms_controller_1.EventType.FilesUploaded, files: filesUploaded };
+                            promise = comms_controller_1.CommsController.singleton.broadcastEvent(fEvent);
                         }
                         else
                             promise = Promise.resolve(true);
@@ -783,7 +783,7 @@ var BucketController = (function (_super) {
                 ]);
             }).then(function () {
                 // Create the user manager
-                that._bucketManager = BucketManager_1.BucketManager.create(bucketsCollection, filesCollection, statsCollection, that._config);
+                that._bucketManager = bucket_manager_1.BucketManager.create(bucketsCollection, filesCollection, statsCollection, that._config);
                 // Initialization is finished
                 resolve();
             }).catch(function (error) {
@@ -792,5 +792,5 @@ var BucketController = (function (_super) {
         });
     };
     return BucketController;
-})(Controller_1.Controller);
+})(controller_1.Controller);
 exports.BucketController = BucketController;

@@ -1,7 +1,7 @@
 var gcloud = require("gcloud");
 var zlib = require("zlib");
 var compressible = require("compressible");
-var CommsController_1 = require("./controllers/CommsController");
+var comms_controller_1 = require("./controllers/comms-controller");
 /**
 * Class responsible for managing buckets and uploads to Google storage
 */
@@ -253,8 +253,8 @@ var BucketManager = (function () {
                                 // Increments the API calls
                                 stats.update({ user: user }, { $inc: { apiCallsUsed: 1 } }, function (err, result) {
                                     // Send bucket added events to sockets
-                                    var fEvent = { eventType: CommsController_1.EventType.BucketUploaded, bucket: bucket, username: user };
-                                    CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                                    var fEvent = { eventType: comms_controller_1.EventType.BucketUploaded, bucket: bucket, username: user };
+                                    comms_controller_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
                                         return resolve(bucket);
                                     });
                                 });
@@ -294,8 +294,8 @@ var BucketManager = (function () {
                             toRemove.push(bucket.identifier);
                             if (attempts == l) {
                                 // Send events to sockets
-                                var fEvent = { eventType: CommsController_1.EventType.BucketRemoved, bucket: bucket };
-                                CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                                var fEvent = { eventType: comms_controller_1.EventType.BucketRemoved, bucket: bucket };
+                                comms_controller_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
                                     resolve(toRemove);
                                 });
                             }
@@ -441,8 +441,8 @@ var BucketManager = (function () {
                             filesRemoved.push(fileEntry);
                             if (attempts == l) {
                                 // Update any listeners on the sockets
-                                var fEvent = { eventType: CommsController_1.EventType.FilesRemoved, files: filesRemoved };
-                                CommsController_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                                var fEvent = { eventType: comms_controller_1.EventType.FilesRemoved, files: filesRemoved };
+                                comms_controller_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
                                     resolve(filesRemoved);
                                 });
                             }
@@ -841,7 +841,7 @@ var BucketManager = (function () {
                     stream.pipe(that._deflater).pipe(response);
             }
             else {
-                // No encoding supported 
+                // No encoding supported
                 // Unzip GZIP and send raw if already compressed
                 if (encoded)
                     stream.pipe(that._unzipper).pipe(response);

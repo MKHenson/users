@@ -4,9 +4,9 @@ var bcrypt = require("bcryptjs");
 var recaptcha = require("recaptcha-async");
 var nodemailer = require("nodemailer");
 var winston = require("winston");
-var CommsController_1 = require("./controllers/CommsController");
-var Session_1 = require("./Session");
-var BucketManager_1 = require("./BucketManager");
+var comms_controller_1 = require("./controllers/comms-controller");
+var session_1 = require("./session");
+var bucket_manager_1 = require("./bucket-manager");
 /*
 * Describes what kind of privileges the user has
 */
@@ -110,7 +110,7 @@ var UserManager = (function () {
                 }
             });
         // Create the session manager
-        this.sessionManager = new Session_1.SessionManager(sessionCollection, {
+        this.sessionManager = new session_1.SessionManager(sessionCollection, {
             domain: config.sessionDomain,
             lifetime: config.sessionLifetime,
             path: config.sessionPath,
@@ -129,8 +129,8 @@ var UserManager = (function () {
         this._userCollection.findOne({ sessionId: sessionId }, function (error, useEntry) {
             if (useEntry) {
                 // Send logged in event to socket
-                var sEvent = { username: useEntry.username, eventType: CommsController_1.EventType.Logout };
-                CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                var sEvent = { username: useEntry.username, eventType: comms_controller_1.EventType.Logout };
+                comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
                     winston.info("User '" + useEntry.username + "' has logged out", { process: process.pid });
                 });
             }
@@ -264,8 +264,8 @@ var UserManager = (function () {
                     if (error)
                         return reject(error);
                     // Send activated event
-                    var sEvent = { username: username, eventType: CommsController_1.EventType.Activated };
-                    CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
+                    comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
                         winston.info("User '" + username + "' has been activated", { process: process.pid });
                         return resolve();
                     }).catch(function (err) {
@@ -475,8 +475,8 @@ var UserManager = (function () {
                     if (error)
                         return reject(error);
                     // Send activated event
-                    var sEvent = { username: username, eventType: CommsController_1.EventType.Activated };
-                    CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
+                    comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
                         winston.info("User '" + username + "' has been activated", { process: process.pid });
                         return resolve(true);
                     }).catch(function (err) {
@@ -608,9 +608,9 @@ var UserManager = (function () {
                         if (error)
                             return reject(new Error("Could not send email to user: " + error.message));
                         // All users have default stats created for them
-                        BucketManager_1.BucketManager.get.createUserStats(newUser.dbEntry.username).then(function () {
+                        bucket_manager_1.BucketManager.get.createUserStats(newUser.dbEntry.username).then(function () {
                             // All users have a bucket created for them
-                            return BucketManager_1.BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
+                            return bucket_manager_1.BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
                         }).then(function (bucket) {
                             return resolve(newUser);
                         }).catch(function (err) {
@@ -640,7 +640,7 @@ var UserManager = (function () {
                 if (user.dbEntry.privileges == UserPrivileges.SuperAdmin)
                     return Promise.reject(new Error("You cannot remove a super user"));
                 username = user.dbEntry.username;
-                return BucketManager_1.BucketManager.get.removeUser(user.dbEntry.username);
+                return bucket_manager_1.BucketManager.get.removeUser(user.dbEntry.username);
             }).then(function (numDeleted) {
                 that._userCollection.remove({ _id: existingUser.dbEntry._id }, function (error, result) {
                     if (error)
@@ -648,8 +648,8 @@ var UserManager = (function () {
                     if (result.result.n == 0)
                         return reject(new Error("Could not remove the user from the database"));
                     // Send event to sockets
-                    var sEvent = { username: username, eventType: CommsController_1.EventType.Removed };
-                    CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Removed };
+                    comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
                         winston.info("User '" + username + "' has been removed", { process: process.pid });
                     });
                     return resolve();
@@ -710,7 +710,7 @@ var UserManager = (function () {
                 // If no user - then reject
                 if (!user)
                     return Promise.reject(new Error("The username or password is incorrect."));
-                // Validate password				
+                // Validate password
                 pass = validator.trim(pass);
                 if (!pass || pass == "")
                     return Promise.reject(new Error("Please enter a valid password"));
@@ -741,8 +741,8 @@ var UserManager = (function () {
                                 if (result.result.n === 0)
                                     return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
                                 // Send logged in event to socket
-                                var sEvent = { username: username, eventType: CommsController_1.EventType.Login };
-                                CommsController_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                                var sEvent = { username: username, eventType: comms_controller_1.EventType.Login };
+                                comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
                                     return resolve(user);
                                 }).catch(function (err) {
                                     return reject(err);

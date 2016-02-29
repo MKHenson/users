@@ -2,12 +2,12 @@ var ws = require("ws");
 var https = require("https");
 var fs = require("fs");
 var winston = require("winston");
-var Users_1 = require("../Users");
+var users_1 = require("../users");
 var ClientConnection = (function () {
     function ClientConnection(ws, clientType) {
         var that = this;
         this.clientType = clientType;
-        Users_1.UserManager.get.loggedIn(ws.upgradeReq, null).then(function (user) {
+        users_1.UserManager.get.loggedIn(ws.upgradeReq, null).then(function (user) {
             ws.clientConnection = that;
             that._ws = ws;
             that.user = user;

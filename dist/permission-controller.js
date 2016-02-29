@@ -1,4 +1,4 @@
-var Users_1 = require("./Users");
+var users_1 = require("./users");
 exports.secret = { key: "" };
 /**
 * Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
@@ -8,7 +8,7 @@ exports.secret = { key: "" };
 */
 function ownerRights(req, res, next) {
     var username = req.params.username || req.params.user;
-    requestHasPermission(Users_1.UserPrivileges.Admin, req, res, username).then(function (user) {
+    requestHasPermission(users_1.UserPrivileges.Admin, req, res, username).then(function (user) {
         next();
     }).catch(function (error) {
         res.setHeader('Content-Type', 'application/json');
@@ -26,7 +26,7 @@ exports.ownerRights = ownerRights;
 * @param {Function} next
 */
 function adminRights(req, res, next) {
-    Users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+    users_1.UserManager.get.loggedIn(req, res).then(function (user) {
         if (!user)
             return res.end(JSON.stringify({ message: "You must be logged in to make this request", error: true }));
         req._user = user;
@@ -34,7 +34,7 @@ function adminRights(req, res, next) {
         var secretKey = (req.body ? req.body.secret : null);
         if (secretKey && secretKey == exports.secret.key)
             next();
-        else if (user.dbEntry.privileges > Users_1.UserPrivileges.Admin)
+        else if (user.dbEntry.privileges > users_1.UserPrivileges.Admin)
             return res.end(JSON.stringify({ message: "You don't have permission to make this request", error: true }));
         else
             next();
@@ -48,7 +48,7 @@ exports.adminRights = adminRights;
 * @param {Function} next
 */
 function identifyUser(req, res, next) {
-    Users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+    users_1.UserManager.get.loggedIn(req, res).then(function (user) {
         if (!user) {
             res.setHeader('Content-Type', 'application/json');
             return res.end(JSON.stringify({
@@ -73,7 +73,7 @@ exports.identifyUser = identifyUser;
 */
 function requestHasPermission(level, req, res, existingUser) {
     return new Promise(function (resolve, reject) {
-        Users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+        users_1.UserManager.get.loggedIn(req, res).then(function (user) {
             if (!user)
                 return reject(new Error("You must be logged in to make this request"));
             if (existingUser !== undefined) {

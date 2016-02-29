@@ -5,9 +5,9 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var express = require("express");
 var bodyParser = require('body-parser');
-var Users_1 = require("../Users");
-var PermissionController_1 = require("../PermissionController");
-var Controller_1 = require("./Controller");
+var users_1 = require("../users");
+var permission_controller_1 = require("../permission-controller");
+var controller_1 = require("./controller");
 var compression = require("compression");
 var winston = require("winston");
 /**
@@ -24,33 +24,33 @@ var UserController = (function (_super) {
     function UserController(e, config) {
         _super.call(this);
         this._config = config;
-        PermissionController_1.secret.key = config.secret;
+        permission_controller_1.secret.key = config.secret;
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
         router.use(bodyParser.urlencoded({ 'extended': true }));
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
-        router.get("/meta/:user", [PermissionController_1.ownerRights, this.getData.bind(this)]);
-        router.get("/meta/:user/:name", [PermissionController_1.ownerRights, this.getVal.bind(this)]);
-        router.get("/users/:username", [PermissionController_1.ownerRights, this.getUser.bind(this)]);
-        router.get("/users", [PermissionController_1.ownerRights, this.getUsers.bind(this)]);
+        router.get("/meta/:user", [permission_controller_1.ownerRights, this.getData.bind(this)]);
+        router.get("/meta/:user/:name", [permission_controller_1.ownerRights, this.getVal.bind(this)]);
+        router.get("/users/:username", [permission_controller_1.ownerRights, this.getUser.bind(this)]);
+        router.get("/users", [permission_controller_1.ownerRights, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
         router.get("/authenticated", this.authenticated.bind(this));
-        router.get("/sessions", [PermissionController_1.ownerRights, this.getSessions.bind(this)]);
+        router.get("/sessions", [permission_controller_1.ownerRights, this.getSessions.bind(this)]);
         router.get("/logout", this.logout.bind(this));
         router.get("/resend-activation/:user", this.resendActivation.bind(this));
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
-        router.delete("/sessions/:id", [PermissionController_1.ownerRights, this.deleteSession.bind(this)]);
-        router.delete("/remove-user/:user", [PermissionController_1.ownerRights, this.removeUser.bind(this)]);
+        router.delete("/sessions/:id", [permission_controller_1.ownerRights, this.deleteSession.bind(this)]);
+        router.delete("/remove-user/:user", [permission_controller_1.ownerRights, this.removeUser.bind(this)]);
         router.post("/login", this.login.bind(this));
         router.post("/register", this.register.bind(this));
-        router.post("/create-user", [PermissionController_1.ownerRights, this.createUser.bind(this)]);
+        router.post("/create-user", [permission_controller_1.ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
-        router.post("/meta/:user/:name", [PermissionController_1.adminRights, this.setVal.bind(this)]);
-        router.post("/meta/:user", [PermissionController_1.adminRights, this.setData.bind(this)]);
-        router.put("/approve-activation/:user", [PermissionController_1.ownerRights, this.approveActivation.bind(this)]);
+        router.post("/meta/:user/:name", [permission_controller_1.adminRights, this.setVal.bind(this)]);
+        router.post("/meta/:user", [permission_controller_1.adminRights, this.setData.bind(this)]);
+        router.put("/approve-activation/:user", [permission_controller_1.ownerRights, this.approveActivation.bind(this)]);
         router.put("/password-reset", this.passwordReset.bind(this));
         // Register the path
         e.use(config.restURL, router);
@@ -77,7 +77,7 @@ var UserController = (function (_super) {
                 ]);
             }).then(function () {
                 // Create the user manager
-                that._userManager = Users_1.UserManager.create(userCollection, sessionCollection, that._config);
+                that._userManager = users_1.UserManager.create(userCollection, sessionCollection, that._config);
                 that._userManager.initialize().then(function () {
                     // Initialization is finished
                     resolve();
@@ -98,7 +98,7 @@ var UserController = (function (_super) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
-        Users_1.UserManager.get.getUser(req.params.username).then(function (user) {
+        users_1.UserManager.get.getUser(req.params.username).then(function (user) {
             if (!user)
                 return res.end(JSON.stringify({ message: "No user found", error: true }));
             var token = {
@@ -546,9 +546,9 @@ var UserController = (function (_super) {
         var that = this;
         var token = req.body;
         // Set default privileges
-        token.privileges = token.privileges ? token.privileges : Users_1.UserPrivileges.Regular;
+        token.privileges = token.privileges ? token.privileges : users_1.UserPrivileges.Regular;
         // Not allowed to create super users
-        if (token.privileges == Users_1.UserPrivileges.SuperAdmin)
+        if (token.privileges == users_1.UserPrivileges.SuperAdmin)
             return res.end(JSON.stringify({
                 message: "You cannot create a user with super admin permissions",
                 error: true
@@ -595,5 +595,5 @@ var UserController = (function (_super) {
         });
     };
     return UserController;
-})(Controller_1.Controller);
+})(controller_1.Controller);
 exports.UserController = UserController;

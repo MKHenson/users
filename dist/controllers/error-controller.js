@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var Controller_1 = require("./Controller");
+var controller_1 = require("./controller");
 /**
 * Handles express errors
 */
@@ -27,5 +27,5 @@ var ErrorController = (function (_super) {
         return Promise.resolve();
     };
     return ErrorController;
-})(Controller_1.Controller);
+})(controller_1.Controller);
 exports.ErrorController = ErrorController;
