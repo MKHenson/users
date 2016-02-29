@@ -1,4 +1,4 @@
-﻿///<reference path='../definitions/express.d.ts' />
+///<reference path='../required/express.d.ts' />
 
 declare module UsersInterface
 {
@@ -171,7 +171,7 @@ declare module UsersInterface
         */
         port: number;
 
-    
+
         /**
         * An array of expected clients
         * [
@@ -213,9 +213,9 @@ declare module UsersInterface
         * eg: "storageAPI"
         */
         statsCollection: string;
-    
+
         /**
-        * The length of time the assets should be cached on a user's browser. 
+        * The length of time the assets should be cached on a user's browser.
         * eg:  2592000000 or 30 days
         */
         cacheLifetime: number;
@@ -333,13 +333,13 @@ declare module UsersInterface
     export interface IConfig
     {
         /**
-        * The domain or host of the site. 
+        * The domain or host of the site.
         * eg: "127.0.0.1" or "webinate.net"
         */
         host: string;
 
         /**
-        * The RESTful path of this service. 
+        * The RESTful path of this service.
         * eg: If "/api", then the API url would be 127.0.0.1:80/api (or rather host:port/restURL)
         */
         restURL: string;
@@ -354,11 +354,11 @@ declare module UsersInterface
         * A secret string to identify authenticated servers
         */
         secret: string;
-    
+
         /**
-        * The URL to redirect to after the user attempts to activate their account. 
+        * The URL to redirect to after the user attempts to activate their account.
         * User's can activate their account via the "/activate-account" URL, and after its validation the server will redirect to this URL
-        * adding a query ?message=You%20have%20activated%20your%20account&status=success. 
+        * adding a query ?message=You%20have%20activated%20your%20account&status=success.
         * The status can be either 'success' or 'error'
         *
         * eg: "http://localhost/notify-user"
@@ -372,9 +372,9 @@ declare module UsersInterface
         * eg: "http://localhost/reset-password"
         */
         passwordResetURL: string;
-        
+
         /**
-        * An array of approved domains that can access this API. 
+        * An array of approved domains that can access this API.
         * e.g. ["webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1"] etc...
         */
         approvedDomains: Array<string>;
@@ -395,7 +395,7 @@ declare module UsersInterface
         * Information regarding the websocket communication. Used for events and IPC
         */
         websocket: IWebsocket;
-	
+
         /**
         * The name of the mongo database name
         */
@@ -412,7 +412,7 @@ declare module UsersInterface
         * eg: "sessions"
         */
         sessionCollection: string;
-    
+
         /**
         * The host the DB is listening on
         * e.g. "127.0.0.1"
@@ -432,7 +432,7 @@ declare module UsersInterface
         ssl: boolean;
 
         /**
-        * The path to the SSL private key 
+        * The path to the SSL private key
         */
         sslKey: string;
 
@@ -463,7 +463,7 @@ declare module UsersInterface
         */
         sessionPath?: string;
 
-        /**  
+        /**
         * If present, the cookie (and hence the session) will apply to the given domain, including any subdomains.
         * For example, on a request from foo.example.org, if the domain is set to '.example.org', then this session will persist across any subdomain of example.org.
         * By default, the domain is not set, and the session will only be visible to other requests that exactly match the domain.
@@ -477,7 +477,7 @@ declare module UsersInterface
         * e.g: true/false. Default is true
         */
         sessionPersistent?: boolean;
-	
+
         /**
         * The default length of user sessions in seconds
         * e.g 1800
@@ -485,17 +485,17 @@ declare module UsersInterface
         sessionLifetime?: number;
 
         /**
-        * The private key to use for Google captcha 
+        * The private key to use for Google captcha
         * Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
         */
         captchaPrivateKey: string;
 
         /**
-        * The public key to use for Google captcha 
+        * The public key to use for Google captcha
         * Get your key from the captcha admin: https://www.google.com/recaptcha/intro/index.html
         */
         captchaPublicKey: string;
-	
+
         /**
         * The 'from' email when they receive an email for the server
         * eg: support@host.com
@@ -523,8 +523,8 @@ declare module UsersInterface
         /**
         * The administrative user. This is the root user that will have access to the information in the database.
         * This can be anything you like, but try to use passwords that are hard to guess
-        * eg: 
-    
+        * eg:
+
         "adminUser": {
                 "username": "root",
                 "email": "root_email@host.com",
