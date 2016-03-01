@@ -7,15 +7,15 @@ set -e
 echo "Downloading latest version from github dev"
 
 #download latest
-wget https://github.com/MKHenson/webinate-users/archive/dev.zip
-unzip -o "dev.zip" "webinate-users-dev/dist/*"
+wget https://github.com/MKHenson/users/archive/dev.zip
+unzip -o "dev.zip" "users-dev/dist/*"
 
 # Moves the dist folder to the current directory
-cp -r webinate-users-dev/dist/* .
+cp -r users-dev/dist/* .
 
 # Remove modepress folder
-if [ -d "webinate-users-dev" ]; then
-	rm webinate-users-dev -R
+if [ -d "users-dev" ]; then
+	rm users-dev -R
 fi
 
 rm "dev.zip"
