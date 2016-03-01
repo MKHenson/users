@@ -3,7 +3,7 @@
     "module": "commonjs",
     "removeComments": false,
     "noEmitOnError": true,
-    "declaration": true,
+    "declaration": false,
     "sourceMap": false,
     "preserveConstEnums": true,
     "target": "es5",
