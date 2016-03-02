@@ -3,7 +3,7 @@ var fs = require('fs');
 
 
 // Load the file
-var jsonConfig = fs.readFileSync("../server/config.json", "utf8")
+var jsonConfig = fs.readFileSync("../dist/config.json", "utf8")
 try
 {
     // Parse the config

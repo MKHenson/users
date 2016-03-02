@@ -23,7 +23,6 @@ export enum UserPrivileges
     Regular = 3
 }
 
-
 /*
 * Class that represents a user and its database entry
 */

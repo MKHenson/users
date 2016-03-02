@@ -1,5 +1,3 @@
-///<reference path='../required/express.d.ts' />
-
 declare module UsersInterface
 {
     export class User

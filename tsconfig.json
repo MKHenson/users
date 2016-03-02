@@ -9,5 +9,9 @@
     "target": "es5",
     "allowUnreachableCode": false,
     "allowUnusedLabels": false
-  }
+  },
+  "files": [
+      "src/main.ts",
+      "src/startup.ts"
+  ]
 }

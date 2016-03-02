@@ -1,4 +1,4 @@
-Webinate Users
+Users
 ===============
 
 A small library providing utility methods for logging in and managing users. The application runs as a standalone
