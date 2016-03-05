@@ -18,4 +18,5 @@
 /// <reference path="./definitions/required/yargs.d.ts" />
 /// <reference path="./definitions/required/nodemailer.d.ts" />
 /// <reference path="./definitions/custom/Definitions.d.ts" />
+/// <reference path="./definitions/custom/es6-promise.d.ts" />
 /// <reference path="./definitions/required/es6-promise.d.ts" />

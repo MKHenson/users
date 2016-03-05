@@ -7,6 +7,7 @@ import * as nodemailer from "nodemailer";
 import * as bodyParser from "body-parser";
 import * as express from "express";
 import * as winston from "winston";
+import * as xoauth2 from "xoauth2";
 
 import {CommsController, EventType} from "./controllers/comms-controller";
 import * as def from "webinate-users";
@@ -130,13 +131,28 @@ export class UserManager
 
 		// Create the transport object which will be sending the emails
         if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
-            this._transport = nodemailer.createTransport(<ITransportOptions>{
-				service: config.emailService,
-                auth: <NodemailerSMTPTransportOptions>{
-					user: config.emailServiceUser,
-					pass: config.emailServicePassword
-				}
-			});
+        {
+            // login
+            var transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    xoauth2: xoauth2.createXOAuth2Generator({
+                        user: '{username}',
+                        clientId: '{Client ID}',
+                        clientSecret: '{Client Secret}',
+                        refreshToken: '{refresh-token}',
+                        accessToken: '{cached access token}'
+                    })
+                }
+            });
+        }
+            // this._transport = nodemailer.createTransport(<ITransportOptions>{
+			// 	service: config.emailService,
+            //     auth: <NodemailerSMTPTransportOptions>{
+			// 		user: config.emailServiceUser,
+			// 		pass: config.emailServicePassword
+			// 	}
+			// });
 
 		// Create the session manager
 		this.sessionManager = new SessionManager(sessionCollection,
