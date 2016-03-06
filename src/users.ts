@@ -1,4 +1,6 @@
-﻿import * as mongodb from "mongodb";
+﻿/// <reference path="./references.d.ts" />
+
+import * as mongodb from "mongodb";
 import * as http from "http";
 import * as validator from "validator";
 import * as bcrypt from "bcryptjs";
@@ -7,12 +9,12 @@ import * as nodemailer from "nodemailer";
 import * as bodyParser from "body-parser";
 import * as express from "express";
 import * as winston from "winston";
-import * as xoauth2 from "xoauth2";
 
 import {CommsController, EventType} from "./controllers/comms-controller";
 import * as def from "webinate-users";
 import {SessionManager, Session} from "./session";
 import {BucketManager} from "./bucket-manager";
+import {Mailer} from "./mailer"
 
 /*
 * Describes what kind of privileges the user has
@@ -115,7 +117,8 @@ export class UserManager
 	public sessionManager: SessionManager;
 	private _userCollection: mongodb.Collection;
 	private _config: def.IConfig;
-	private _transport: Transport;
+	//private _transport: Transport;
+    private _mailer : Mailer;
 
 	/**
 	* Creates an instance of the user manager
@@ -129,30 +132,18 @@ export class UserManager
         this._config = config;
         UserManager._singleton = this;
 
-		// Create the transport object which will be sending the emails
-        if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
-        {
-            // login
-            var transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    xoauth2: xoauth2.createXOAuth2Generator({
-                        user: '{username}',
-                        clientId: '{Client ID}',
-                        clientSecret: '{Client Secret}',
-                        refreshToken: '{refresh-token}',
-                        accessToken: '{cached access token}'
-                    })
-                }
-            });
-        }
-            // this._transport = nodemailer.createTransport(<ITransportOptions>{
-			// 	service: config.emailService,
-            //     auth: <NodemailerSMTPTransportOptions>{
-			// 		user: config.emailServiceUser,
-			// 		pass: config.emailServicePassword
-			// 	}
-			// });
+		// // Create the transport object which will be sending the emails
+        // if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
+        // {
+        //     // login
+        //     this._transport = nodemailer.createTransport(<ITransportOptions>{
+		// 		service: config.emailService,
+        //         auth: <NodemailerSMTPTransportOptions>{
+		// 			user: config.emailServiceUser,
+		// 			pass: config.emailServicePassword
+		// 		}
+		// 	});
+        // }
 
 		// Create the session manager
 		this.sessionManager = new SessionManager(sessionCollection,
@@ -198,6 +189,13 @@ export class UserManager
 	{
 		var that = this;
 		var config = this._config;
+
+        if (that._config.google.bucket && that._config.google.keyFile)
+        {
+            that._mailer = new Mailer();
+            that._mailer.initialize(that._config.google.keyFile, that._config.google.mail.apiEmail);
+        }
+
 
 		return new Promise<void>(function( resolve, reject )
         {
@@ -377,22 +375,36 @@ export class UserManager
         var that = this;
         return new Promise<boolean>(function (resolve, reject)
         {
-            // Setup e-mail data with unicode symbols
-            var mailOptions: MailComposer = {
-                from: that._config.adminUser.email,
-                to: that._config.adminUser.email,
-                subject: `Message from ${( name ? name : "a user" )}`,
-                text: message + "<br /><br />Email: " + (from ? from : ""),
-                html: message.replace(/(?:\r\n|\r|\n)/g, '<br />') + (from ? "\n\nEmail: " + from : ""),
-            };
+            if (!that._mailer)
+                reject(new Error(`No email account has been setup`));
 
-            that._transport.sendMail(mailOptions, function (error: Error, info: any)
-            {
-                if (error)
-                    reject(new Error(`Could not send email to user: ${error.message}`));
-
+            that._mailer.sendMail(
+               that._config.adminUser.email,
+               that._config.google.mail.from,
+               `Message from ${( name ? name : "a user" )}`,
+               message + "<br /><br />Email: " + (from ? from : "")
+            ).then(function(){
                 return resolve(true);
+            }).catch(function(err){
+                return reject(new Error(`Could not send email to user: ${err.message}`));
             });
+
+            // // Setup e-mail data with unicode symbols
+            // var mailOptions: MailComposer = {
+            //     from: that._config.adminUser.email,
+            //     to: that._config.adminUser.email,
+            //     subject: `Message from ${( name ? name : "a user" )}`,
+            //     text: message + "<br /><br />Email: " + (from ? from : ""),
+            //     html: message.replace(/(?:\r\n|\r|\n)/g, '<br />') + (from ? "\n\nEmail: " + from : ""),
+            // };
+
+//             that._transport.sendMail(mailOptions, function (error: Error, info: any)
+//             {
+//                 if (error)
+//                     reject(new Error(`Could not send email to user: ${error.message}`));
+//
+//                 return resolve(true);
+//             });
         });
     }
 
@@ -435,21 +447,37 @@ export class UserManager
 					Thanks
 					The Webinate Team`;
 
-                    // Setup e-mail data with unicode symbols
-                    var mailOptions: MailComposer = {
-                        from: that._config.emailFrom,
-                        to: user.dbEntry.email,
-                        subject: "Activate your account",
-                        text: message,
-                        html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                    };
+                    // If no mailer is setup
+                    if (!that._mailer)
+                        reject(new Error(`No email account has been setup`));
 
-                    that._transport.sendMail(mailOptions, function (error: Error, info: any) {
-                        if (error)
-                            reject(new Error(`Could not send email to user: ${error.message}`));
-
+                    // Send mail using the mailer
+                    that._mailer.sendMail(
+                        user.dbEntry.email,
+                        that._config.google.mail.from,
+                        "Activate your account",
+                        message
+                    ).then(function(){
                         return resolve(true);
+                    }).catch(function(err){
+                        reject(new Error(`Could not send email to user: ${err.message}`));
                     });
+
+//                     // Setup e-mail data with unicode symbols
+//                     var mailOptions: MailComposer = {
+//                         from: that._config.emailFrom,
+//                         to: user.dbEntry.email,
+//                         subject: "Activate your account",
+//                         text: message,
+//                         html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+//                     };
+//
+//                     that._transport.sendMail(mailOptions, function (error: Error, info: any) {
+//                         if (error)
+//                             reject(new Error(`Could not send email to user: ${error.message}`));
+//
+//                         return resolve(true);
+//                     });
                 });
 
             }).catch(function (error: Error) {
@@ -498,22 +526,38 @@ export class UserManager
 					Thanks
 					The Webinate Team`;
 
-                    // Setup e-mail data with unicode symbols
-                    var mailOptions: MailComposer = {
-                        from: that._config.emailFrom,
-                        to: user.dbEntry.email,
-                        subject: "Reset Password",
-                        text: message,
-                        html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                    };
+                    // If no mailer is setup
+                    if (!that._mailer)
+                        reject(new Error(`No email account has been setup`));
 
-                    that._transport.sendMail(mailOptions, function (error: Error, info: any)
-                    {
-                        if (error)
-                            reject(new Error(`Could not send email to user: ${error.message}`));
-
+                    // Send mail using the mailer
+                    that._mailer.sendMail(
+                        user.dbEntry.email,
+                        that._config.google.mail.from,
+                        "Reset Password",
+                        message
+                    ).then(function(){
                         return resolve(true);
+                    }).catch(function(err){
+                        reject(new Error(`Could not send email to user: ${err.message}`));
                     });
+
+//                     // Setup e-mail data with unicode symbols
+//                     var mailOptions: MailComposer = {
+//                         from: that._config.emailFrom,
+//                         to: user.dbEntry.email,
+//                         subject: "Reset Password",
+//                         text: message,
+//                         html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+//                     };
+//
+//                     that._transport.sendMail(mailOptions, function (error: Error, info: any)
+//                     {
+//                         if (error)
+//                             reject(new Error(`Could not send email to user: ${error.message}`));
+//
+//                         return resolve(true);
+//                     });
                 });
 
             }).catch(function (error: Error)
@@ -797,36 +841,65 @@ export class UserManager
                     Thanks
                     The Webinate Team`;
 
-                    // Setup e-mail data with unicode symbols
-                    var mailOptions: MailComposer = {
-                        from: that._config.emailFrom,
-                        to: newUser.dbEntry.email,
-                        subject: "Activate your account",
-                        text: message,
-                        html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                    };
+                    // If no mailer is setup
+                    if (!that._mailer)
+                        reject(new Error(`No email account has been setup`));
 
-                    // Send mail
-                    that._transport.sendMail(mailOptions, function (error: Error, info: any)
-                    {
-                        if (error)
-                            return reject(new Error(`Could not send email to user: ${error.message}`));
+                    // Send mail using the mailer
+                    that._mailer.sendMail(
+                        newUser.dbEntry.email,
+                        that._config.google.mail.from,
+                        "Activate your account",
+                        message
+                    ).then(function(){
 
                         // All users have default stats created for them
-                        BucketManager.get.createUserStats(newUser.dbEntry.username).then(function ()
-                        {
-                            // All users have a bucket created for them
-                            return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
+                        return BucketManager.get.createUserStats(newUser.dbEntry.username);
 
-                        }).then(function(bucket)
-                        {
-                            return resolve(newUser);
+                    }).then(function(){
 
-                        }).catch(function (err)
-                        {
-                            return reject(err);
-                        });
+                        // All users have a bucket created for them
+                        return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
+
+                    }).then(function(){
+
+                        return resolve(newUser);
+
+                    }).catch(function(err){
+
+                        return reject(err);
                     });
+
+//                     // Setup e-mail data with unicode symbols
+//                     var mailOptions: MailComposer = {
+//                         from: that._config.emailFrom,
+//                         to: newUser.dbEntry.email,
+//                         subject: "Activate your account",
+//                         text: message,
+//                         html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+//                     };
+//
+//                     // Send mail
+//                     that._transport.sendMail(mailOptions, function (error: Error, info: any)
+//                     {
+//                         if (error)
+//                             return reject(new Error(`Could not send email to user: ${error.message}`));
+//
+//                         // All users have default stats created for them
+//                         BucketManager.get.createUserStats(newUser.dbEntry.username).then(function ()
+//                         {
+//                             // All users have a bucket created for them
+//                             return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
+//
+//                         }).then(function(bucket)
+//                         {
+//                             return resolve(newUser);
+//
+//                         }).catch(function (err)
+//                         {
+//                             return reject(err);
+//                         });
+//                     });
                 });
 
             }).catch(function (error: Error)

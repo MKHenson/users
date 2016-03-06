@@ -1,54 +1,59 @@
 {
-  "host": "127.0.0.1",
-  "restURL": "",
-  "mediaURL": "media",
-  "accountRedirectURL": "http://host.com/admin/message",
-  "passwordResetURL": "http://host.com/admin/password-reset-form",
-  "userCollection": "users",
-  "sessionCollection": "sessions",
-  "approvedDomains": [ "webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1" ],
-  "secret": "",
-  "portHTTP": 80,
-  "portHTTPS": 443,
-  "databaseHost": "127.0.0.1",
-  "databasePort": 27017,
-  "ssl": false,
-  "debugMode": true,
-  "sslKey": "",
-  "sslCert": "",
-  "sslRoot": "",
-  "sslIntermediate": "",
-	"databaseName": "users",
-	"sessionPath": "/",
-	"sessionDomain": "",
-	"sessionPersistent": true,
-	"sessionLifetime": 1800,
-	"captchaPrivateKey": "GOOGLE_CAPTHCA_PRIVATE_KEY",
-	"captchaPublicKey": "GOOGLE_CAPTHCA_PUBLIC_KEY",
-	"emailFrom": "Support",
-	"emailService": "Gmail",
-	"emailServiceUser": "provider@gmail.com",
-	"emailServicePassword": "provider_password",
-  "adminUser": {
-    "username": "root",
-    "email": "root_email@host.com",
-    "password": "CHANGE_THIS_PASSWORD"
-  },
-  "bucket": {
-    "keyFile": "",
-    "projectId": "",
-    "bucketsCollection": "buckets",
-    "filesCollection": "files",
-    "statsCollection": "storageAPI",
-    "cacheLifetime": 2592000000
-  },
-  "websocket": {
-    "port": 8080,
-    "clients": [
-      {
-        "origin": "",
-        "eventListeners": [ ]
-      }
-    ]
-  }
+    "host": "127.0.0.1",
+    "restURL": "",
+    "mediaURL": "media",
+    "accountRedirectURL": "http://host.com/admin/message",
+    "passwordResetURL": "http://host.com/admin/password-reset-form",
+    "userCollection": "users",
+    "sessionCollection": "sessions",
+    "approvedDomains": [ "webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1" ],
+    "secret": "",
+    "portHTTP": 80,
+    "portHTTPS": 443,
+    "databaseHost": "127.0.0.1",
+    "databasePort": 27017,
+    "ssl": false,
+    "debugMode": true,
+    "sslKey": "",
+    "sslCert": "",
+    "sslRoot": "",
+    "sslIntermediate": "",
+    "databaseName": "users",
+    "sessionPath": "/",
+    "sessionDomain": "",
+    "sessionPersistent": true,
+    "sessionLifetime": 1800,
+    "captchaPrivateKey": "GOOGLE_CAPTHCA_PRIVATE_KEY",
+    "captchaPublicKey": "GOOGLE_CAPTHCA_PUBLIC_KEY",
+    "emailFrom": "Support",
+    "emailService": "Gmail",
+    "emailServiceUser": "provider@gmail.com",
+    "emailServicePassword": "provider_password",
+    "adminUser": {
+        "username": "root",
+        "email": "root_email@host.com",
+        "password": "CHANGE_THIS_PASSWORD"
+    },
+    "google": {
+        "mail":{
+            "apiEmail": ""
+        },
+    "bucket": {
+        "keyFile": "",
+        "projectId": "",
+        "bucketsCollection": "buckets",
+        "filesCollection": "files",
+        "statsCollection": "storageAPI",
+        "cacheLifetime": 2592000000
+        }
+    },
+    "websocket": {
+        "port": 8080,
+        "clients": [
+            {
+                "origin": "",
+                "eventListeners": [ ]
+            }
+        ]
+    }
 }

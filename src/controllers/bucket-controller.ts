@@ -362,7 +362,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         var fileID = req.params.id;
         var file: users.IFileEntry = null;
-        var cache = this._config.bucket.cacheLifetime;
+        var cache = this._config.google.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
@@ -399,7 +399,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         var fileID = req.params.id;
         var file: users.IFileEntry = null;
-        var cache = this._config.bucket.cacheLifetime;
+        var cache = this._config.google.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
@@ -436,7 +436,7 @@ export class BucketController extends Controller
         var manager = BucketManager.get;
         var fileID = req.params.id;
         var file: users.IFileEntry = null;
-        var cache = this._config.bucket.cacheLifetime;
+        var cache = this._config.google.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
@@ -1004,9 +1004,9 @@ export class BucketController extends Controller
             var statsCollection;
 
             Promise.all([
-                that.createCollection(that._config.bucket.bucketsCollection, db),
-                that.createCollection(that._config.bucket.filesCollection, db),
-                that.createCollection(that._config.bucket.statsCollection, db)
+                that.createCollection(that._config.google.bucket.bucketsCollection, db),
+                that.createCollection(that._config.google.bucket.filesCollection, db),
+                that.createCollection(that._config.google.bucket.statsCollection, db)
 
             ]).then(function (collections)
             {

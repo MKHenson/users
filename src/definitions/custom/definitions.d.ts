@@ -182,7 +182,7 @@
     /*
     * Users stores data on an external cloud bucket with Google
     */
-    export interface IGoogleStorage
+    export interface IGoogleProperties
     {
         /*
         * Path to the key file
@@ -190,33 +190,56 @@
         keyFile: string;
 
         /*
-        * Project ID
+        * Mail settings
         */
-        projectId: string;
+        mail: {
 
-        /**
-        * The name of the mongodb collection for storing bucket details
-        * eg: "buckets"
-        */
-        bucketsCollection: string;
+            /*
+            * The email account to use the gmail API through. This account must be authorized to
+            * use this application. See: https://admin.google.com/AdminHome?fral=1#SecuritySettings:
+            */
+            apiEmail: string;
 
-        /**
-        * The name of the mongodb collection for storing file details
-        * eg: "files"
-        */
-        filesCollection: string;
+            /*
+            * The email to use as the from field when sending mail. This can be different from the apiEmail.
+            */
+            from: string;
+        };
 
-        /**
-        * The name of the mongodb collection for storing user stats
-        * eg: "storageAPI"
+        /*
+        * Describes the bucket details
         */
-        statsCollection: string;
+        bucket : {
 
-        /**
-        * The length of time the assets should be cached on a user's browser.
-        * eg:  2592000000 or 30 days
-        */
-        cacheLifetime: number;
+            /*
+            * Project ID
+            */
+            projectId: string;
+
+            /**
+            * The name of the mongodb collection for storing bucket details
+            * eg: "buckets"
+            */
+            bucketsCollection: string;
+
+            /**
+            * The name of the mongodb collection for storing file details
+            * eg: "files"
+            */
+            filesCollection: string;
+
+            /**
+            * The name of the mongodb collection for storing user stats
+            * eg: "storageAPI"
+            */
+            statsCollection: string;
+
+            /**
+            * The length of time the assets should be cached on a user's browser.
+            * eg:  2592000000 or 30 days
+            */
+            cacheLifetime: number;
+        }
     }
 
     /*
@@ -495,30 +518,6 @@
         captchaPublicKey: string;
 
         /**
-        * The 'from' email when they receive an email for the server
-        * eg: support@host.com
-        */
-        emailFrom: string;
-
-        /**
-        * Email service we are using to send mail. For example 'Gmail'
-        * eg: "Gmail"
-        */
-        emailService: string;
-
-        /**
-        * The email address / username of the service
-        * e.g: "provider@gmail.com"
-        */
-        emailServiceUser: string;
-
-        /**
-        * The password of the email service
-        * e.g: "provider_password"
-        */
-        emailServicePassword: string;
-
-        /**
         * The administrative user. This is the root user that will have access to the information in the database.
         * This can be anything you like, but try to use passwords that are hard to guess
         * eg:
@@ -534,14 +533,20 @@
         /**
         * Information relating to the Google storage platform
         *
-        "bucket": {
-                "keyFile": "",
-                "projectId": "",
-                "bucketsCollection": "buckets",
-                "filesCollection": "files"
+        "google": {
+            "keyFile": "",
+            "mail":{
+                "apiEmail": "",
+                "from": ""
+            },
+            "bucket": {
+                    "projectId": "",
+                    "bucketsCollection": "buckets",
+                    "filesCollection": "files"
+                }
             }
         */
-        bucket: IGoogleStorage;
+        google: IGoogleProperties;
     }
 
     export interface IGetUser extends IGetResponse<IUserEntry> { }

@@ -1,3 +1,4 @@
+/// <reference path="./references.d.ts" />
 var gcloud = require("gcloud");
 var zlib = require("zlib");
 var compressible = require("compressible");
@@ -8,7 +9,7 @@ var comms_controller_1 = require("./controllers/comms-controller");
 var BucketManager = (function () {
     function BucketManager(buckets, files, stats, config) {
         BucketManager._singleton = this;
-        this._gcs = gcloud.storage({ projectId: config.bucket.projectId, keyFilename: config.bucket.keyFile });
+        this._gcs = gcloud.storage({ projectId: config.google.bucket.projectId, keyFilename: config.google.keyFile });
         this._buckets = buckets;
         this._files = files;
         this._stats = stats;

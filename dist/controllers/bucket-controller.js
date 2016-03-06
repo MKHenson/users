@@ -279,7 +279,7 @@ var BucketController = (function (_super) {
         var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
-        var cache = this._config.bucket.cacheLifetime;
+        var cache = this._config.google.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
         manager.getFile(fileID).then(function (iFile) {
@@ -306,7 +306,7 @@ var BucketController = (function (_super) {
         var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
-        var cache = this._config.bucket.cacheLifetime;
+        var cache = this._config.google.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
@@ -332,7 +332,7 @@ var BucketController = (function (_super) {
         var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
-        var cache = this._config.bucket.cacheLifetime;
+        var cache = this._config.google.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
             return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
@@ -762,9 +762,9 @@ var BucketController = (function (_super) {
             var filesCollection;
             var statsCollection;
             Promise.all([
-                that.createCollection(that._config.bucket.bucketsCollection, db),
-                that.createCollection(that._config.bucket.filesCollection, db),
-                that.createCollection(that._config.bucket.statsCollection, db)
+                that.createCollection(that._config.google.bucket.bucketsCollection, db),
+                that.createCollection(that._config.google.bucket.filesCollection, db),
+                that.createCollection(that._config.google.bucket.statsCollection, db)
             ]).then(function (collections) {
                 bucketsCollection = collections[0];
                 filesCollection = collections[1];
