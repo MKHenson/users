@@ -10,7 +10,17 @@
 			"taskName": "build-all",
 			"isBuildCommand": true,
 			"showOutput": "always",
-            "problemMatcher": "$tsc"
+            "problemMatcher": {
+                "fileLocation": ["relative", "${workspaceRoot}"],
+                "pattern": {
+                    "regexp": "^(.*)\\((.*),(.*)\\):\\s(error|warning)\\s(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
 		}
 	]
 }
