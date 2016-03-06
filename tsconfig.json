@@ -8,7 +8,8 @@
     "preserveConstEnums": true,
     "target": "es5",
     "allowUnreachableCode": false,
-    "allowUnusedLabels": false
+    "allowUnusedLabels": false,
+    "outDir": "dist"
   },
   "files": [
       "src/main.ts",
