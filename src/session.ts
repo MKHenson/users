@@ -1,4 +1,6 @@
-﻿import * as http from "http";
+﻿/// <reference path="./references.d.ts" />
+
+import * as http from "http";
 import * as mongodb from "mongodb";
 import {ISessionEntry} from "webinate-users";
 import {EventEmitter} from "events"
@@ -14,7 +16,7 @@ export interface ISessionOptions
 	*/
 	path?: string;
 
-	/**  
+	/**
 	* If present, the cookie (and hence the session) will apply to the given domain, including any subdomains.
 	* For example, on a request from foo.example.org, if the domain is set to '.example.org', then this session will persist across any subdomain of example.org.
 	* By default, the domain is not set, and the session will only be visible to other requests that exactly match the domain.
@@ -27,7 +29,7 @@ export interface ISessionOptions
 	*/
 	persistent?: boolean;
 
-	/**  
+	/**
 	* If true, the cookie will be encrypted
 	*/
 	secure?: boolean;
@@ -45,7 +47,7 @@ export interface ISessionOptions
 * A class that manages session data for active users
 */
 export class SessionManager extends EventEmitter
-{	
+{
 	private _dbCollection: mongodb.Collection;
 	private _timeout: number;
 	private _cleanupProxy: any;
@@ -115,7 +117,7 @@ export class SessionManager extends EventEmitter
 			})
 		});
 	}
-    
+
 	/**
 	* Clears the users session cookie so that its no longer tracked
 	* @param {string} sessionId The session ID to remove, if null then the currently authenticated session will be used
@@ -183,7 +185,7 @@ export class SessionManager extends EventEmitter
 		{
 			// Check if the request has a valid session ID
 			var sessionId: string = that.getIDFromRequest(request);
-			
+
 			if (sessionId != "")
 			{
 				// We have a session ID, lets try to find it in the DB
@@ -256,10 +258,10 @@ export class SessionManager extends EventEmitter
 			});
 		});
 	}
-	
+
 	/**
-	* Each time a session is created, a timer is started to check all sessions in the DB. 
-	* Once the lifetime of a session is up its then removed from the DB and we check for any remaining sessions. 
+	* Each time a session is created, a timer is started to check all sessions in the DB.
+	* Once the lifetime of a session is up its then removed from the DB and we check for any remaining sessions.
 	* @param {boolean} force If true, this will force a cleanup instead of waiting on the next timer
 	*/
 	cleanup(force: boolean = false)
@@ -267,9 +269,9 @@ export class SessionManager extends EventEmitter
 		var that = this;
 		var now: number = +new Date;
 		var next: number = Infinity;
-		
+
 		this._timeout = 0;
-		
+
 		that._dbCollection.find(function(err: Error, result: mongodb.Cursor)
 		{
 			// If an error occurs, just try again in 2 minutes
@@ -321,7 +323,7 @@ export class SessionManager extends EventEmitter
 			}
 		});
 	}
-	
+
 	/**
 	* Looks at the headers from the HTTP request to determine if a session cookie has been asssigned and returns the ID.
 	* @param {http.ServerRequest} req
@@ -337,7 +339,7 @@ export class SessionManager extends EventEmitter
 		else
 			return "";
 	}
-	
+
 	/**
 	* Creates a random session ID.
 	* The ID is a pseude-random ASCII string which contains at least the specified number of bits of entropy (64 in this case)
@@ -383,19 +385,19 @@ export class Session
 	* Any custom data associated with the session
 	*/
 	data: any;
-	
+
 	/**
 	* The specific time when this session will expire
 	*/
 	expiration: number;
-	
+
 	/**
 	* The options of this session system
 	*/
-	options: ISessionOptions; 
+	options: ISessionOptions;
 
 	/**
-	* Creates an instance of the session 
+	* Creates an instance of the session
 	* @param {string} sessionId The ID of the session
 	* @param {SessionOptions} options The options associated with this session
 	* @param {ISessionEntry} data The data of the session in the database
@@ -410,7 +412,7 @@ export class Session
 		if (data)
 			this.open(data);
 	}
-	
+
 	/**
 	* Fills in the data of this session from the data saved in the database
 	* @param {ISessionEntry} data The data fetched from the database

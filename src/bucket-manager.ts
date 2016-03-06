@@ -1,4 +1,6 @@
-﻿import * as users from "webinate-users";
+﻿/// <reference path="./references.d.ts" />
+
+import * as users from "webinate-users";
 import * as fs from "fs";
 import * as gcloud from "gcloud";
 import * as http from "http";
@@ -32,7 +34,7 @@ export class BucketManager
     constructor(buckets: mongodb.Collection, files: mongodb.Collection, stats: mongodb.Collection, config: users.IConfig)
     {
         BucketManager._singleton = this;
-        this._gcs = gcloud.storage({ projectId: config.bucket.projectId, keyFilename: config.bucket.keyFile });
+        this._gcs = gcloud.storage({ projectId: config.google.bucket.projectId, keyFilename: config.google.keyFile });
         this._buckets = buckets;
         this._files = files;
         this._stats = stats;
