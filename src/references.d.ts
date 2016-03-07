@@ -16,7 +16,6 @@
 /// <reference path="./definitions/required/winston.d.ts" />
 /// <reference path="./definitions/required/ws.d.ts" />
 /// <reference path="./definitions/required/yargs.d.ts" />
-/// <reference path="./definitions/required/nodemailer.d.ts" />
 /// <reference path="./definitions/custom/Definitions.d.ts" />
 /// <reference path="./definitions/custom/googleapis.d.ts" />
 /// <reference path="./definitions/custom/google-auth-library.d.ts" />

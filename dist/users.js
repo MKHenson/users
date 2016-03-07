@@ -101,18 +101,6 @@ var UserManager = (function () {
         this._userCollection = userCollection;
         this._config = config;
         UserManager._singleton = this;
-        // // Create the transport object which will be sending the emails
-        // if (config.emailService != "" && config.emailServiceUser != "" && config.emailServicePassword != "")
-        // {
-        //     // login
-        //     this._transport = nodemailer.createTransport(<ITransportOptions>{
-        // 		service: config.emailService,
-        //         auth: <NodemailerSMTPTransportOptions>{
-        // 			user: config.emailServiceUser,
-        // 			pass: config.emailServicePassword
-        // 		}
-        // 	});
-        // }
         // Create the session manager
         this.sessionManager = new session_1.SessionManager(sessionCollection, {
             domain: config.sessionDomain,
@@ -300,21 +288,6 @@ var UserManager = (function () {
             }).catch(function (err) {
                 return reject(new Error("Could not send email to user: " + err.message));
             });
-            // // Setup e-mail data with unicode symbols
-            // var mailOptions: MailComposer = {
-            //     from: that._config.adminUser.email,
-            //     to: that._config.adminUser.email,
-            //     subject: `Message from ${( name ? name : "a user" )}`,
-            //     text: message + "<br /><br />Email: " + (from ? from : ""),
-            //     html: message.replace(/(?:\r\n|\r|\n)/g, '<br />') + (from ? "\n\nEmail: " + from : ""),
-            // };
-            //             that._transport.sendMail(mailOptions, function (error: Error, info: any)
-            //             {
-            //                 if (error)
-            //                     reject(new Error(`Could not send email to user: ${error.message}`));
-            //
-            //                 return resolve(true);
-            //             });
         });
     };
     /**
@@ -349,21 +322,6 @@ var UserManager = (function () {
                     }).catch(function (err) {
                         reject(new Error("Could not send email to user: " + err.message));
                     });
-                    //                     // Setup e-mail data with unicode symbols
-                    //                     var mailOptions: MailComposer = {
-                    //                         from: that._config.emailFrom,
-                    //                         to: user.dbEntry.email,
-                    //                         subject: "Activate your account",
-                    //                         text: message,
-                    //                         html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                    //                     };
-                    //
-                    //                     that._transport.sendMail(mailOptions, function (error: Error, info: any) {
-                    //                         if (error)
-                    //                             reject(new Error(`Could not send email to user: ${error.message}`));
-                    //
-                    //                         return resolve(true);
-                    //                     });
                 });
             }).catch(function (error) {
                 reject(error);
@@ -401,22 +359,6 @@ var UserManager = (function () {
                     }).catch(function (err) {
                         reject(new Error("Could not send email to user: " + err.message));
                     });
-                    //                     // Setup e-mail data with unicode symbols
-                    //                     var mailOptions: MailComposer = {
-                    //                         from: that._config.emailFrom,
-                    //                         to: user.dbEntry.email,
-                    //                         subject: "Reset Password",
-                    //                         text: message,
-                    //                         html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                    //                     };
-                    //
-                    //                     that._transport.sendMail(mailOptions, function (error: Error, info: any)
-                    //                     {
-                    //                         if (error)
-                    //                             reject(new Error(`Could not send email to user: ${error.message}`));
-                    //
-                    //                         return resolve(true);
-                    //                     });
                 });
             }).catch(function (error) {
                 reject(error);
@@ -650,36 +592,6 @@ var UserManager = (function () {
                     }).catch(function (err) {
                         return reject(err);
                     });
-                    //                     // Setup e-mail data with unicode symbols
-                    //                     var mailOptions: MailComposer = {
-                    //                         from: that._config.emailFrom,
-                    //                         to: newUser.dbEntry.email,
-                    //                         subject: "Activate your account",
-                    //                         text: message,
-                    //                         html: message.replace(/(?:\r\n|\r|\n)/g, '<br />')
-                    //                     };
-                    //
-                    //                     // Send mail
-                    //                     that._transport.sendMail(mailOptions, function (error: Error, info: any)
-                    //                     {
-                    //                         if (error)
-                    //                             return reject(new Error(`Could not send email to user: ${error.message}`));
-                    //
-                    //                         // All users have default stats created for them
-                    //                         BucketManager.get.createUserStats(newUser.dbEntry.username).then(function ()
-                    //                         {
-                    //                             // All users have a bucket created for them
-                    //                             return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
-                    //
-                    //                         }).then(function(bucket)
-                    //                         {
-                    //                             return resolve(newUser);
-                    //
-                    //                         }).catch(function (err)
-                    //                         {
-                    //                             return reject(err);
-                    //                         });
-                    //                     });
                 });
             }).catch(function (error) {
                 return reject(error);
