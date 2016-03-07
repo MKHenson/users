@@ -12,6 +12,10 @@ Node Package Manager (NPM) and a running instance of mongoDB
 * MongoDB v3
 * Node 0.12
 * **Tested Ubuntu v14**
+* Goole Developers account
+
+## Setting up the Google services
+[Setup Google Developer Settings & Services](google-setup.md)
 
 ## Installation
 
@@ -46,7 +50,7 @@ The server uses mongoDB as its database engine - make sure this is running befor
     node Main.js --config="config.json" --logging="true" --logFile="logs.log" --numThreads="max"
 
 The file must be formatted as a valid JSON.
-Please have a look at the (latest config definition)[https://github.com/MKHenson/webinate-users/blob/master/webinate-users.d.ts#L112]
+Please have a look at the [latest config definition](https://github.com/MKHenson/webinate-users/blob/master/webinate-users.d.ts#L112)
 for details of what each parameter does.
 
 
