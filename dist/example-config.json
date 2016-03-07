@@ -35,16 +35,17 @@
         "password": "CHANGE_THIS_PASSWORD"
     },
     "google": {
-        "mail":{
-            "apiEmail": ""
-        },
-    "bucket": {
         "keyFile": "",
-        "projectId": "",
-        "bucketsCollection": "buckets",
-        "filesCollection": "files",
-        "statsCollection": "storageAPI",
-        "cacheLifetime": 2592000000
+        "mail":{
+            "apiEmail": "",
+            "from": ""
+        },
+        "bucket": {
+            "projectId": "",
+            "bucketsCollection": "buckets",
+            "filesCollection": "files",
+            "statsCollection": "storageAPI",
+            "cacheLifetime": 2592000000
         }
     },
     "websocket": {
