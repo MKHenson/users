@@ -11,7 +11,9 @@ Go to the developers site and create yourself an [account](https://developers.go
 
 ## Go to your console and enable the APISs
 [Login](https://console.developers.google.com/home/dashboard) to the developer console.
+
 Create a [new project](https://console.developers.google.com/projectselector/apis/library) or open and existing one
+
 Click on the [Enable APIs and get credentials section](https://console.developers.google.com/apis/library). Specifically we make sure that the following APIs are enabled:
 
 * Gmail API
