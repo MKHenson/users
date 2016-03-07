@@ -22,22 +22,31 @@ Click on the [Enable APIs and get credentials section](https://console.developer
 
 ## Setup credentials
 While still in the console, click on the [Credentials section](https://console.developers.google.com/apis/credentials)
+
 Click on the Create Credentials button and choose Service Account Key
 
     This is basically a server to server key so we don't have to ask for user validation as we will use our main Google dev account
 
 In the service account drop down, select 'New service account'
+
 Give is a useful name
+
 For the key type, select JSON
+
 Click Create
 
     This will download a private key JSON. This is the JSON we use in the users config file. Specifically for the setting: google.keyFile
 
 Once the key is downloaded, move the key to a safe folder and update the config fiole the path to that file.
+
 Now go back to the credentials screen.
+
 Click on manage service accounts
+
 You will see your new service account listed. Select the ... button at then end of the row corresponding to your account
+
 Click Edit
+
 Make sure the "Enable Google apps Domain-wide Delegation" checkbox is ticked
 
     This will tell Google that your service account should have access to all API's. However, a service account cannot by default access all API's
@@ -46,19 +55,26 @@ Make sure the "Enable Google apps Domain-wide Delegation" checkbox is ticked
 
 ## Allow access to the service
 Go to your Google admin screen and click on the security tab ([link](https://admin.google.com/AdminHome?fral=1#SecuritySettings:))
+
 Click show more
+
 Click advanced settings
+
 Click Manage API client access
+
 In the client name enter in the client_id. You can find the client_id in the JSON you downloaded earlier.
+
 For the One ore More API Scopes, enter in the following:
 
     https://mail.google.com/, https://www.googleapis.com/auth/gmail.compose, https://www.googleapis.com/auth/gmail.modify, https://www.googleapis.com/auth/gmail.send
 
 Allowing us, to compose, draft, read and send emails.
+
 Click Authorize
 
 ## Update the config
 Finally open up the config and change the google.mail.apiEmail property to be your Google developer account. This must be the same you have authorized the API service for mail.
+
 You can also set the google.mail.from property to set the email of whom emails will be sent from (This can be different from the api email - preferably an alias).
 
 
