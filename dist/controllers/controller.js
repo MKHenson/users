@@ -15,7 +15,7 @@ var Controller = (function () {
     */
     Controller.prototype.ensureIndex = function (collection, name) {
         return new Promise(function (resolve, reject) {
-            collection.ensureIndex(name, function (err, indexName) {
+            collection.createIndex(name, function (err, indexName) {
                 if (err)
                     return reject(err);
                 else

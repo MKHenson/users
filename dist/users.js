@@ -118,7 +118,7 @@ var UserManager = (function () {
     UserManager.prototype.onSessionRemoved = function (sessionId) {
         if (!sessionId || sessionId == "")
             return;
-        this._userCollection.findOne({ sessionId: sessionId }, function (error, useEntry) {
+        this._userCollection.find({ sessionId: sessionId }).limit(1).next().then(function (useEntry) {
             if (useEntry) {
                 // Send logged in event to socket
                 var sEvent = { username: useEntry.username, eventType: comms_controller_1.EventType.Logout };
@@ -141,9 +141,7 @@ var UserManager = (function () {
         }
         return new Promise(function (resolve, reject) {
             // Make sure the user collection has an index to search the username field
-            that._userCollection.ensureIndex({ username: "text", email: "text" }, function (error, indexName) {
-                if (error)
-                    return reject(error);
+            that._userCollection.createIndexes([{ username: "text" }, { email: "text" }]).then(function () {
                 that.getUser(config.adminUser.username).then(function (user) {
                     // Admin user already exists
                     if (!user)
@@ -157,6 +155,8 @@ var UserManager = (function () {
                         reject(error);
                     });
                 });
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -256,17 +256,15 @@ var UserManager = (function () {
                 return Promise.reject(new Error("No user exists with the specified details"));
             return new Promise(function (resolve, reject) {
                 // Clear the user's activation
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }, function (error, result) {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
                     var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
-                    comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
-                        winston.info("User '" + username + "' has been activated", { process: process.pid });
-                        return resolve();
-                    }).catch(function (err) {
-                        return reject(error);
-                    });
+                    return comms_controller_1.CommsController.singleton.broadcastEvent(sEvent);
+                }).then(function () {
+                    winston.info("User '" + username + "' has been activated", { process: process.pid });
+                    return resolve();
+                }).catch(function (error) {
+                    return reject(error);
                 });
             });
         });
@@ -308,9 +306,7 @@ var UserManager = (function () {
                 var newKey = user.generateKey();
                 user.dbEntry.registerKey = newKey;
                 // Update the collection with a new key
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { registerKey: newKey } }, function (error, result) {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: newKey } }).then(function (result) {
                     // Send a message to the user to say they are registered but need to activate their account
                     var message = "Thank you for registering with Webinate!\n\t\t\t\t\tTo activate your account please click the link below:\n\n\t\t\t\t\t" + that.createActivationLink(user, origin) + "\n\n\t\t\t\t\tThanks\n\t\t\t\t\tThe Webinate Team";
                     // If no mailer is setup
@@ -322,6 +318,8 @@ var UserManager = (function () {
                     }).catch(function (err) {
                         reject(new Error("Could not send email to user: " + err.message));
                     });
+                }).catch(function (error) {
+                    return reject(error);
                 });
             }).catch(function (error) {
                 reject(error);
@@ -345,9 +343,7 @@ var UserManager = (function () {
                 // Password token
                 user.dbEntry.passwordTag = newKey;
                 // Update the collection with a new key
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { passwordTag: newKey } }, function (error, result) {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { passwordTag: newKey } }).then(function (result) {
                     // Send a message to the user to say they are registered but need to activate their account
                     var message = "A request has been made to reset your password.\n\t\t\t\t\tTo change your password please click the link below:\n\n\t\t\t\t\t" + that.createResetLink(user, origin) + "\n\n\t\t\t\t\tThanks\n\t\t\t\t\tThe Webinate Team";
                     // If no mailer is setup
@@ -359,6 +355,8 @@ var UserManager = (function () {
                     }).catch(function (err) {
                         reject(new Error("Could not send email to user: " + err.message));
                     });
+                }).catch(function (error) {
+                    return reject(error);
                 });
             }).catch(function (error) {
                 reject(error);
@@ -422,12 +420,10 @@ var UserManager = (function () {
                 return that.hashPassword(newPassword);
             }).then(function (hashed) {
                 // Update the key to be blank
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { passwordTag: "", password: hashed } }, function (error, result) {
-                    if (error)
-                        return reject(error);
-                    // All done :)
-                    resolve(true);
-                });
+                return that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { passwordTag: "", password: hashed } });
+            }).then(function (result) {
+                // All done :)
+                resolve(true);
             }).catch(function (error) {
                 reject(error);
             });
@@ -453,17 +449,15 @@ var UserManager = (function () {
                 if (user.dbEntry.registerKey != code)
                     return reject(new Error("Activation key is not valid. Please try send another."));
                 // Update the key to be blank
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }, function (error, result) {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
                     var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
-                    comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
-                        winston.info("User '" + username + "' has been activated", { process: process.pid });
-                        return resolve(true);
-                    }).catch(function (err) {
-                        return reject(error);
-                    });
+                    return comms_controller_1.CommsController.singleton.broadcastEvent(sEvent);
+                }).then(function () {
+                    winston.info("User '" + username + "' has been activated", { process: process.pid });
+                    return resolve(true);
+                }).catch(function (err) {
+                    return reject(err);
                 });
             }).catch(function (error) {
                 reject(error);
@@ -491,14 +485,12 @@ var UserManager = (function () {
             that.sessionManager.getSession(request, response).then(function (session) {
                 if (!session)
                     return resolve(null);
-                that._userCollection.findOne({ sessionId: session.sessionId }, function (error, useEntry) {
-                    if (error)
-                        return reject(error);
-                    else if (!useEntry)
-                        return resolve(null);
-                    else
-                        return resolve(new User(useEntry));
-                });
+                return that._userCollection.find({ sessionId: session.sessionId }).limit(1).next();
+            }).then(function (useEntry) {
+                if (!useEntry)
+                    return resolve(null);
+                else
+                    return resolve(new User(useEntry));
             }).catch(function (error) {
                 return reject(error);
             });
@@ -570,9 +562,7 @@ var UserManager = (function () {
                     meta: meta
                 });
                 // Update the database
-                that._userCollection.insert(newUser.generateDbEntry(), function (error, result) {
-                    if (error)
-                        return reject(error);
+                that._userCollection.insertOne(newUser.generateDbEntry()).then(function (result) {
                     // Assing the ID and pass the user on
                     newUser.dbEntry = result.ops[0];
                     // Send a message to the user to say they are registered but need to activate their account
@@ -592,6 +582,8 @@ var UserManager = (function () {
                     }).catch(function (err) {
                         return reject(err);
                     });
+                }).catch(function (err) {
+                    return reject(err);
                 });
             }).catch(function (error) {
                 return reject(error);
@@ -617,18 +609,16 @@ var UserManager = (function () {
                 username = user.dbEntry.username;
                 return bucket_manager_1.BucketManager.get.removeUser(user.dbEntry.username);
             }).then(function (numDeleted) {
-                that._userCollection.remove({ _id: existingUser.dbEntry._id }, function (error, result) {
-                    if (error)
-                        return reject(error);
-                    if (result.result.n == 0)
-                        return reject(new Error("Could not remove the user from the database"));
-                    // Send event to sockets
-                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Removed };
-                    comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
-                        winston.info("User '" + username + "' has been removed", { process: process.pid });
-                    });
-                    return resolve();
+                return that._userCollection.deleteOne({ _id: existingUser.dbEntry._id });
+            }).then(function (result) {
+                if (result.result.n == 0)
+                    return reject(new Error("Could not remove the user from the database"));
+                // Send event to sockets
+                var sEvent = { username: username, eventType: comms_controller_1.EventType.Removed };
+                comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                    winston.info("User '" + username + "' has been removed", { process: process.pid });
                 });
+                return resolve();
             }).catch(function (error) {
                 reject(error);
             });
@@ -652,13 +642,13 @@ var UserManager = (function () {
                 return reject(new Error("Please only use alpha numeric characters for your username"));
             var target = [{ email: email }, { username: user }];
             // Search the collection for the user
-            that._userCollection.findOne({ $or: target }, function (error, userEntry) {
-                if (error)
-                    return reject(error);
-                else if (!userEntry)
+            that._userCollection.find({ $or: target }).limit(1).next().then(function (userEntry) {
+                if (!userEntry)
                     return resolve(null);
                 else
                     return resolve(new User(userEntry));
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -700,9 +690,7 @@ var UserManager = (function () {
                 // Set the user last login time
                 user.dbEntry.lastLoggedIn = Date.now();
                 // Update the collection
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } }, function (error, result) {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } }).then(function (result) {
                     if (result.result.n === 0)
                         return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
                     if (!rememberMe)
@@ -710,9 +698,7 @@ var UserManager = (function () {
                     else {
                         that.sessionManager.createSession(request, response).then(function (session) {
                             // Search the collection for the user
-                            that._userCollection.update({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }, function (error, result) {
-                                if (error)
-                                    return reject(error);
+                            that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }).then(function (result) {
                                 if (result.result.n === 0)
                                     return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
                                 // Send logged in event to socket
@@ -722,11 +708,15 @@ var UserManager = (function () {
                                 }).catch(function (err) {
                                     return reject(err);
                                 });
+                            }).catch(function (error) {
+                                return reject(error);
                             });
                         }).catch(function (error) {
                             return reject(error);
                         });
                     }
+                }).catch(function (error) {
+                    return reject(error);
                 });
             }).catch(function (err) {
                 return reject(err);
@@ -749,13 +739,13 @@ var UserManager = (function () {
                 if (!user)
                     return resolve(false);
                 // Remove the user from the DB
-                that._userCollection.remove({ _id: user.dbEntry._id }, function (error, result) {
-                    if (error)
-                        return reject(error);
-                    else if (result.result.n === 0)
+                that._userCollection.deleteOne({ _id: user.dbEntry._id }).then(function (result) {
+                    if (result.result.n === 0)
                         return resolve(false);
                     else
                         return resolve(true);
+                }).catch(function (error) {
+                    return reject(error);
                 });
             });
         });
@@ -775,10 +765,10 @@ var UserManager = (function () {
             if (!user)
                 return reject(false);
             // Remove the user from the DB
-            that._userCollection.update({ _id: user._id }, { $set: { meta: (data ? data : {}) } }, function (error, result) {
-                if (error)
-                    return reject(error);
-                resolve(true);
+            that._userCollection.updateOne({ _id: user._id }, { $set: { meta: (data ? data : {}) } }).then(function (result) {
+                return resolve(true);
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -801,10 +791,10 @@ var UserManager = (function () {
             var updateToken = { $set: {} };
             updateToken.$set[datum] = val;
             // Remove the user from the DB
-            that._userCollection.update({ _id: user._id }, updateToken, function (error, result) {
-                if (error)
-                    return reject(error);
-                resolve(true);
+            that._userCollection.updateOne({ _id: user._id }, updateToken).then(function (result) {
+                return resolve(true);
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -823,10 +813,10 @@ var UserManager = (function () {
             if (!user)
                 return resolve(false);
             // Remove the user from the DB
-            that._userCollection.findOne({ _id: user._id }, { _id: 0, meta: 1 }, function (error, result) {
-                if (error)
-                    return reject(error);
-                resolve(result.meta[name]);
+            that._userCollection.find({ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next().then(function (result) {
+                return resolve(result.meta[name]);
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -844,10 +834,10 @@ var UserManager = (function () {
             if (!user)
                 return resolve(false);
             // Remove the user from the DB
-            that._userCollection.findOne({ _id: user._id }, { _id: 0, meta: 1 }, function (error, result) {
-                if (error)
-                    return reject(error);
-                resolve(result.meta);
+            that._userCollection.find({ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next().then(function (result) {
+                return resolve(result.meta);
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -880,15 +870,13 @@ var UserManager = (function () {
         var that = this;
         return new Promise(function (resolve, reject) {
             var findToken = { $or: [{ username: searchPhrases }, { email: searchPhrases }] };
-            that._userCollection.find(findToken, {}, startIndex, limit, function (error, result) {
-                if (error)
-                    return reject(error);
-                result.toArray(function (err, results) {
-                    var users = [];
-                    for (var i = 0, l = results.length; i < l; i++)
-                        users.push(new User(results[i]));
-                    resolve(users);
-                });
+            that._userCollection.find(findToken).skip(startIndex).limit(limit).toArray().then(function (results) {
+                var users = [];
+                for (var i = 0, l = results.length; i < l; i++)
+                    users.push(new User(results[i]));
+                resolve(users);
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };

@@ -49,14 +49,10 @@ var SessionManager = (function (_super) {
     SessionManager.prototype.getActiveSessions = function (startIndex, limit) {
         var that = this;
         return new Promise(function (resolve, reject) {
-            that._dbCollection.find({}, {}, startIndex, limit, function (error, result) {
-                if (error)
-                    return reject(error);
-                result.toArray(function (error, results) {
-                    if (error)
-                        return reject(error);
-                    resolve(results);
-                });
+            that._dbCollection.find({}).skip(startIndex).limit(limit).toArray().then(function (results) {
+                resolve(results);
+            }).catch(function (error) {
+                return reject(error);
             });
         });
     };
@@ -74,26 +70,22 @@ var SessionManager = (function (_super) {
             var sId = sessionId || that.getIDFromRequest(request);
             if (sId != "") {
                 // We have a session ID, lets try to find it in the DB
-                that._dbCollection.findOne({ sessionId: sId }, function (err, sessionDB) {
-                    if (err)
+                that._dbCollection.find({ sessionId: sId }).limit(1).next().then(function (sessionDB) {
+                    // Create a new session
+                    var session = new Session(sId, that._options);
+                    session.expiration = -1;
+                    // Adds / updates the DB with the new session
+                    that._dbCollection.deleteOne({ sessionId: session.sessionId }).then(function (result) {
+                        that.emit("sessionRemoved", sId);
+                        // Set the session cookie header
+                        response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+                        // Resolve the request
+                        resolve(true);
+                    }).catch(function (err) {
                         reject(err);
-                    else {
-                        // Create a new session
-                        var session = new Session(sId, that._options);
-                        session.expiration = -1;
-                        // Adds / updates the DB with the new session
-                        that._dbCollection.remove({ sessionId: session.sessionId }, function (err, result) {
-                            that.emit("sessionRemoved", sId);
-                            if (err)
-                                reject(err);
-                            else {
-                                // Set the session cookie header
-                                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
-                                // Resolve the request
-                                resolve(true);
-                            }
-                        });
-                    }
+                    });
+                }).catch(function (err) {
+                    reject(err);
                 });
             }
             else
@@ -113,31 +105,29 @@ var SessionManager = (function (_super) {
             var sessionId = that.getIDFromRequest(request);
             if (sessionId != "") {
                 // We have a session ID, lets try to find it in the DB
-                that._dbCollection.findOne({ sessionId: sessionId }, function (err, sessionDB) {
+                that._dbCollection.find({ sessionId: sessionId }).limit(1).next().then(function (sessionDB) {
                     // Cant seem to find any session - so create a new one
-                    if (err)
-                        reject(err);
-                    else if (!sessionDB)
+                    if (!sessionDB)
                         resolve(null);
                     else {
                         // Create a new session
                         var session = new Session(sessionId, that._options, sessionDB);
                         // Adds / updates the DB with the new session
-                        that._dbCollection.update({ sessionId: session.sessionId }, session.save(), null, function (err, result) {
-                            if (err)
-                                reject(err);
-                            else {
-                                // make sure a timeout is pending for the expired session reaper
-                                if (!that._timeout)
-                                    that._timeout = setTimeout(that._cleanupProxy, 60000);
-                                // Set the session cookie header
-                                if (response)
-                                    response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
-                                // Resolve the request
-                                resolve(session);
-                            }
+                        that._dbCollection.updateOne({ sessionId: session.sessionId }, session.save()).then(function (result) {
+                            // make sure a timeout is pending for the expired session reaper
+                            if (!that._timeout)
+                                that._timeout = setTimeout(that._cleanupProxy, 60000);
+                            // Set the session cookie header
+                            if (response)
+                                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+                            // Resolve the request
+                            resolve(session);
+                        }).catch(function (err) {
+                            return reject(err);
                         });
                     }
+                }).catch(function (err) {
+                    reject(err);
                 });
             }
             else
@@ -155,15 +145,13 @@ var SessionManager = (function (_super) {
         return new Promise(function (resolve, reject) {
             var session = new Session(that.createID(), that._options, null);
             // Adds / updates the DB with the new session
-            that._dbCollection.insert(session.save(), function (err, result) {
-                if (err)
-                    reject(err);
-                else {
-                    // Set the session cookie header
-                    response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
-                    // Resolve the request
-                    resolve(session);
-                }
+            that._dbCollection.insertOne(session.save()).then(function (result) {
+                // Set the session cookie header
+                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+                // Resolve the request
+                resolve(session);
+            }).catch(function (err) {
+                reject(err);
             });
         });
     };
@@ -201,7 +189,7 @@ var SessionManager = (function (_super) {
                         }
                         // Check if we need to remove sessions - if we do, then remove them :)
                         if (toRemoveQuery.$or.length > 0) {
-                            that._dbCollection.remove(toRemoveQuery, function (err, result) {
+                            that._dbCollection.deleteMany(toRemoveQuery).then(function (result) {
                                 for (var i = 0, l = toRemoveQuery.$or.length; i < l; i++)
                                     that.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId);
                                 if (next < Infinity)

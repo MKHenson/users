@@ -65,20 +65,8 @@ export class BucketManager
                 (<any>search).name = searchTerm;
 
             // Save the new entry into the database
-            bucketCollection.find(search, function (err, result)
-            {
-                if (err)
-                    return reject(err);
-                else
-                {
-                    result.toArray(function(err, buckets: Array<users.IBucketEntry>)
-                    {
-                        if (err)
-                            return reject(err);
-
-                        return resolve(buckets);
-                    });
-                }
+            bucketCollection.find(search).toArray(function(error, buckets: Array<users.IBucketEntry>) {
+                return resolve(buckets);
             });
         });
     }
@@ -118,20 +106,8 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Save the new entry into the database
-            files.find(searchQuery, {}, startIndex, limit, function (err, result)
-            {
-                if (err)
-                    return reject(err);
-                else
-                {
-                    result.toArray(function (err, files: Array<users.IFileEntry>)
-                    {
-                        if (err)
-                            return reject(err);
-
-                        return resolve(files);
-                    });
-                }
+            files.find(searchQuery).skip(startIndex).limit(limit).toArray(function(err, files: Array<users.IFileEntry>){
+                return resolve(files);
             });
         });
     }
@@ -148,12 +124,10 @@ export class BucketManager
         return new Promise <boolean>(function (resolve, reject)
         {
             // Save the new entry into the database
-            files.update(searchQuery, { $set: <users.IFileEntry>{ meta : meta } }, function (err, result)
-            {
-                if (err)
-                    return reject(err);
-                else
-                    return resolve(true);
+            files.updateMany(searchQuery, { $set: <users.IFileEntry>{ meta : meta } }).then(function(updateResult) {
+                return resolve(true);
+            }).catch(function(err: Error) {
+                return reject(err);
             });
         });
     }
@@ -190,10 +164,8 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Save the new entry into the database
-            stats.findOne(<users.IStorageStats>{ user: user }, function (err, result: users.IStorageStats)
+            stats.find(<users.IStorageStats>{ user: user }).limit(1).next( function( result: users.IStorageStats )
             {
-                if (err)
-                    return reject(err);
                 if (!result)
                     return reject(new Error(`Could not find storage data for the user '${user}'`));
                 else
@@ -222,12 +194,10 @@ export class BucketManager
                 memoryUsed: 0
             }
 
-            stats.save(storage, function (err, result: users.IStorageStats)
-            {
-                if (err)
-                    return reject(err);
-                else
-                    return resolve(result);
+            stats.insertOne(storage).then(function(result: users.IStorageStats) {
+                return resolve(result);
+            }).catch(function(err){
+                return reject(err);
             });
         });
     }
@@ -244,13 +214,10 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            var storage: users.IStorageStats = { user: user };
-            stats.remove(storage, function (err, result: number)
-            {
-                if (err)
-                    return reject(err);
-                else
-                    return resolve(result);
+            stats.deleteOne(<users.IStorageStats>{ user: user }).then(function(deleteResult){
+                return resolve(deleteResult.deletedCount);
+            }).catch(function(err){
+                return reject(err);
             });
         });
     }
@@ -338,25 +305,21 @@ export class BucketManager
                         }
 
                         // Save the new entry into the database
-                        bucketCollection.save(newEntry, function (err, result: users.IBucketEntry)
-                        {
-                            if (err)
-                                return reject(err);
-                            else
-                            {
-                                // Increments the API calls
-                                stats.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } }, function (err, result)
-                                {
-                                    // Send bucket added events to sockets
-                                    var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: bucket, username: user };
-                                    CommsController.singleton.broadcastEvent(fEvent).then(function ()
-                                    {
-                                        return resolve(bucket);
-                                    });
+                        bucketCollection.insertOne(newEntry).then(function(result: users.IBucketEntry) {
 
+                            // Increments the API calls
+                            return stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } });
 
-                                });
-                            }
+                        }).then( function (updateResult) {
+
+                            // Send bucket added events to sockets
+                            var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: bucket, username: user };
+                            return CommsController.singleton.broadcastEvent(fEvent);
+
+                        }).then(function() {
+                           return resolve(bucket);
+                        }).catch(function(err){
+                            return reject(err);
                         });
                     }
                 });
@@ -383,53 +346,48 @@ export class BucketManager
 
         return new Promise(function (resolve, reject)
         {
-            bucketCollection.find(searchQuery, function (err, cursor)
-            {
-                if (err)
-                    return reject(err);
+            bucketCollection.find(searchQuery).toArray().then( function(buckets: Array<users.IBucketEntry>) {
 
                 var toRemove = [];
 
-                cursor.toArray(function (err, buckets: Array<users.IBucketEntry>)
+                var attempts = 0;
+                var error: Error = null;
+
+                for (var i = 0, l = buckets.length; i < l; i++)
                 {
-                    if (err)
-                        return reject(err);
-
-                    var attempts = 0;
-                    var error: Error = null;
-
-                    for (var i = 0, l = buckets.length; i < l; i++)
+                    that.deleteBucket(buckets[i]).then(function (bucket)
                     {
-                        that.deleteBucket(buckets[i]).then(function (bucket)
+                        attempts++;
+                        toRemove.push(bucket.identifier);
+                        if (attempts == l)
                         {
-                            attempts++;
-                            toRemove.push(bucket.identifier);
-                            if (attempts == l)
+                            // Send events to sockets
+                            var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket };
+                            CommsController.singleton.broadcastEvent(fEvent).then(function ()
                             {
-                                // Send events to sockets
-                                var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket };
-                                CommsController.singleton.broadcastEvent(fEvent).then(function ()
-                                {
-                                    resolve(toRemove);
-                                });
-                            }
+                                resolve(toRemove);
+                            });
+                        }
 
-                        }).catch(function (err : Error)
-                        {
-                            if (err)
-                                error = err;
+                    }).catch(function (err : Error)
+                    {
+                        if (err)
+                            error = err;
 
-                            attempts++;
-                            if (attempts == l)
-                                reject(new Error(`Could not delete bucket: ${error.message}`));
-                        });
-                    }
+                        attempts++;
+                        if (attempts == l)
+                            reject(new Error(`Could not delete bucket: ${error.message}`));
+                    });
+                }
 
-                    // If no buckets
-                    if (buckets.length == 0)
-                        resolve(toRemove);
-                })
-            });
+                // If no buckets
+                if (buckets.length == 0)
+                    resolve(toRemove);
+
+            }).catch(function(err) {
+
+                return reject(err);
+            })
         });
     }
 
@@ -489,13 +447,12 @@ export class BucketManager
                     else
                     {
                         // Remove the bucket entry
-                        bucketCollection.remove(<users.IBucketEntry>{ _id: bucketEntry._id }, function (err, result)
-                        {
-                            // Remove the bucket entry
-                            stats.update(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
-                            {
-                                return resolve(bucketEntry);
-                            });
+                        bucketCollection.deleteOne(<users.IBucketEntry>{ _id: bucketEntry._id }).then(function(deleteResult) {
+                            return stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } });
+                        }).then(function (result) {
+                            return resolve(bucketEntry);
+                        }).catch(function(err){
+                            return reject(err);
                         });
                     }
                 });
@@ -536,26 +493,14 @@ export class BucketManager
                         return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`));
 
                     // Update the bucket data usage
-                    bucketCollection.update(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } }, function (err, result)
-                    {
-                        if (err)
-                            return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
-
-                        // Remove the file entries
-                        files.remove(<users.IFileEntry>{ _id: fileEntry._id }, function (err, result)
-                        {
-                            if (err)
-                                return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
-
-                            // Update the stats usage
-                            stats.update(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } }, function (err, result)
-                            {
-                                if (err)
-                                    return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
-
-                                return resolve(fileEntry);
-                            });
-                        });
+                    bucketCollection.updateOne(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } }).then(function(result) {
+                        return files.deleteOne(<users.IFileEntry>{ _id: fileEntry._id });
+                    }).then(function (result) {
+                        return stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } });
+                    }).then( function(result) {
+                        return resolve(fileEntry);
+                    }).catch(function(err){
+                        return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
                     });
                 });
 
@@ -585,48 +530,46 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Get the files
-            files.find(searchQuery, function (err, cursor)
-            {
+            files.find(searchQuery).toArray().then(function(fileEntries: Array<users.IFileEntry>){
+
+                var error: Error = null;
+
+                for (var i = 0, l = fileEntries.length; i < l; i++)
+                {
+                    that.deleteFile(fileEntries[i]).then(function(fileEntry)
+                    {
+                        attempts++;
+                        filesRemoved.push(fileEntry);
+
+                        if (attempts == l)
+                        {
+                            // Update any listeners on the sockets
+                            var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved };
+                            CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                            {
+                                resolve(filesRemoved);
+                            });
+                        }
+
+                    }).catch(function (err) {
+
+                        if (err)
+                            error = err;
+
+                        attempts++;
+
+                        if (attempts == l)
+                            reject(error);
+                    });
+                }
+
+                if (fileEntries.length == 0)
+                    return resolve([]);
+
+            }).catch( function(err) {
+
                 if (err)
                     return reject(err);
-
-                // For each file entry
-                cursor.toArray(function (err, fileEntries: Array<users.IFileEntry>)
-                {
-                    var error: Error = null;
-
-                    for (var i = 0, l = fileEntries.length; i < l; i++)
-                    {
-                       that.deleteFile(fileEntries[i]).then(function(fileEntry)
-                       {
-                            attempts++;
-                            filesRemoved.push(fileEntry);
-
-                            if (attempts == l)
-                            {
-                                // Update any listeners on the sockets
-                                var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved };
-                                CommsController.singleton.broadcastEvent(fEvent).then(function ()
-                                {
-                                    resolve(filesRemoved);
-                                });
-                            }
-
-                        }).catch(function (err)
-                        {
-                            if (err)
-                                error = err;
-
-                            attempts++;
-
-                            if (attempts == l)
-                                reject(error);
-                        });
-                    }
-
-                    if (fileEntries.length == 0)
-                        return resolve([]);
-                });
             });
         });
     }
@@ -690,14 +633,13 @@ export class BucketManager
 
         return new Promise<users.IBucketEntry>(function (resolve, reject)
         {
-            bucketCollection.findOne(searchQuery, function (err, result: users.IBucketEntry)
-            {
-                if (err)
-                    return reject(err);
-                else if (!result)
+            bucketCollection.find(searchQuery).limit(1).next().then( function( result: users.IBucketEntry) {
+                if (!result)
                     return resolve(null);
                 else
                     return resolve(result);
+            }).catch(function (err){
+                return reject(err);
             });
         });
     }
@@ -716,10 +658,7 @@ export class BucketManager
 
         return new Promise<users.IStorageStats>(function (resolve, reject)
         {
-            stats.findOne(<users.IStorageStats>{ user: user }, function (err, result: users.IStorageStats )
-            {
-                if (err)
-                    return reject(err);
+            stats.find(<users.IStorageStats>{ user: user }).limit(1).next().then( function(result: users.IStorageStats ) {
 
                 if (result.memoryUsed + part.byteCount < result.memoryAllocated)
                 {
@@ -730,6 +669,9 @@ export class BucketManager
                 }
                 else
                     return reject(new Error("You do not have enough memory allocated. Please upgrade your account for more memory"));
+
+            }).catch(function(err){
+                 return reject(err);
             });
         })
     }
@@ -746,16 +688,16 @@ export class BucketManager
 
         return new Promise<users.IStorageStats>(function (resolve, reject)
         {
-            stats.findOne(<users.IStorageStats>{ user: user }, function (err, result: users.IStorageStats)
-            {
-                if (err)
-                    return reject(err);
-                else if (!result)
+            stats.find(<users.IStorageStats>{ user: user }).limit(1).next().then( function (result: users.IStorageStats) {
+                if (!result)
                     return reject(new Error(`Could not find the user ${user}`));
                 else if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
                     resolve(true);
                 else
                     return resolve(false);
+
+            }).catch(function(err){
+                return reject(err);
             });
         })
     }
@@ -772,12 +714,10 @@ export class BucketManager
 
         return new Promise<users.IStorageStats>(function (resolve, reject)
         {
-            stats.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } }, function (err, result)
-            {
-                if (err)
-                    return reject(err);
-                else
-                    resolve(true);
+            stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } }).then( function (updateResult) {
+                resolve(true);
+            }).catch(function(err){
+                return reject(err);
             });
         })
     }
@@ -792,15 +732,15 @@ export class BucketManager
         var that = this;
         return new Promise<users.IFileEntry>(function (resolve, reject)
         {
-            that.withinAPILimit(file.user).then(function (val)
-            {
+            that.withinAPILimit(file.user).then(function (val) {
+
                 if (!val)
                     return Promise.reject(new Error("You do not have enough API calls left to make this request"));
 
                 return that.incrementAPI(file.user);
 
-            }).then(function ()
-            {
+            }).then(function() {
+
                 var bucket = that._gcs.bucket(file.bucketId);
                 var rawFile = bucket.file(file.identifier);
                 rawFile.makePublic(function (err, api)
@@ -808,17 +748,14 @@ export class BucketManager
                     if (err)
                         return reject(err);
 
-                    that._files.update(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: true } }, function (err, result)
-                    {
-                        if (err)
-                            return reject(err);
-
+                    that._files.updateOne(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: true } }).then( function(updateResult) {
                         resolve(file);
+                    }).catch(function(err){
+                        return reject(err);
                     });
                 });
 
-            }).catch(function (err)
-            {
+            }).catch(function (err) {
                 return reject(new err);
             });
 
@@ -851,12 +788,10 @@ export class BucketManager
                     if (err)
                         return reject(err);
 
-                    that._files.update(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: false } }, function (err, result)
-                    {
-                        if (err)
-                            return reject(err);
-
-                        resolve(file);
+                    that._files.updateOne(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: false } }).then( function(result) {
+                        return resolve(file);
+                    }).catch(function(err){
+                        return reject(err);
                     });
                 });
 
@@ -901,12 +836,10 @@ export class BucketManager
                 mimeType: part.headers["content-type"]
             };
 
-            files.save(entry, function (err: Error, result: any)
-            {
-                if (err)
-                    return reject(new Error(`Could not save user file entry: ${err.toString() }`));
-                else
-                    resolve(result.ops[0]);
+            files.insertOne(entry).then(function( result: any) {
+                return resolve(result.ops[0]);
+            }).catch(function(err){
+                return reject(new Error(`Could not save user file entry: ${err.toString() }`));
             });
         });
     }
@@ -978,28 +911,25 @@ export class BucketManager
 
                 }).on('finish', function ()
                 {
-                    bucketCollection.update(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: part.byteCount } }, function (err, result)
-                    {
-                        statCollection.update(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } }, function (err, result)
-                        {
-                            that.registerFile(fileID, bucketEntry, part, user, makePublic, parentFile).then(function (file)
-                            {
-                                if (makePublic)
-                                    rawFile.makePublic(function (err, api)
-                                    {
-                                        if (err)
-                                            return reject(err);
-                                        else
-                                            return resolve(file);
-                                    });
+                    bucketCollection.updateOne(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: part.byteCount } }).then( function(updateResult) {
+                        return statCollection.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ memoryUsed: part.byteCount, apiCallsUsed: 1 } });
+                    }).then( function(updateResult) {
+                        return that.registerFile(fileID, bucketEntry, part, user, makePublic, parentFile)
+                    }).then(function (file) {
+
+                        if (makePublic) {
+                            rawFile.makePublic(function (err, api) {
+                                if (err)
+                                    return reject(err);
                                 else
                                     return resolve(file);
-
-                            }).catch(function (err: Error)
-                            {
-                                return reject(err);
                             });
-                        });
+                        }
+                        else
+                            return resolve(file);
+
+                    }).catch(function (err: Error) {
+                        return reject(err);
                     });
                 });
 
@@ -1032,14 +962,15 @@ export class BucketManager
             if (searchTerm)
                 (<any>searchQuery).name = searchTerm;
 
-            files.findOne(searchQuery, function (err, result: users.IFileEntry)
+            files.find(searchQuery).limit(1).next().then( function (result: users.IFileEntry)
             {
-                if (err)
-                    return reject(err);
-                else if (!result)
+                if (!result)
                     return reject(`File '${fileID}' does not exist`);
                 else
                     return resolve(result);
+
+            }).catch(function(err){
+                return reject(err);
             });
         });
     }
@@ -1060,12 +991,10 @@ export class BucketManager
         {
             that.incrementAPI(file.user).then(function()
             {
-                files.update(<users.IFileEntry>{ _id: file._id }, { $set: <users.IFileEntry>{ name : name } }, function (err, result)
-                {
-                    if (err)
-                        reject(err);
-                    else
-                        resolve(file);
+                files.updateOne(<users.IFileEntry>{ _id: file._id }, { $set: <users.IFileEntry>{ name : name } }).then( function(result) {
+                    resolve(file);
+                }).catch(function(err){
+                    reject(err);
                 });
             })
         });
@@ -1149,14 +1078,15 @@ export class BucketManager
 
         return new Promise<number>(function (resolve, reject)
         {
-            stats.update(<users.IStorageStats>{ user: user }, { $set: value }, function (err, numAffected)
-            {
-                if (err)
-                    return reject(err);
-                else if (numAffected === 0)
+            stats.updateOne(<users.IStorageStats>{ user: user }, { $set: value }).then(function(updateResult) {
+
+                if (updateResult.matchedCount === 0)
                     return reject(`Could not find user '${user}'`);
                 else
-                    return resolve(numAffected);
+                    return resolve(updateResult.modifiedCount);
+
+            }).catch(function(err){
+                return reject(err);
             });
         });
     }

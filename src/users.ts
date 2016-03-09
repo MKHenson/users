@@ -152,8 +152,7 @@ export class UserManager
         if (!sessionId || sessionId == "")
             return;
 
-        this._userCollection.findOne({ sessionId: sessionId }, function (error: Error, useEntry: def.IUserEntry)
-        {
+        this._userCollection.find({ sessionId: sessionId }).limit(1).next().then( function (useEntry: def.IUserEntry) {
             if (useEntry)
             {
                 // Send logged in event to socket
@@ -185,11 +184,8 @@ export class UserManager
 		return new Promise<void>(function( resolve, reject )
         {
             // Make sure the user collection has an index to search the username field
-            that._userCollection.ensureIndex(<def.IUserEntry>{ username: "text", email: "text" }, function (error: Error, indexName: string)
+            that._userCollection.createIndexes(<Array<def.IUserEntry>>[{ username: "text" }, { email: "text" }]).then( function()
             {
-                if (error)
-                    return reject(error);
-
                 that.getUser(config.adminUser.username).then(function (user)
                 {
                     // Admin user already exists
@@ -210,6 +206,8 @@ export class UserManager
                         reject(error);
                     });
                 })
+            }).catch(function(error: Error){
+                return reject(error);
             });
 
 		});
@@ -326,24 +324,20 @@ export class UserManager
 			return new Promise<void>(function (resolve, reject)
 			{
 				// Clear the user's activation
-				that._userCollection.update({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }, function (error: Error, result: mongodb.WriteResult<any>)
-                {
-                    if (error)
-                        return reject(error);
+				that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }).then(function (result) {
 
                     // Send activated event
                     var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
-                    CommsController.singleton.broadcastEvent(sEvent).then(function ()
-                    {
-                        winston.info(`User '${username}' has been activated`, { process: process.pid });
-                        return resolve();
+                    return CommsController.singleton.broadcastEvent(sEvent);
 
-                    }).catch(function (err: Error)
-                    {
-                        return reject(error);
+                }).then(function () {
 
-                    });
-				});
+                    winston.info(`User '${username}' has been activated`, { process: process.pid });
+                    return resolve();
+
+				}).catch(function(error: Error) {
+                    return reject(error);
+                });
 			});
 		});
     }
@@ -401,10 +395,7 @@ export class UserManager
                 user.dbEntry.registerKey = newKey;
 
                 // Update the collection with a new key
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } }, function (error: Error, result: mongodb.WriteResult<any>)
-                {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } }).then(function (result) {
 
                     // Send a message to the user to say they are registered but need to activate their account
                     var message: string = `Thank you for registering with Webinate!
@@ -430,12 +421,14 @@ export class UserManager
                     }).catch(function(err){
                         reject(new Error(`Could not send email to user: ${err.message}`));
                     });
+
+                }).catch(function(error: Error){
+                    return reject(error);
                 });
 
             }).catch(function (error: Error) {
 
                 reject(error);
-
             });
         });
     }
@@ -464,10 +457,7 @@ export class UserManager
                 user.dbEntry.passwordTag = newKey;
 
                 // Update the collection with a new key
-                that._userCollection.update({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } }, function (error: Error, result: mongodb.WriteResult<any>)
-                {
-                    if (error)
-                        return reject(error);
+                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } }).then(function (result) {
 
                     // Send a message to the user to say they are registered but need to activate their account
                     var message: string = `A request has been made to reset your password.
@@ -493,6 +483,9 @@ export class UserManager
                     }).catch(function(err){
                         reject(new Error(`Could not send email to user: ${err.message}`));
                     });
+
+                }).catch(function(error: Error){
+                    return reject(error);
                 });
 
             }).catch(function (error: Error)
@@ -577,14 +570,12 @@ export class UserManager
             }).then( function(hashed)
             {
                 // Update the key to be blank
-                that._userCollection.update(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: hashed } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-                {
-                    if (error)
-                        return reject(error);
+                return that._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: hashed } });
 
-                    // All done :)
-                    resolve(true);
-                });
+            }).then(function (result) {
+
+                // All done :)
+                resolve(true);
 
             }).catch(function (error: Error)
             {
@@ -619,23 +610,20 @@ export class UserManager
 					return reject(new Error("Activation key is not valid. Please try send another."));
 
 				// Update the key to be blank
-				that._userCollection.update(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-				{
-					if (error)
-                        return reject(error);
+				that._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }).then(function (result) {
 
                     // Send activated event
                     var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
-                    CommsController.singleton.broadcastEvent(sEvent).then(function ()
-                    {
-                        winston.info(`User '${username}' has been activated`, { process: process.pid });
-                        return resolve(true);
+                    return CommsController.singleton.broadcastEvent(sEvent);
 
-                    }).catch(function (err: Error)
-                    {
-                        return reject(error);
-                    });
-				});
+                }).then(function () {
+
+                    winston.info(`User '${username}' has been activated`, { process: process.pid });
+                    return resolve(true);
+
+				}).catch(function(err){
+                    return reject(err);
+                });
 
 			}).catch(function (error: Error)
 			{
@@ -671,15 +659,14 @@ export class UserManager
 			{
 				if (!session) return resolve(null);
 
-				that._userCollection.findOne({ sessionId: session.sessionId }, function (error: Error, useEntry: def.IUserEntry)
-				{
-					if (error)
-						return reject(error);
-					else if (!useEntry)
-						return resolve(null);
-					else
-						return resolve(new User(useEntry));
-				});
+				return that._userCollection.find({ sessionId: session.sessionId }).limit(1).next();
+
+            }).then(function (useEntry: def.IUserEntry) {
+
+                if (!useEntry)
+                    return resolve(null);
+                else
+                    return resolve(new User(useEntry));
 
 			}).catch(function (error: Error)
 			{
@@ -759,10 +746,7 @@ export class UserManager
                 });
 
                 // Update the database
-                that._userCollection.insert(newUser.generateDbEntry(), function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-                {
-                    if (error)
-                        return reject(error);
+                that._userCollection.insertOne(newUser.generateDbEntry()).then(function (result: mongodb.WriteResult<def.IUserEntry>) {
 
                     // Assing the ID and pass the user on
                     newUser.dbEntry = result.ops[0];
@@ -804,6 +788,9 @@ export class UserManager
 
                         return reject(err);
                     });
+
+                }).catch(function(err){
+                    return reject(err);
                 });
 
             }).catch(function (error: Error)
@@ -843,23 +830,21 @@ export class UserManager
 
             }).then(function (numDeleted)
             {
-                that._userCollection.remove(<def.IUserEntry>{ _id: existingUser.dbEntry._id }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
+                return that._userCollection.deleteOne(<def.IUserEntry>{ _id: existingUser.dbEntry._id });
+
+            }).then(function (result) {
+
+                if (result.result.n == 0)
+                    return reject(new Error("Could not remove the user from the database"));
+
+                // Send event to sockets
+                var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed };
+                CommsController.singleton.broadcastEvent(sEvent).then(function ()
                 {
-                    if (error)
-                        return reject(error);
-
-                    if (result.result.n == 0)
-                        return reject(new Error("Could not remove the user from the database"));
-
-                    // Send event to sockets
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed };
-                    CommsController.singleton.broadcastEvent(sEvent).then(function ()
-                    {
-                        winston.info(`User '${username}' has been removed`, { process: process.pid });
-                    });
-
-                    return resolve();
+                    winston.info(`User '${username}' has been removed`, { process: process.pid });
                 });
+
+                return resolve();
 
             }).catch(function (error: Error)
 			{
@@ -890,12 +875,16 @@ export class UserManager
 			var target = [{ email: email }, { username: user }];
 
 			// Search the collection for the user
-			that._userCollection.findOne({ $or: target }, function (error: Error, userEntry: def.IUserEntry)
-			{
-				if (error) return reject(error);
-				else if (!userEntry) return resolve(null);
-				else return resolve(new User(userEntry));
-			});
+			that._userCollection.find({ $or: target }).limit(1).next().then(function (userEntry: def.IUserEntry) {
+
+				if (!userEntry)
+                    return resolve(null);
+				else
+                    return resolve(new User(userEntry));
+
+			}).catch(function(error: Error){
+                return reject(error);
+            });
 		});
 	}
 
@@ -949,10 +938,10 @@ export class UserManager
 				user.dbEntry.lastLoggedIn = Date.now();
 
 				// Update the collection
-				that._userCollection.update({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-				{
-					if (error) return reject(error);
-					if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+				that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } }).then( function (result) {
+
+					if (result.result.n === 0)
+                        return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
 					if (!rememberMe)
 						return resolve(user);
@@ -961,10 +950,10 @@ export class UserManager
 						that.sessionManager.createSession(request, response).then(function (session: Session)
 						{
 							// Search the collection for the user
-							that._userCollection.update({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry> )
-							{
-								if (error) return reject(error);
-                                if (result.result.n === 0) return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+							that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }).then( function (result) {
+
+                                if (result.result.n === 0)
+                                    return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
                                 // Send logged in event to socket
                                 var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login };
@@ -976,13 +965,18 @@ export class UserManager
                                 {
                                     return reject(err);
                                 });
-							});
+
+							}).catch(function(error: Error){
+                                return reject(error);
+                            });
 
 						}).catch(function (error: Error)
 						{
 							return reject(error);
 						});
 					}
+                }).catch(function(error: Error){
+                    return reject(error);
                 });
 
             }).catch(function (err)
@@ -1011,12 +1005,16 @@ export class UserManager
 				if (!user) return resolve(false);
 
 				// Remove the user from the DB
-				that._userCollection.remove({ _id: user.dbEntry._id }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-				{
-					if (error) return reject(error);
-					else if (result.result.n === 0) return resolve(false);
-					else return resolve(true);
-				});
+				that._userCollection.deleteOne({ _id: user.dbEntry._id }).then(function (result) {
+
+					if (result.result.n === 0)
+                        return resolve(false);
+					else
+                        return resolve(true);
+
+				}).catch(function(error: Error){
+                    return reject(error);
+                });
 			});
 		});
     }
@@ -1040,12 +1038,10 @@ export class UserManager
                 return reject(false);
 
             // Remove the user from the DB
-            that._userCollection.update(<def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } }, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-            {
-                if (error)
-                    return reject(error);
-
-                resolve(true);
+            that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } }).then(function (result) {
+                return resolve(true);
+            }).catch(function(error: Error){
+                return reject(error);
             });
         });
     }
@@ -1075,12 +1071,10 @@ export class UserManager
             updateToken.$set[datum] = val;
 
             // Remove the user from the DB
-            that._userCollection.update(<def.IUserEntry>{ _id: user._id }, updateToken, function (error: Error, result: mongodb.WriteResult<def.IUserEntry>)
-            {
-                if (error)
-                    return reject(error);
-
-                resolve(true);
+            that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, updateToken).then(function (result) {
+                return resolve(true);
+            }).catch(function(error: Error){
+                return reject(error);
             });
         });
     }
@@ -1104,12 +1098,11 @@ export class UserManager
                 return resolve(false);
 
             // Remove the user from the DB
-            that._userCollection.findOne( <def.IUserEntry>{ _id: user._id }, { _id: 0, meta: 1 }, function (error: Error, result: def.IUserEntry)
+            that._userCollection.find( <def.IUserEntry>{ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next().then(function (result: def.IUserEntry)
             {
-                if (error)
-                    return reject(error);
-
-                resolve(result.meta[name]);
+                return resolve(result.meta[name]);
+            }).catch(function(error: Error){
+                return reject(error);
             });
         });
     }
@@ -1132,12 +1125,10 @@ export class UserManager
                 return resolve(false);
 
             // Remove the user from the DB
-            that._userCollection.findOne(<def.IUserEntry>{ _id: user._id }, { _id: 0, meta: 1 }, function (error: Error, result: def.IUserEntry)
-            {
-                if (error)
-                    return reject(error);
-
-                resolve(result.meta);
+            that._userCollection.find(<def.IUserEntry>{ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next().then(function (result: def.IUserEntry) {
+                return resolve(result.meta);
+            }).catch(function(error: Error){
+                return reject(error);
             });
         });
     }
@@ -1178,20 +1169,15 @@ export class UserManager
         {
             var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
 
-            that._userCollection.find(findToken, {}, startIndex, limit, function (error: Error, result: mongodb.Cursor)
-			{
-                if (error)
-                    return reject(error);
-
-				result.toArray(function (err: any, results: Array<def.IUserEntry>)
-				{
-					var users: Array<User> = [];
+            that._userCollection.find(findToken).skip(startIndex).limit(limit).toArray().then(function(results: Array<def.IUserEntry>){
+                var users: Array<User> = [];
 					for (var i = 0, l = results.length; i < l; i++)
 						users.push(new User(results[i]));
 
 					resolve(users);
-				});
-			});
+            }).catch(function(error: Error){
+                return reject(error);
+            });
 		});
     }
 

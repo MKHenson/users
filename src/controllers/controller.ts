@@ -10,7 +10,7 @@ export class Controller
     }
 
     /**
-    * All controllers must successfully return a promise for its initialization phase. 
+    * All controllers must successfully return a promise for its initialization phase.
     */
     initialize(db: mongodb.Db): Promise<void>
     {
@@ -24,7 +24,7 @@ export class Controller
     {
         return new Promise(function (resolve, reject)
         {
-            collection.ensureIndex(name, function (err, indexName)
+            collection.createIndex(name, function (err, indexName)
             {
                 if (err)
                     return reject(err)
@@ -34,7 +34,7 @@ export class Controller
         });
     }
 
-    
+
     /**
     * Creates a new mongodb collection
     * @param {string} name The name of the collection to create
@@ -45,7 +45,7 @@ export class Controller
     {
         return new Promise<mongodb.Collection>(function (resolve, reject)
         {
-            db.createCollection(name, function (err: Error, collection: mongodb.Collection) 
+            db.createCollection(name, function (err: Error, collection: mongodb.Collection)
             {
                 if (err || !collection)
                     return reject(new Error("Error creating collection: " + err.message));

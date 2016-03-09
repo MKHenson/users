@@ -102,19 +102,11 @@ export class SessionManager extends EventEmitter
 
         return new Promise<Array<ISessionEntry>>(function (resolve, reject)
 		{
-			that._dbCollection.find({}, {}, startIndex, limit, function (error: Error, result: mongodb.Cursor)
-			{
-				if (error)
-					return reject(error);
-
-				result.toArray(function (error: Error, results: Array<ISessionEntry>)
-				{
-					if (error)
-						return reject(error);
-
-					resolve(results);
-				});
-			})
+			that._dbCollection.find({}).skip(startIndex).limit(limit).toArray().then(function (results: Array<ISessionEntry>) {
+				resolve(results);
+			}).catch(function(error: Error){
+                return reject(error);
+            });
 		});
 	}
 
@@ -137,34 +129,30 @@ export class SessionManager extends EventEmitter
 			if (sId != "")
 			{
 				// We have a session ID, lets try to find it in the DB
-				that._dbCollection.findOne({ sessionId: sId },(err: Error, sessionDB: ISessionEntry) =>
-				{
-					if (err)
-						reject(err);
-					else
-                    {
-						// Create a new session
-						var session = new Session(sId, that._options);
-						session.expiration = -1;
+				that._dbCollection.find({ sessionId: sId }).limit(1).next().then(function(sessionDB: ISessionEntry) {
 
-						// Adds / updates the DB with the new session
-						that._dbCollection.remove({ sessionId: session.sessionId }, function (err: Error, result: any)
-                        {
-                            that.emit("sessionRemoved", sId);
+                    // Create a new session
+                    var session = new Session(sId, that._options);
+                    session.expiration = -1;
 
-							if (err)
-								reject(err);
-							else
-							{
-								// Set the session cookie header
-								response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+                    // Adds / updates the DB with the new session
+                    that._dbCollection.deleteOne({ sessionId: session.sessionId }).then(function (result: any) {
 
-								// Resolve the request
-								resolve(true);
-							}
-						});
-					}
-				});
+                        that.emit("sessionRemoved", sId);
+
+                        // Set the session cookie header
+                        response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+
+                        // Resolve the request
+                        resolve(true);
+
+                    }).catch(function(err: Error){
+                        reject(err);
+                    });
+
+				}).catch(function(err: Error){
+                    reject(err);
+                });
 			}
 			else
 				resolve(true);
@@ -189,12 +177,9 @@ export class SessionManager extends EventEmitter
 			if (sessionId != "")
 			{
 				// We have a session ID, lets try to find it in the DB
-				that._dbCollection.findOne({ sessionId: sessionId }, (err: Error, sessionDB: ISessionEntry) =>
-				{
+				that._dbCollection.find({ sessionId: sessionId }).limit(1).next().then(function(sessionDB: ISessionEntry) {
 					// Cant seem to find any session - so create a new one
-					if (err)
-						reject(err);
-                    else if (!sessionDB)
+					if (!sessionDB)
                         resolve(null);
 					else
 					{
@@ -202,26 +187,26 @@ export class SessionManager extends EventEmitter
 						var session = new Session(sessionId, that._options, sessionDB);
 
 						// Adds / updates the DB with the new session
-						that._dbCollection.update({ sessionId: session.sessionId }, session.save(), null, function (err: Error, result: any)
-						{
-							if (err)
-								reject(err);
-							else
-							{
-								// make sure a timeout is pending for the expired session reaper
-								if (!that._timeout)
-									that._timeout = setTimeout(that._cleanupProxy, 60000);
+						that._dbCollection.updateOne({ sessionId: session.sessionId }, session.save()).then(function (result) {
 
-								// Set the session cookie header
-                                if (response)
-                                    response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+                            // make sure a timeout is pending for the expired session reaper
+                            if (!that._timeout)
+                                that._timeout = setTimeout(that._cleanupProxy, 60000);
 
-								// Resolve the request
-								resolve(session);
-							}
-						});
+                            // Set the session cookie header
+                            if (response)
+                                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+
+                            // Resolve the request
+                            resolve(session);
+
+						}).catch(function(err: Error){
+                            return reject(err);
+                        });
 					}
-				});
+				}).catch(function(err: Error){
+                    reject(err);
+                });
 			}
 			else
 				// Resolve with no session data
@@ -243,19 +228,17 @@ export class SessionManager extends EventEmitter
 			var session = new Session(that.createID(), that._options, null);
 
 			// Adds / updates the DB with the new session
-			that._dbCollection.insert(session.save(), function (err: Error, result: ISessionEntry)
-			{
-				if (err)
-					reject(err);
-				else
-				{
-					// Set the session cookie header
-					response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+			that._dbCollection.insertOne(session.save()).then(function(result) {
 
-					// Resolve the request
-					resolve(session);
-				}
-			});
+                // Set the session cookie header
+                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+
+                // Resolve the request
+                resolve(session);
+
+			}).catch(function(err: Error){
+                reject(err);
+            });
 		});
 	}
 
@@ -304,7 +287,7 @@ export class SessionManager extends EventEmitter
 						// Check if we need to remove sessions - if we do, then remove them :)
 						if (toRemoveQuery.$or.length > 0)
 						{
-							that._dbCollection.remove(toRemoveQuery, function (err: Error, result: any)
+							that._dbCollection.deleteMany(toRemoveQuery).then( function (result)
                             {
                                 for (var i = 0, l = toRemoveQuery.$or.length; i < l; i++)
                                     that.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId );
