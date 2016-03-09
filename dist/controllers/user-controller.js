@@ -78,10 +78,10 @@ var UserController = (function (_super) {
             }).then(function () {
                 // Create the user manager
                 that._userManager = users_1.UserManager.create(userCollection, sessionCollection, that._config);
-                that._userManager.initialize().then(function () {
-                    // Initialization is finished
-                    resolve();
-                });
+                return that._userManager.initialize();
+            }).then(function () {
+                // Initialization is finished
+                resolve();
             }).catch(function (error) {
                 reject(error);
             });

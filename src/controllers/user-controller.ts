@@ -86,8 +86,8 @@ export class UserController extends Controller
                 that.createCollection(that._config.userCollection, db),
                 that.createCollection(that._config.sessionCollection, db)
 
-            ]).then(function( collections )
-            {
+            ]).then(function( collections ) {
+
                 userCollection = collections[0];
                 sessionCollection = collections[1];
 
@@ -97,21 +97,20 @@ export class UserController extends Controller
                     that.ensureIndex(userCollection, "lastLoggedIn"),
                 ]);
 
-            }).then(function ()
-            {
+            }).then(function () {
+
                 // Create the user manager
                 that._userManager = UserManager.create(userCollection, sessionCollection, that._config);
-                that._userManager.initialize().then(function ()
-                {
-                    // Initialization is finished
-                    resolve();
+                return that._userManager.initialize();
 
-                })
+            }).then(function () {
 
-            }).catch(function (error: Error)
-            {
+                // Initialization is finished
+                resolve();
+
+            }).catch(function (error: Error) {
                 reject(error);
-            })
+            });
 		});
 	}
 

@@ -8,7 +8,6 @@
 /// <reference path="./definitions/required/body-parser.d.ts" />
 /// <reference path="./definitions/required/method-override.d.ts" />
 /// <reference path="./definitions/required/mongodb.d.ts" />
-/// <reference path="./definitions/required/mongo-extras.d.ts" />
 /// <reference path="./definitions/required/morgan.d.ts" />
 /// <reference path="./definitions/required/multiparty.d.ts" />
 /// <reference path="./definitions/required/recaptcha-async.d.ts" />

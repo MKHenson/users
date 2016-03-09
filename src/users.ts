@@ -183,33 +183,32 @@ export class UserManager
 
 		return new Promise<void>(function( resolve, reject )
         {
-            // Make sure the user collection has an index to search the username field
-            that._userCollection.createIndexes(<Array<def.IUserEntry>>[{ username: "text" }, { email: "text" }]).then( function()
+            // Clear all existing indices and then re-add them
+            that._userCollection.dropIndexes().then(function(){
+
+               // Make sure the user collection has an index to search the username field
+               return that._userCollection.createIndex( <def.IUserEntry>{ username: "text", email: "text" } );
+
+            }).then(function()
             {
-                that.getUser(config.adminUser.username).then(function (user)
-                {
+                // See if we have an admin user
+                return that.getUser(config.adminUser.username);
+
+            }).then(function (user)
+            {
+                // No admin user exists, so lets try to create one
+                if (!user)
+                    return that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, UserPrivileges.SuperAdmin, {}, true)
+                else
                     // Admin user already exists
-                    if (!user)
-                        return Promise.reject(new Error());
+                    return user;
 
-                    resolve();
+            }).then(function(newUser){
+                resolve();
 
-                }).catch(function (error: Error)
-                {
-                    // No admin user exists, so lets try to create one
-                    that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, UserPrivileges.SuperAdmin, {}, true).then(function (newUser)
-                    {
-                        resolve();
-
-                    }).catch(function (error)
-                    {
-                        reject(error);
-                    });
-                })
             }).catch(function(error: Error){
                 return reject(error);
             });
-
 		});
 	}
 
@@ -723,6 +722,7 @@ export class UserManager
 			if (privilege > 3) return reject(new Error("Privilege type is unrecognised"));
             if (privilege == UserPrivileges.SuperAdmin && allowAdmin == false ) return reject(new Error("You cannot create a super user"));
             var hashedPsw : string;
+            var newUser: User;
 
 			// Check if the user already exists
             that.hashPassword(password).then(function (hashedPassword)
@@ -736,7 +736,7 @@ export class UserManager
                     return Promise.reject(new Error(`A user with that name or email already exists`));
 
                 // Create the user
-                var newUser: User = new User({
+                newUser = new User({
                     username: user,
                     password: hashedPsw,
                     email: email,
@@ -746,52 +746,47 @@ export class UserManager
                 });
 
                 // Update the database
-                that._userCollection.insertOne(newUser.generateDbEntry()).then(function (result: mongodb.WriteResult<def.IUserEntry>) {
+                return that._userCollection.insertOne(newUser.generateDbEntry());
 
-                    // Assing the ID and pass the user on
-                    newUser.dbEntry = result.ops[0];
+            }).then(function (insertResult) {
 
-                    // Send a message to the user to say they are registered but need to activate their account
-                    var message: string = `Thank you for registering with Webinate!
-                    To activate your account please click the link below:
+                // Assing the ID and pass the user on
+                newUser.dbEntry = insertResult.ops[0];
 
-                    ${that.createActivationLink(newUser, origin) }
+                // Send a message to the user to say they are registered but need to activate their account
+                var message: string = `Thank you for registering with Webinate!
+                To activate your account please click the link below:
 
-                    Thanks
-                    The Webinate Team`;
+                ${that.createActivationLink(newUser, origin) }
 
-                    // If no mailer is setup
-                    if (!that._mailer)
-                        reject(new Error(`No email account has been setup`));
+                Thanks
+                The Webinate Team`;
 
-                    // Send mail using the mailer
-                    that._mailer.sendMail(
-                        newUser.dbEntry.email,
-                        that._config.google.mail.from,
-                        "Activate your account",
-                        message
-                    ).then(function(){
+                // If no mailer is setup
+                if (!that._mailer)
+                    return Promise.reject(new Error(`No email account has been setup`));
 
-                        // All users have default stats created for them
-                        return BucketManager.get.createUserStats(newUser.dbEntry.username);
+                // Send mail using the mailer
+                return that._mailer.sendMail(
+                    newUser.dbEntry.email,
+                    that._config.google.mail.from,
+                    "Activate your account",
+                    message
+                );
 
-                    }).then(function(){
+            }).then(function(){
 
-                        // All users have a bucket created for them
-                        return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
+                // All users have default stats created for them
+                return BucketManager.get.createUserStats(newUser.dbEntry.username);
 
-                    }).then(function(){
+            }).then(function(){
 
-                        return resolve(newUser);
+                // All users have a bucket created for them
+                return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
 
-                    }).catch(function(err){
+            }).then(function(){
 
-                        return reject(err);
-                    });
-
-                }).catch(function(err){
-                    return reject(err);
-                });
+                return resolve(newUser);
 
             }).catch(function (error: Error)
 			{
@@ -928,59 +923,49 @@ export class UserManager
 
                 return that.comparePassword(pass, user.dbEntry.password);
 
-             }).then(function(same: boolean)
-             {
+             }).then(function(same: boolean) {
 				// Check the password
                 if (!same)
-					return reject(new Error("The username or password is incorrect."));
+					return Promise.reject(new Error("The username or password is incorrect."));
 
 				// Set the user last login time
 				user.dbEntry.lastLoggedIn = Date.now();
 
 				// Update the collection
-				that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } }).then( function (result) {
+				return that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } });
 
-					if (result.result.n === 0)
-                        return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+             }).then( function (result : mongodb.UpdateWriteOpResult) {
 
-					if (!rememberMe)
-						return resolve(user);
-					else
-					{
-						that.sessionManager.createSession(request, response).then(function (session: Session)
-						{
-							// Search the collection for the user
-							that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } }).then( function (result) {
+                if (result.matchedCount === 0)
+                    return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
-                                if (result.result.n === 0)
-                                    return reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+                if (!rememberMe)
+                    return resolve(user);
 
-                                // Send logged in event to socket
-                                var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login };
-                                CommsController.singleton.broadcastEvent(sEvent).then(function ()
-                                {
-                                    return resolve(user);
+                that.sessionManager.createSession(request, response).then(function (session: Session | User) {
 
-                                }).catch(function (err)
-                                {
-                                    return reject(err);
-                                });
+                    // Search the collection for the user
+                    if (session instanceof Session)
+                        return that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } });
 
-							}).catch(function(error: Error){
-                                return reject(error);
-                            });
+                }).then( function(result : mongodb.UpdateWriteOpResult) {
 
-						}).catch(function (error: Error)
-						{
-							return reject(error);
-						});
-					}
-                }).catch(function(error: Error){
-                    return reject(error);
+                    if (result.matchedCount === 0)
+                        return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
+
+                    // Send logged in event to socket
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login };
+                    return CommsController.singleton.broadcastEvent(sEvent);
+
+                }).then(function () {
+
+                    return resolve(user);
+
+                }).catch(function (err) {
+                    return reject(err);
                 });
 
-            }).catch(function (err)
-            {
+             }).catch(function (err) {
                 return reject(err);
             });
 		});

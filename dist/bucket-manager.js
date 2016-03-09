@@ -105,7 +105,7 @@ var BucketManager = (function () {
     /**
     * Fetches the storage/api data for a given user
     * @param {string} user The user whos data we are fetching
-    * @returns {Promise<def.IFileEntry>}
+    * @returns {Promise<def.IStorageStats>}
     */
     BucketManager.prototype.getUserStats = function (user) {
         var that = this;
@@ -113,7 +113,7 @@ var BucketManager = (function () {
         var stats = this._stats;
         return new Promise(function (resolve, reject) {
             // Save the new entry into the database
-            stats.find({ user: user }).limit(1).next(function (result) {
+            stats.find({ user: user }).limit(1).next().then(function (result) {
                 if (!result)
                     return reject(new Error("Could not find storage data for the user '" + user + "'"));
                 else
@@ -137,8 +137,8 @@ var BucketManager = (function () {
                 apiCallsUsed: 0,
                 memoryUsed: 0
             };
-            stats.insertOne(storage).then(function (result) {
-                return resolve(result);
+            stats.insertOne(storage).then(function (insertResult) {
+                return resolve(insertResult.ops[0]);
             }).catch(function (err) {
                 return reject(err);
             });
@@ -225,7 +225,7 @@ var BucketManager = (function () {
                             memoryUsed: 0
                         };
                         // Save the new entry into the database
-                        bucketCollection.insertOne(newEntry).then(function (result) {
+                        bucketCollection.insertOne(newEntry).then(function (insertResult) {
                             // Increments the API calls
                             return stats.updateOne({ user: user }, { $inc: { apiCallsUsed: 1 } });
                         }).then(function (updateResult) {
@@ -631,8 +631,8 @@ var BucketManager = (function () {
                 publicURL: "https://storage.googleapis.com/" + bucket.identifier + "/" + fileID,
                 mimeType: part.headers["content-type"]
             };
-            files.insertOne(entry).then(function (result) {
-                return resolve(result.ops[0]);
+            files.insertOne(entry).then(function (insertResult) {
+                return resolve(insertResult.ops[0]);
             }).catch(function (err) {
                 return reject(new Error("Could not save user file entry: " + err.toString()));
             });

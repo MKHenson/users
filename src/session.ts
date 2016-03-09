@@ -228,7 +228,7 @@ export class SessionManager extends EventEmitter
 			var session = new Session(that.createID(), that._options, null);
 
 			// Adds / updates the DB with the new session
-			that._dbCollection.insertOne(session.save()).then(function(result) {
+			that._dbCollection.insertOne(session.save()).then(function(insertResult) {
 
                 // Set the session cookie header
                 response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());

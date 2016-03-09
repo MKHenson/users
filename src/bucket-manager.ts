@@ -153,7 +153,7 @@ export class BucketManager
     /**
     * Fetches the storage/api data for a given user
     * @param {string} user The user whos data we are fetching
-    * @returns {Promise<def.IFileEntry>}
+    * @returns {Promise<def.IStorageStats>}
     */
     getUserStats(user?: string): Promise<users.IStorageStats>
     {
@@ -164,7 +164,7 @@ export class BucketManager
         return new Promise(function (resolve, reject)
         {
             // Save the new entry into the database
-            stats.find(<users.IStorageStats>{ user: user }).limit(1).next( function( result: users.IStorageStats )
+            stats.find(<users.IStorageStats>{ user: user }).limit(1).next().then(function(result)
             {
                 if (!result)
                     return reject(new Error(`Could not find storage data for the user '${user}'`));
@@ -194,8 +194,8 @@ export class BucketManager
                 memoryUsed: 0
             }
 
-            stats.insertOne(storage).then(function(result: users.IStorageStats) {
-                return resolve(result);
+            stats.insertOne(storage).then(function(insertResult) {
+                return resolve(insertResult.ops[0]);
             }).catch(function(err){
                 return reject(err);
             });
@@ -305,7 +305,7 @@ export class BucketManager
                         }
 
                         // Save the new entry into the database
-                        bucketCollection.insertOne(newEntry).then(function(result: users.IBucketEntry) {
+                        bucketCollection.insertOne(newEntry).then(function(insertResult) {
 
                             // Increments the API calls
                             return stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } });
@@ -836,8 +836,8 @@ export class BucketManager
                 mimeType: part.headers["content-type"]
             };
 
-            files.insertOne(entry).then(function( result: any) {
-                return resolve(result.ops[0]);
+            files.insertOne(entry).then(function(insertResult ) {
+                return resolve(insertResult.ops[0]);
             }).catch(function(err){
                 return reject(new Error(`Could not save user file entry: ${err.toString() }`));
             });
