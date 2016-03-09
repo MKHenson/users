@@ -1144,6 +1144,7 @@ describe('Checking media API', function(){
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
+					test.string(res.body.message).is("Successfully retrieved george's stats")
 					test.bool(res.body.error).isNotTrue()
 					test.object(res.body).hasProperty("message")
 					test.object(res.body).hasProperty("data")
