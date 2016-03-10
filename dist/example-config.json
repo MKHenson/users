@@ -18,6 +18,7 @@
     "sslCert": "",
     "sslRoot": "",
     "sslIntermediate": "",
+    "sslPassPhrase": "",
     "databaseName": "users",
     "sessionPath": "/",
     "sessionDomain": "",
@@ -25,10 +26,6 @@
     "sessionLifetime": 1800,
     "captchaPrivateKey": "GOOGLE_CAPTHCA_PRIVATE_KEY",
     "captchaPublicKey": "GOOGLE_CAPTHCA_PUBLIC_KEY",
-    "emailFrom": "Support",
-    "emailService": "Gmail",
-    "emailServiceUser": "provider@gmail.com",
-    "emailServicePassword": "provider_password",
     "adminUser": {
         "username": "root",
         "email": "root_email@host.com",

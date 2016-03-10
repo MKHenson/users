@@ -71,18 +71,25 @@ var CommsController = (function () {
             res.writeHead(200);
             res.end("All glory to WebSockets!\n");
         };
-        var httpsServer = null;
+        // Create the web socket server
         if (cfg.ssl) {
+            var httpsServer = null;
             var caChain = [fs.readFileSync(cfg.sslIntermediate), fs.readFileSync(cfg.sslRoot)];
             var privkey = cfg.sslKey ? fs.readFileSync(cfg.sslKey) : null;
             var theCert = cfg.sslCert ? fs.readFileSync(cfg.sslCert) : null;
             winston.info("Attempting to start Websocket server with SSL...", { process: process.pid });
             httpsServer = https.createServer({ key: privkey, cert: theCert, passphrase: cfg.sslPassPhrase, ca: caChain }, processRequest);
             httpsServer.listen(cfg.websocket.port);
+            this._server = new ws.Server({ server: httpsServer });
         }
-        winston.info("Websockets listening on HTTP port " + cfg.websocket.port, { process: process.pid });
-        // Create the web socket server
-        this._server = new ws.Server({ port: cfg.websocket.port, server: httpsServer });
+        else
+            this._server = new ws.Server({ port: cfg.websocket.port });
+        winston.info("Websockets attempting to listen on HTTP port " + cfg.websocket.port, { process: process.pid });
+        // Handle errors
+        this._server.on('error', function connection(err) {
+            winston.error("Websocket error: " + err.toString());
+            that._server.close();
+        });
         // A client has connected to the server
         this._server.on('connection', function connection(ws) {
             var headers = ws.upgradeReq.headers;
