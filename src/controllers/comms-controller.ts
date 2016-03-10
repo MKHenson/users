@@ -7,7 +7,7 @@ import * as fs from "fs";
 import * as winston from "winston";
 import {UserManager, User} from "../users";
 
-interface ISocketClient extends WS.WebSocket
+interface ISocketClient extends ws
 {
     clientConnection: ClientConnection;
 }
@@ -18,7 +18,7 @@ class ClientConnection
     public user: User;
     public clientType: def.IWebsocketClient;
 
-    constructor(ws: WS.WebSocket, clientType: def.IWebsocketClient)
+    constructor(ws: ws, clientType: def.IWebsocketClient)
     {
         var that = this;
         this.clientType = clientType;
@@ -86,7 +86,7 @@ export enum EventType
 export class CommsController
 {
     public static singleton: CommsController;
-    private _server: WS.Server;
+    private _server: ws.Server;
 
     /**
 	* Creates an instance of the Communication server
@@ -122,7 +122,7 @@ export class CommsController
         this._server = new ws.Server({ port: cfg.websocket.port, server: httpsServer });
 
         // A client has connected to the server
-        this._server.on('connection', function connection(ws: WS.WebSocket)
+        this._server.on('connection', function connection(ws: ws)
         {
             var headers = (<http.ServerRequest>ws.upgradeReq).headers;
 
