@@ -1,4 +1,3 @@
-/// <reference path="./references.d.ts" />
 var http = require("http");
 var https = require("https");
 var fs = require("fs");

@@ -1,4 +1,3 @@
-/// <reference path="./references.d.ts" />
 var gcloud = require("gcloud");
 var zlib = require("zlib");
 var compressible = require("compressible");

@@ -1,4 +1,3 @@
-/// <reference path="./references.d.ts" />
 var google = require("googleapis");
 var googleAuth = require("google-auth-library");
 var fs = require("fs");

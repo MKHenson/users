@@ -1,6 +1,4 @@
-﻿/// <reference path="./references.d.ts" />
-
-import * as users from "webinate-users";
+﻿import * as users from "webinate-users";
 import * as fs from "fs";
 import * as gcloud from "gcloud";
 import * as http from "http";

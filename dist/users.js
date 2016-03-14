@@ -1,4 +1,3 @@
-/// <reference path="./references.d.ts" />
 var mongodb = require("mongodb");
 var validator = require("validator");
 var bcrypt = require("bcryptjs");

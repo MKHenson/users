@@ -1,6 +1,4 @@
-﻿/// <reference path="./references.d.ts" />
-
-import * as http from "http";
+﻿import * as http from "http";
 import * as mongodb from "mongodb";
 import {ISessionEntry} from "webinate-users";
 import {EventEmitter} from "events"

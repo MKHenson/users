@@ -12,6 +12,7 @@
     "outDir": "dist"
   },
   "files": [
+      "src/references.d.ts",
       "src/main.ts",
       "src/startup.ts"
   ]

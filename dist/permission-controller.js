@@ -1,4 +1,3 @@
-/// <reference path="./references.d.ts" />
 var users_1 = require("./users");
 exports.secret = { key: "" };
 /**

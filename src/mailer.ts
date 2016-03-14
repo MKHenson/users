@@ -1,5 +1,3 @@
-/// <reference path="./references.d.ts" />
-
 import * as google from "googleapis";
 import * as googleAuth from "google-auth-library";
 import * as fs from "fs";

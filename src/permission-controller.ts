@@ -1,6 +1,4 @@
-﻿/// <reference path="./references.d.ts" />
-
-import express = require("express");
+﻿import express = require("express");
 import bodyParser = require('body-parser');
 
 // NEW ES6 METHOD

@@ -1,6 +1,4 @@
-﻿/// <reference path="./references.d.ts" />
-
-import * as http from "http";
+﻿import * as http from "http";
 import * as https from "https";
 import * as fs from "fs";
 import * as express from "express";

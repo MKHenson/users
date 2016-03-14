@@ -1,6 +1,4 @@
-﻿/// <reference path="./references.d.ts" />
-
-import * as mongodb from "mongodb";
+﻿import * as mongodb from "mongodb";
 import * as http from "http";
 import * as validator from "validator";
 import * as bcrypt from "bcryptjs";
