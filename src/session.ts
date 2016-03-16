@@ -94,7 +94,7 @@ export class SessionManager extends EventEmitter
 	* @param {number} startIndex
 	* @param {number} limit
 	*/
-	getActiveSessions(startIndex?: number, limit?: number): Promise<Array<ISessionEntry>>
+	getActiveSessions(startIndex?: number, limit: number = -1): Promise<Array<ISessionEntry>>
 	{
 		var that = this;
 

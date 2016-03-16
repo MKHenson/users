@@ -95,7 +95,7 @@ export class BucketManager
     * @param {any} searchQuery The search query to idenfify files
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    getFiles(searchQuery: any, startIndex?: number, limit?: number): Promise<Array<users.IFileEntry>>
+    getFiles(searchQuery: any, startIndex?: number, limit: number = -1): Promise<Array<users.IFileEntry>>
     {
         var that = this;
         var gcs = this._gcs;

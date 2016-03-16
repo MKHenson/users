@@ -46,6 +46,7 @@ var SessionManager = (function (_super) {
     * @param {number} limit
     */
     SessionManager.prototype.getActiveSessions = function (startIndex, limit) {
+        if (limit === void 0) { limit = -1; }
         var that = this;
         return new Promise(function (resolve, reject) {
             that._dbCollection.find({}).skip(startIndex).limit(limit).toArray().then(function (results) {

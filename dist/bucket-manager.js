@@ -60,6 +60,7 @@ var BucketManager = (function () {
     * @returns {Promise<Array<def.IFileEntry>>}
     */
     BucketManager.prototype.getFiles = function (searchQuery, startIndex, limit) {
+        if (limit === void 0) { limit = -1; }
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
