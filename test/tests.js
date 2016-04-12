@@ -378,18 +378,6 @@ describe('Testing user API functions', function(){
 				});
 		}).timeout(20000)
 		
-		it('should get no group of users', function(done){
-			agent
-				.get('/users/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.object(res.body).hasProperty("message")
-					test.bool(res.body.error).isTrue()
-					test.string(res.body.message).is("You must be logged in to make this request")
-					done();
-				});
-		}).timeout(20000)
-		
 		it('should get no sessions', function(done){
 			agent
 				.get('/users/sessions').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -691,6 +679,19 @@ describe('Testing user API functions', function(){
 				});
 		}).timeout(16000)
 		
+		it('should get george when searching all registered users', function(done){
+			agent
+				.get('/users/users?search=george').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.end(function(err, res){
+					if (err) return done(err);
+					test.object(res.body).hasProperty("message")
+					test.string(res.body.message).is("Found 1 users")
+					test.bool(res.body.error).isFalse()
+					test.string(res.body.data[0].password).is("***********************************************************")
+					done();
+				});
+		}).timeout(20000)
+		
 		it('did create another regular user george2 with valid details', function(done){
 			agent
 				.post('/users/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -866,19 +867,6 @@ describe('Testing user API functions', function(){
 		it('did not get details of the admin user (no permission)', function(done){
 			agent
 				.get("/users/users/"+ config.adminUser.username +"?verbose=true").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', georgeCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.bool(res.body.error).isTrue()
-					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("You don't have permission to make this request")
-					done();
-				});	
-		}).timeout(20000)
-		
-		it('did not get details other users (no permission)', function(done){
-			agent
-				.get("/users/users"+"?verbose=true").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
