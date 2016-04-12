@@ -393,7 +393,7 @@ describe('Testing user API functions', function(){
 		it('should not be able to create a new user', function(done){
 			agent
 				.post('/users/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.send({username: "George", password:"Password", email:"george@webinate.net", email:"george@webinate.net", privileges: 1})
+				.send({username: "George", password:"Password", email:"george@webinate.net", privileges: 1})
 				.end(function(err, res){
 					if (err) return done(err);
 					test.bool(res.body.error).isTrue()
