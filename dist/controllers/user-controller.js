@@ -34,7 +34,7 @@ var UserController = (function (_super) {
         router.get("/meta/:user", [permission_controller_1.ownerRights, this.getData.bind(this)]);
         router.get("/meta/:user/:name", [permission_controller_1.ownerRights, this.getVal.bind(this)]);
         router.get("/users/:username", [permission_controller_1.ownerRights, this.getUser.bind(this)]);
-        router.get("/users", [permission_controller_1.ownerRights, this.getUsers.bind(this)]);
+        router.get("/users", [permission_controller_1.identifyUser, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
         router.get("/authenticated", this.authenticated.bind(this));
         router.get("/sessions", [permission_controller_1.ownerRights, this.getSessions.bind(this)]);
@@ -116,7 +116,7 @@ var UserController = (function (_super) {
     * Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
     * Also specify the verbose=true parameter in order to get all user data. You can also search with the
     * search query
-    * @param {express.Request} req
+    * @param {def.AuthRequest} req
     * @param {express.Response} res
     * @param {Function} next
     */
@@ -125,6 +125,12 @@ var UserController = (function (_super) {
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         var totalNumUsers = 0;
+        var verbose = Boolean(req.query.verbose);
+        // Only admins are allowed to see sensitive data
+        if (req._user && req._user.dbEntry.privileges == users_1.UserPrivileges.SuperAdmin && verbose)
+            verbose = true;
+        else
+            verbose = false;
         that._userManager.numUsers(new RegExp(req.query.search)).then(function (numUsers) {
             totalNumUsers = numUsers;
             return that._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit), new RegExp(req.query.search));
@@ -132,7 +138,7 @@ var UserController = (function (_super) {
             .then(function (users) {
             var sanitizedData = [];
             for (var i = 0, l = users.length; i < l; i++)
-                sanitizedData.push(users[i].generateCleanedData(Boolean(req.query.verbose)));
+                sanitizedData.push(users[i].generateCleanedData(verbose));
             var token = {
                 error: false,
                 message: "Found " + users.length + " users",

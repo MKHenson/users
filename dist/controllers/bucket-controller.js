@@ -39,18 +39,18 @@ var BucketController = (function (_super) {
         router.get("/get-files/:user/:bucket", [permission_controller_1.ownerRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", [permission_controller_1.ownerRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", [permission_controller_1.ownerRights, this.getBuckets.bind(this)]);
-        router.delete("/remove-buckets/:buckets", [permission_controller_1.identifyUser, this.removeBuckets.bind(this)]);
-        router.delete("/remove-files/:files", [permission_controller_1.identifyUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket/:parentFile?", [permission_controller_1.identifyUser, this.uploadUserFiles.bind(this)]);
+        router.delete("/remove-buckets/:buckets", [permission_controller_1.requireUser, this.removeBuckets.bind(this)]);
+        router.delete("/remove-files/:files", [permission_controller_1.requireUser, this.removeFiles.bind(this)]);
+        router.post("/upload/:bucket/:parentFile?", [permission_controller_1.requireUser, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:user/:name", [permission_controller_1.ownerRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", [permission_controller_1.ownerRights, this.createStats.bind(this)]);
         router.put("/storage-calls/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
         router.put("/storage-memory/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
         router.put("/storage-allocated-calls/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", [permission_controller_1.ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-        router.put("/rename-file/:file", [permission_controller_1.identifyUser, this.renameFile.bind(this)]);
-        router.put("/make-public/:id", [permission_controller_1.identifyUser, this.makePublic.bind(this)]);
-        router.put("/make-private/:id", [permission_controller_1.identifyUser, this.makePrivate.bind(this)]);
+        router.put("/rename-file/:file", [permission_controller_1.requireUser, this.renameFile.bind(this)]);
+        router.put("/make-public/:id", [permission_controller_1.requireUser, this.makePublic.bind(this)]);
+        router.put("/make-private/:id", [permission_controller_1.requireUser, this.makePrivate.bind(this)]);
         // Register the path
         e.use("" + config.mediaURL, router);
     }

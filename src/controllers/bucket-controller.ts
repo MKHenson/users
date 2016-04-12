@@ -6,7 +6,7 @@ import * as users from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../session";
 import {UserManager, User, UserPrivileges} from "../users";
-import {ownerRights, identifyUser} from "../permission-controller";
+import {ownerRights, requireUser} from "../permission-controller";
 import {Controller} from "./controller"
 import {BucketManager} from "../bucket-manager";
 import * as multiparty from "multiparty";
@@ -52,18 +52,18 @@ export class BucketController extends Controller
         router.get("/get-files/:user/:bucket", <any>[ownerRights, this.getFiles.bind(this)]);
         router.get("/get-stats/:user?", <any>[ownerRights, this.getStats.bind(this)]);
         router.get("/get-buckets/:user?", <any>[ownerRights, this.getBuckets.bind(this)]);
-        router.delete("/remove-buckets/:buckets", <any>[identifyUser, this.removeBuckets.bind(this)]);
-        router.delete("/remove-files/:files", <any>[identifyUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket/:parentFile?", <any>[identifyUser, this.uploadUserFiles.bind(this)]);
+        router.delete("/remove-buckets/:buckets", <any>[requireUser, this.removeBuckets.bind(this)]);
+        router.delete("/remove-files/:files", <any>[requireUser, this.removeFiles.bind(this)]);
+        router.post("/upload/:bucket/:parentFile?", <any>[requireUser, this.uploadUserFiles.bind(this)]);
         router.post("/create-bucket/:user/:name", <any>[ownerRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", <any>[ownerRights, this.createStats.bind(this)]);
         router.put("/storage-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
         router.put("/storage-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
         router.put("/storage-allocated-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
         router.put("/storage-allocated-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-        router.put("/rename-file/:file", <any>[identifyUser, this.renameFile.bind(this)]);
-        router.put("/make-public/:id", <any>[identifyUser, this.makePublic.bind(this)]);
-        router.put("/make-private/:id", <any>[identifyUser, this.makePrivate.bind(this)]);
+        router.put("/rename-file/:file", <any>[requireUser, this.renameFile.bind(this)]);
+        router.put("/make-public/:id", <any>[requireUser, this.makePublic.bind(this)]);
+        router.put("/make-private/:id", <any>[requireUser, this.makePrivate.bind(this)]);
 
         // Register the path
         e.use(`${config.mediaURL}`, router);

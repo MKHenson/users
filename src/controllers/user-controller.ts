@@ -8,7 +8,7 @@ import * as def from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../session";
 import {UserManager, User, UserPrivileges} from "../users";
-import {ownerRights, adminRights, secret} from "../permission-controller";
+import {ownerRights, adminRights, secret, identifyUser} from "../permission-controller";
 import {Controller} from "./controller"
 import {BucketManager} from "../bucket-manager";
 import * as compression from "compression";
@@ -46,7 +46,7 @@ export class UserController extends Controller
         router.get("/meta/:user", <any>[ownerRights, this.getData.bind(this)]);
         router.get("/meta/:user/:name", <any>[ownerRights, this.getVal.bind(this)]);
         router.get("/users/:username", <any>[ownerRights, this.getUser.bind(this)]);
-        router.get("/users", <any>[ownerRights, this.getUsers.bind(this)]);
+        router.get("/users", <any>[identifyUser, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
 		router.get("/authenticated", this.authenticated.bind(this));
         router.get("/sessions", <any>[ownerRights, this.getSessions.bind(this)]);
@@ -151,16 +151,24 @@ export class UserController extends Controller
 	* Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
     * Also specify the verbose=true parameter in order to get all user data. You can also search with the
     * search query
-	* @param {express.Request} req
+	* @param {def.AuthRequest} req
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-    private getUsers(req: express.Request, res: express.Response, next: Function): any
+    private getUsers(req: def.AuthRequest, res: express.Response, next: Function): any
     {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         var totalNumUsers: number = 0;
+
+        var verbose = Boolean(req.query.verbose);
+
+        // Only admins are allowed to see sensitive data
+        if (req._user && req._user.dbEntry.privileges == UserPrivileges.SuperAdmin && verbose)
+            verbose = true;
+        else
+            verbose = false;
 
         that._userManager.numUsers(new RegExp(req.query.search)).then(function(numUsers)
         {
@@ -172,7 +180,7 @@ export class UserController extends Controller
             var sanitizedData = [];
 
             for (var i = 0, l = users.length; i < l; i++)
-                sanitizedData.push(users[i].generateCleanedData(Boolean(req.query.verbose)));
+                sanitizedData.push(users[i].generateCleanedData(verbose));
 
             var token: def.IGetUsers = {
                 error: false,

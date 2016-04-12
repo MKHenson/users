@@ -42,12 +42,27 @@ function adminRights(req, res, next) {
 }
 exports.adminRights = adminRights;
 /**
-* Checks for session data and fetches the user. Sends back an error if no user present
+* Checks for session data and fetches the user. Does not throw an error if the user is not present.
 * @param {def.AuthRequest} req
 * @param {express.Response} res
 * @param {Function} next
 */
 function identifyUser(req, res, next) {
+    users_1.UserManager.get.loggedIn(req, res).then(function (user) {
+        req._user = null;
+        next();
+    }).catch(function (error) {
+        next();
+    });
+}
+exports.identifyUser = identifyUser;
+/**
+* Checks for session data and fetches the user. Sends back an error if no user present
+* @param {def.AuthRequest} req
+* @param {express.Response} res
+* @param {Function} next
+*/
+function requireUser(req, res, next) {
     users_1.UserManager.get.loggedIn(req, res).then(function (user) {
         if (!user) {
             res.setHeader('Content-Type', 'application/json');
@@ -62,7 +77,7 @@ function identifyUser(req, res, next) {
         next();
     });
 }
-exports.identifyUser = identifyUser;
+exports.requireUser = requireUser;
 /**
 * Checks a user is logged in and has permission
 * @param {def.UserPrivileges} level

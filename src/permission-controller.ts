@@ -59,12 +59,31 @@ export function adminRights(req: def.AuthRequest, res: express.Response, next: F
 }
 
 /**
-* Checks for session data and fetches the user. Sends back an error if no user present
+* Checks for session data and fetches the user. Does not throw an error if the user is not present.
 * @param {def.AuthRequest} req
 * @param {express.Response} res
 * @param {Function} next
 */
 export function identifyUser(req: def.AuthRequest, res: express.Response, next: Function): any
+{
+    UserManager.get.loggedIn(<express.Request><Express.Request>req, res).then(function (user)
+    {
+        req._user = null;
+        next();
+
+    }).catch(function (error: Error)
+    {
+        next();
+    });
+}
+
+/**
+* Checks for session data and fetches the user. Sends back an error if no user present
+* @param {def.AuthRequest} req
+* @param {express.Response} res
+* @param {Function} next
+*/
+export function requireUser(req: def.AuthRequest, res: express.Response, next: Function): any
 {
     UserManager.get.loggedIn(<express.Request><Express.Request>req, res).then(function (user)
     {
