@@ -3,6 +3,9 @@ var https = require("https");
 var fs = require("fs");
 var winston = require("winston");
 var users_1 = require("../users");
+/**
+ * A wrapper class for client connections made to the CommsController
+ */
 var ClientConnection = (function () {
     function ClientConnection(ws, clientType) {
         var that = this;
@@ -21,6 +24,7 @@ var ClientConnection = (function () {
     * @param {string|any} message
     */
     ClientConnection.prototype.onMessage = function (message) {
+        winston.info("Received message from client: '" + message + "'", { process: process.pid });
     };
     /**
     * Called whenever a client disconnnects
