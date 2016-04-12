@@ -12,6 +12,9 @@ interface ISocketClient extends ws
     clientConnection: ClientConnection;
 }
 
+/**
+ * A wrapper class for client connections made to the CommsController
+ */
 class ClientConnection
 {
     private _ws: ISocketClient;
@@ -41,6 +44,7 @@ class ClientConnection
 	*/
     private onMessage(message: string)
     {
+        winston.info(`Received message from client: '${message}'`, { process: process.pid } );
     }
 
     /**
