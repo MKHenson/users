@@ -1,4 +1,6 @@
-﻿import * as users from "webinate-users";
+﻿"use strict";
+
+import * as users from "webinate-users";
 import * as fs from "fs";
 import * as gcloud from "gcloud";
 import * as http from "http";
@@ -398,7 +400,7 @@ export class BucketManager
     removeBucketsByName(buckets: Array<string>, user : string ): Promise<Array<string>>
     {
         if (buckets.length == 0)
-            return Promise.resolve();
+            return Promise.resolve([]);
 
         // Create the search query for each of the files
         var searchQuery = { $or: [], user: user };
@@ -581,7 +583,7 @@ export class BucketManager
     removeFilesById(fileIDs: Array<string>, user? : string): Promise<Array<string>>
     {
         if (fileIDs.length == 0)
-            return Promise.resolve();
+            return Promise.resolve([]);
 
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
@@ -599,10 +601,10 @@ export class BucketManager
     * @param {string} bucket The id or name of the bucket to remove
     * @returns {Promise<string>} Returns the file IDs of the files removed
     */
-    removeFilesByBucket(bucket: string): Promise<Array<string>>
+    removeFilesByBucket(bucket: string): Promise<Array<string>|Error>
     {
         if (!bucket || bucket.trim() == "")
-            return Promise.reject(new Error("Please specify a valid bucket"));
+            return Promise.reject( new Error("Please specify a valid bucket"));
 
         // Create the search query for each of the files
         var searchQuery = { $or: <Array<users.IFileEntry>>[{ bucketId: bucket }, { bucketName: bucket }] };
@@ -730,7 +732,7 @@ export class BucketManager
         var that = this;
         return new Promise<users.IFileEntry>(function (resolve, reject)
         {
-            that.withinAPILimit(file.user).then(function (val) {
+            that.withinAPILimit(file.user).then(function (val) : Promise<Error|boolean> {
 
                 if (!val)
                     return Promise.reject(new Error("You do not have enough API calls left to make this request"));
@@ -770,10 +772,10 @@ export class BucketManager
         var that = this;
         return new Promise<users.IFileEntry>(function (resolve, reject)
         {
-            that.withinAPILimit(file.user).then(function (val)
+            that.withinAPILimit(file.user).then(function (val) : Promise<Error | boolean>
             {
                 if (!val)
-                    return Promise.reject(new Error("You do not have enough API calls left to make this request"));
+                    return Promise.reject( new Error("You do not have enough API calls left to make this request"));
 
                 return that.incrementAPI(file.user);
 

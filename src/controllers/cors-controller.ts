@@ -1,4 +1,6 @@
-﻿import * as mongodb from "mongodb";
+﻿"use strict";
+
+import * as mongodb from "mongodb";
 import * as http from "http";
 import {IConfig} from "webinate-users";
 import {Controller} from "./controller"
@@ -59,6 +61,6 @@ export class CORSController extends Controller
      */
     initialize(db: mongodb.Db): Promise<void>
     {
-        return Promise.resolve<any>();
+        return Promise.resolve<void>(null);
     }
 }

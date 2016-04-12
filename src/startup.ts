@@ -1,4 +1,6 @@
-﻿import * as http from "http";
+﻿"use strict";
+
+import * as http from "http";
 import * as https from "https";
 import * as fs from "fs";
 import * as express from "express";

@@ -1,4 +1,5 @@
-﻿/// <reference path="./references.d.ts" />
+﻿"use strict";
+
 import * as cluster from "cluster";
 import * as os from "os";
 import * as yargs from "yargs";

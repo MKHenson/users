@@ -1,3 +1,4 @@
+"use strict";
 var gcloud = require("gcloud");
 var zlib = require("zlib");
 var compressible = require("compressible");
@@ -295,7 +296,7 @@ var BucketManager = (function () {
     */
     BucketManager.prototype.removeBucketsByName = function (buckets, user) {
         if (buckets.length == 0)
-            return Promise.resolve();
+            return Promise.resolve([]);
         // Create the search query for each of the files
         var searchQuery = { $or: [], user: user };
         for (var i = 0, l = buckets.length; i < l; i++)
@@ -434,7 +435,7 @@ var BucketManager = (function () {
    */
     BucketManager.prototype.removeFilesById = function (fileIDs, user) {
         if (fileIDs.length == 0)
-            return Promise.resolve();
+            return Promise.resolve([]);
         // Create the search query for each of the files
         var searchQuery = { $or: [] };
         for (var i = 0, l = fileIDs.length; i < l; i++)

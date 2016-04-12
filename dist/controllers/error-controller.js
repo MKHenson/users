@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -24,7 +25,7 @@ var ErrorController = (function (_super) {
     * All controllers must successfully return a promise for its initialization phase.
     */
     ErrorController.prototype.initialize = function (db) {
-        return Promise.resolve();
+        return Promise.resolve(null);
     };
     return ErrorController;
 })(controller_1.Controller);

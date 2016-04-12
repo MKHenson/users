@@ -1,4 +1,6 @@
-﻿import express = require("express");
+﻿"use strict";
+
+import express = require("express");
 import bodyParser = require('body-parser');
 import * as http from "http";
 import * as entities from "entities";
@@ -13,6 +15,7 @@ import * as multiparty from "multiparty";
 import * as validator from "validator";
 import * as compression from "compression";
 import * as winston from "winston";
+import * as gcloud from "gcloud";
 
 import {CommsController, EventType} from "./comms-controller";
 import * as def from "webinate-users";
@@ -261,7 +264,7 @@ export class BucketController extends Controller
         if (!req.body || !req.body.name || req.body.name.trim() == "")
             return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the new name of the file", error: true }));
 
-        manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file)
+        manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file) : Promise<Error|users.IFileEntry>
         {
             if (!file)
                 return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
@@ -486,7 +489,7 @@ export class BucketController extends Controller
         if (req.query.search)
             searchTerm = new RegExp(req.query.search, "i");
 
-        manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket)
+        manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket) : Promise<Error|number>
         {
             if (!bucket)
                 return Promise.reject(new Error(`Could not find the bucket '${req.params.bucket}'`));
@@ -494,7 +497,7 @@ export class BucketController extends Controller
             bucketEntry = bucket;
             return manager.numFiles({ bucketId: bucket.identifier });
 
-        }).then(function (count)
+        }).then(function (count : number)
         {
             numFiles = count;
             return manager.getFilesByBucket(bucketEntry, index, limit, searchTerm);
@@ -615,14 +618,14 @@ export class BucketController extends Controller
             return res.end(JSON.stringify(<users.IResponse>{ message: "Please only use safe characters", error: true }));
 
 
-        UserManager.get.getUser(username).then(function(user)
+        UserManager.get.getUser(username).then(function(user) : Promise<Error|boolean>
         {
             if (user)
                 return manager.withinAPILimit(username);
             else
                 return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
 
-        }).then(function( inLimits )
+        }).then(function( inLimits: boolean ) : Promise<Error|gcloud.IBucket>
         {
             if (!inLimits)
                 return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));

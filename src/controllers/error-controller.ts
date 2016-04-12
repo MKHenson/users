@@ -1,4 +1,6 @@
-﻿import * as mongodb from "mongodb";
+﻿"use strict";
+
+import * as mongodb from "mongodb";
 import * as http from "http";
 import * as def from "webinate-users";
 import {Controller} from "./controller"
@@ -29,6 +31,6 @@ export class ErrorController extends Controller
     */
     initialize(db: mongodb.Db): Promise<void>
     {
-        return Promise.resolve<any>();
+        return Promise.resolve<void>(null);
     }
 }

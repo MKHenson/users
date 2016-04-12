@@ -1,4 +1,6 @@
-﻿import * as http from "http";
+﻿"use strict";
+
+import * as http from "http";
 import * as mongodb from "mongodb";
 import {ISessionEntry} from "webinate-users";
 import {EventEmitter} from "events"

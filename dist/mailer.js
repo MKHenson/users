@@ -1,3 +1,4 @@
+"use strict";
 var google = require("googleapis");
 var googleAuth = require("google-auth-library");
 var fs = require("fs");

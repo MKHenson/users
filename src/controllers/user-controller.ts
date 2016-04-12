@@ -1,4 +1,6 @@
-﻿import express = require("express");
+﻿"use strict";
+
+import express = require("express");
 import bodyParser = require('body-parser');
 
 // NEW ES6 METHOD

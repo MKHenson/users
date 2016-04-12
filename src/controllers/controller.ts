@@ -1,4 +1,6 @@
-﻿import * as mongodb from "mongodb";
+﻿"use strict";
+
+import * as mongodb from "mongodb";
 
 /**
 * Base class for all controllers

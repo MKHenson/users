@@ -1,4 +1,6 @@
-﻿import * as mongodb from "mongodb";
+﻿"use strict";
+
+import * as mongodb from "mongodb";
 import * as http from "http";
 import * as validator from "validator";
 import * as bcrypt from "bcryptjs";
@@ -546,7 +548,7 @@ export class UserManager
             var user: User;
 
             // Get the user
-            that.getUser(username).then(function(selectedUser)
+            that.getUser(username).then(function(selectedUser) : Promise<Error|string>
             {
                 user = selectedUser;
 
@@ -564,7 +566,7 @@ export class UserManager
 
                 return that.hashPassword(newPassword);
 
-            }).then( function(hashed)
+            }).then( function(hashed: string)
             {
                 // Update the key to be blank
                 return that._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: hashed } });
@@ -723,12 +725,12 @@ export class UserManager
             var newUser: User;
 
 			// Check if the user already exists
-            that.hashPassword(password).then(function (hashedPassword)
+            that.hashPassword(password).then(function (hashedPassword: string)
             {
                 hashedPsw = hashedPassword;
                 return that.getUser(user, email);
 
-            }).then(function(existingUser)
+            }).then(function(existingUser): Promise<mongodb.InsertOneWriteOpResult|Error>
             {
                 if (existingUser)
                     return Promise.reject(new Error(`A user with that name or email already exists`));
@@ -746,7 +748,7 @@ export class UserManager
                 // Update the database
                 return that._userCollection.insertOne(newUser.generateDbEntry());
 
-            }).then(function (insertResult) {
+            }).then(function (insertResult: mongodb.InsertOneWriteOpResult) : Promise<boolean|Error> {
 
                 // Assing the ID and pass the user on
                 newUser.dbEntry = insertResult.ops[0];
@@ -858,12 +860,16 @@ export class UserManager
 
 		email = email != undefined ? email : user;
 
-		return new Promise<User>(function( resolve, reject)
+		return new Promise<User>(function( resolve, reject )
 		{
 			// Validate user string
 			user = validator.trim(user);
-			if (!user || user == "") return reject(new Error("Please enter a valid username"));
-			if (!validator.isAlphanumeric(user) && !validator.isEmail(user)) return reject(new Error("Please only use alpha numeric characters for your username"));
+
+			if (!user || user == "")
+                return reject(new Error("Please enter a valid username"));
+
+			if (!validator.isAlphanumeric(user) && !validator.isEmail(user))
+                return reject(new Error("Please only use alpha numeric characters for your username"));
 
 			var target = [{ email: email }, { username: user }];
 
@@ -902,7 +908,7 @@ export class UserManager
             {
                 return that.getUser(username);
 
-            }).then(function (selectedUser)
+            }).then(function (selectedUser) : Promise<Error|boolean>
             {
                 user = selectedUser;
 
@@ -921,7 +927,7 @@ export class UserManager
 
                 return that.comparePassword(pass, user.dbEntry.password);
 
-             }).then(function(same: boolean) {
+             }).then(function(same: boolean) : Promise<Error|mongodb.UpdateWriteOpResult> {
 				// Check the password
                 if (!same)
 					return Promise.reject(new Error("The username or password is incorrect."));

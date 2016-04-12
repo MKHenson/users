@@ -1,4 +1,6 @@
-﻿import * as ws from "ws";
+﻿"use strict";
+
+import * as ws from "ws";
 import * as mongodb from "mongodb";
 import * as def from "webinate-users";
 import * as https from "https";
@@ -209,6 +211,6 @@ export class CommsController
 	*/
     initialize(db: mongodb.Db): Promise<void>
     {
-        return Promise.resolve<void>();
+        return Promise.resolve<void>(null);
     }
 }

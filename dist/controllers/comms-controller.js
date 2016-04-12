@@ -1,3 +1,4 @@
+"use strict";
 var ws = require("ws");
 var https = require("https");
 var fs = require("fs");
@@ -150,7 +151,7 @@ var CommsController = (function () {
     * @returns {Promise<Controller>}
     */
     CommsController.prototype.initialize = function (db) {
-        return Promise.resolve();
+        return Promise.resolve(null);
     };
     return CommsController;
 })();

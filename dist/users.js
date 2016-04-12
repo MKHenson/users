@@ -1,3 +1,4 @@
+"use strict";
 var mongodb = require("mongodb");
 var validator = require("validator");
 var bcrypt = require("bcryptjs");
