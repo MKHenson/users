@@ -92,16 +92,16 @@ export class Mailer
      * @param {stirng} to The email address to send the message to
      * @param {stirng} from The email we're sending from
      * @param {stirng} subject The message subject
-     * @param {stirng} message The message to be sent
+     * @param {stirng} msg The message to be sent
      * @returns {Promise<boolean>}
      */
-    sendMail( to : string, from : string, subject : string, message : string ): Promise<boolean>
+    sendMail( to : string, from : string, subject : string, msg : string ): Promise<boolean>
     {
         var that = this;
         return new Promise(function(resolve, reject){
 
             // Build the message string
-            var message = that.buildMessage(to, from, subject, message);
+            var message = that.buildMessage(to, from, subject, msg);
 
             // Send the message
             that.gmail.users.messages.send({
