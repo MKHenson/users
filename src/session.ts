@@ -293,13 +293,13 @@ export class SessionManager extends EventEmitter
                                     that.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId );
 
 								if (next < Infinity)
-									that._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
+									that._timeout = setTimeout(that._cleanupProxy, next - (+new Date) + 1000);
 							});
 						}
 						else
 						{
 							if (next < Infinity)
-								that._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
+								that._timeout = setTimeout(that._cleanupProxy, next - (+new Date) + 1000);
 						}
 					}
 				});

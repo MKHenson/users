@@ -194,12 +194,12 @@ var SessionManager = (function (_super) {
                                 for (var i = 0, l = toRemoveQuery.$or.length; i < l; i++)
                                     that.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId);
                                 if (next < Infinity)
-                                    that._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
+                                    that._timeout = setTimeout(that._cleanupProxy, next - (+new Date) + 1000);
                             });
                         }
                         else {
                             if (next < Infinity)
-                                that._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
+                                that._timeout = setTimeout(that._cleanupProxy, next - (+new Date) + 1000);
                         }
                     }
                 });
