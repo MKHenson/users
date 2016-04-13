@@ -1,7 +1,6 @@
 {
     "host": "127.0.0.1",
-    "restURL": "",
-    "mediaURL": "media",
+    "apiPrefix": "",
     "accountRedirectURL": "http://host.com/admin/message",
     "passwordResetURL": "http://host.com/admin/password-reset-form",
     "userCollection": "users",
