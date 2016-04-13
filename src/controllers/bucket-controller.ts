@@ -50,26 +50,25 @@ export class BucketController extends Controller
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
-        router.get("/download/:id", <any>[this.getFile.bind(this)]);
-
-        router.get("/get-files/:user/:bucket", <any>[ownerRights, this.getFiles.bind(this)]);
-        router.get("/get-stats/:user?", <any>[ownerRights, this.getStats.bind(this)]);
-        router.get("/get-buckets/:user?", <any>[ownerRights, this.getBuckets.bind(this)]);
-        router.delete("/remove-buckets/:buckets", <any>[requireUser, this.removeBuckets.bind(this)]);
-        router.delete("/remove-files/:files", <any>[requireUser, this.removeFiles.bind(this)]);
-        router.post("/upload/:bucket/:parentFile?", <any>[requireUser, this.uploadUserFiles.bind(this)]);
-        router.post("/create-bucket/:user/:name", <any>[ownerRights, this.createBucket.bind(this)]);
+        router.get("/files/:id/download", <any>[this.getFile.bind(this)]);
+        router.get("/users/:user/buckets/:bucket/get-files", <any>[ownerRights, this.getFiles.bind(this)]);
+        router.get("/users/:user/get-stats", <any>[ownerRights, this.getStats.bind(this)]);
+        router.get("/users/:user/buckets", <any>[ownerRights, this.getBuckets.bind(this)]);
+        router.delete("/buckets/:buckets", <any>[requireUser, this.removeBuckets.bind(this)]);
+        router.delete("/files/:files", <any>[requireUser, this.removeFiles.bind(this)]);
+        router.post("/buckets/:bucket/upload/:parentFile?", <any>[requireUser, this.uploadUserFiles.bind(this)]);
+        router.post("/users/:user/buckets/:name", <any>[ownerRights, this.createBucket.bind(this)]);
         router.post("/create-stats/:target", <any>[ownerRights, this.createStats.bind(this)]);
-        router.put("/storage-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
-        router.put("/storage-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
-        router.put("/storage-allocated-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
-        router.put("/storage-allocated-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
-        router.put("/rename-file/:file", <any>[requireUser, this.renameFile.bind(this)]);
-        router.put("/make-public/:id", <any>[requireUser, this.makePublic.bind(this)]);
-        router.put("/make-private/:id", <any>[requireUser, this.makePrivate.bind(this)]);
+        router.put("/stats/storage-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateCalls.bind(this)]);
+        router.put("/stats/storage-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateMemory.bind(this)]);
+        router.put("/stats/storage-allocated-calls/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind(this)]);
+        router.put("/stats/storage-allocated-memory/:target/:value", <any>[ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind(this)]);
+        router.put("/files/:file/rename-file", <any>[requireUser, this.renameFile.bind(this)]);
+        router.put("/files/:id/make-public", <any>[requireUser, this.makePublic.bind(this)]);
+        router.put("/files/:id/make-private", <any>[requireUser, this.makePrivate.bind(this)]);
 
         // Register the path
-        e.use(`${config.mediaURL}`, router);
+        e.use(`${config.apiPrefix}`, router);
     }
 
     /**

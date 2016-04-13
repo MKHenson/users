@@ -45,30 +45,30 @@ export class UserController extends Controller
 		router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
-        router.get("/meta/:user", <any>[ownerRights, this.getData.bind(this)]);
-        router.get("/meta/:user/:name", <any>[ownerRights, this.getVal.bind(this)]);
+        router.get("/users/:user/meta", <any>[ownerRights, this.getData.bind(this)]);
+        router.get("/users/:user/meta/:name", <any>[ownerRights, this.getVal.bind(this)]);
         router.get("/users/:username", <any>[ownerRights, this.getUser.bind(this)]);
         router.get("/users", <any>[identifyUser, this.getUsers.bind(this)]);
         router.get("/who-am-i", this.authenticated.bind(this));
 		router.get("/authenticated", this.authenticated.bind(this));
         router.get("/sessions", <any>[ownerRights, this.getSessions.bind(this)]);
 		router.get("/logout", this.logout.bind(this));
-		router.get("/resend-activation/:user", this.resendActivation.bind(this));
+		router.get("/users/:user/resend-activation", this.resendActivation.bind(this));
         router.get("/activate-account", this.activateAccount.bind(this));
-        router.get("/request-password-reset/:user", this.requestPasswordReset.bind(this));
+        router.get("/users/:user/request-password-reset", this.requestPasswordReset.bind(this));
         router.delete("/sessions/:id", <any>[ownerRights, this.deleteSession.bind(this)]);
-        router.delete("/remove-user/:user", <any>[ownerRights, this.removeUser.bind(this)]);
+        router.delete("/users/:user/remove-user", <any>[ownerRights, this.removeUser.bind(this)]);
 		router.post("/login", this.login.bind(this));
 		router.post("/register", this.register.bind(this));
         router.post("/create-user", <any>[ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
-        router.post("/meta/:user/:name", <any>[adminRights, this.setVal.bind(this)]);
-        router.post("/meta/:user", <any>[adminRights, this.setData.bind(this)]);
-        router.put("/approve-activation/:user", <any>[ownerRights, this.approveActivation.bind(this)]);
+        router.post("/users/:user/meta/:name", <any>[adminRights, this.setVal.bind(this)]);
+        router.post("/users/:user/meta", <any>[adminRights, this.setData.bind(this)]);
+        router.put("/users/:user/approve-activation", <any>[ownerRights, this.approveActivation.bind(this)]);
         router.put("/password-reset", this.passwordReset.bind(this));
 
 		// Register the path
-        e.use(config.restURL, router);
+        e.use(config.apiPrefix, router);
     }
 
 	/**

@@ -241,7 +241,7 @@ doing that.
 
 **Example calls**
 ```
-http://localhost:8000/api/approve-activation/mat // Activates the account with the username "mat"
+http://localhost:8000/api/users/mat/approve-activation // Activates the account with the username "mat"
 
 {
 	error: false,
@@ -331,7 +331,7 @@ Attempts to delete a user and their details from the server
 
 **Example calls**
 ```
-http://localhost:8000/api/remove-user/mat // Removes the account with the username "mat"
+http://localhost:8000/api/users/mat/remove-user // Removes the account with the username "mat"
 
 {
 	error: false,
@@ -353,7 +353,7 @@ Resends the activation link to the user
 
 **Example calls**
 ```
-http://localhost:8000/api/resend-activation/mat // Sends an activation link to the user with the username "mat".
+http://localhost:8000/api/users/mat/resend-activation // Sends an activation link to the user with the username "mat".
 {
 	error: false,
 	message: "An activation link has been sent, please check your email for further instructions"
@@ -398,7 +398,7 @@ the link would be something like 127.0.0.1?key=sdgthdf&user=mat
 
 **Example calls**
 ```
-http://localhost:8000/api/request-password-reset/mat // Sends a password reset for the user with the username "mat".
+http://localhost:8000/api/users/mat/request-password-reset // Sends a password reset for the user with the username "mat".
 {
 	error: false,
 	message: "Instructions have been sent to your email on how to change your password"

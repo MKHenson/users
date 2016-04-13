@@ -291,7 +291,7 @@ export class UserManager
 	*/
 	private createActivationLink( user : User, origin : string ): string
 	{
-        return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) }${this._config.restURL}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
+        return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) }${this._config.apiPrefix}/activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
 	}
 
 	/**
