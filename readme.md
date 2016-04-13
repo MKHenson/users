@@ -101,7 +101,7 @@ http://localhost:8000/api/authenticated
 
 Attempts to log the user in with the provided credentials
 
-    `/login`
+    `/users/login`
 
 **Request Type: POST**
 
@@ -112,7 +112,7 @@ Attempts to log the user in with the provided credentials
 
 **Examples**
 ```
-http://localhost:8000/api/login
+http://localhost:8000/api/users/login
 
 {
 	message: "User is authenticated",
@@ -232,7 +232,7 @@ Approves a user's activation code so they can login without email validation. Us
 they have to click a link to activate their account. This function allows you to approve a user without them
 doing that.
 
-    `/approve-activation/:user`
+    `/users/:user/approve-activation`
 
 **Request Type: PUT**
 
@@ -256,7 +256,7 @@ http://localhost:8000/api/users/mat/approve-activation // Activates the account 
 Attempts to register a new user. This process will create a new user and send them an email with intructions
 on how to activate their account
 
-    `/register`
+    `/users/register`
 
 **Request Type: POST**
 
@@ -269,7 +269,7 @@ on how to activate their account
 
 **Example calls**
 ```
-http://localhost:8000/api/register // Activates the account with the username "mat"
+http://localhost:8000/api/users/register // Activates the account with the username "mat"
 
 {
 	error: false,
@@ -284,7 +284,7 @@ http://localhost:8000/api/register // Activates the account with the username "m
 Attempts to create a new user - circumventing registration.
 This process will create a new user and send them an email with intructions on how to activate their account.
 
-    `/create-user`
+    `/users`
 
 **Request Type: POST**
 
@@ -295,7 +295,7 @@ This process will create a new user and send them an email with intructions on h
 
 **Example calls**
 ```
-http://localhost:8000/api/create-user // Activates the account with the username "mat"
+http://localhost:8000/api/users // Activates the account with the username "mat"
 
 {
 	error: false,
@@ -322,7 +322,7 @@ http://localhost:8000/api/create-user // Activates the account with the username
 You cannot remove super users.*
 Attempts to delete a user and their details from the server
 
-    `/remove-user/:user`
+    `/users/:user`
 
 **Request Type: DELETE**
 
@@ -331,7 +331,7 @@ Attempts to delete a user and their details from the server
 
 **Example calls**
 ```
-http://localhost:8000/api/users/mat/remove-user // Removes the account with the username "mat"
+http://localhost:8000/api/users/mat // Removes the account with the username "mat"
 
 {
 	error: false,
@@ -344,7 +344,7 @@ http://localhost:8000/api/users/mat/remove-user // Removes the account with the 
 ### Resend Activation Link
 Resends the activation link to the user
 
-    `/resend-activation/:user`
+    `/users/:user/resend-activation`
 
 **Request Type: GET**
 
@@ -389,7 +389,7 @@ Sends a password reset link the user's email and generates a password key that m
 The link generated is config.passwordResetURL with "key" and "user" query parameters. So if the passwordResetURL is 127.0.0.1 then
 the link would be something like 127.0.0.1?key=sdgthdf&user=mat
 
-    `/request-password-reset/:user`
+    `/users/:user/request-password-reset`
 
 **Request Type: GET**
 

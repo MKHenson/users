@@ -51,7 +51,7 @@ export class BucketController extends Controller
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
         router.get("/files/:id/download", <any>[this.getFile.bind(this)]);
-        router.get("/users/:user/buckets/:bucket/get-files", <any>[ownerRights, this.getFiles.bind(this)]);
+        router.get("/users/:user/buckets/:bucket/files", <any>[ownerRights, this.getFiles.bind(this)]);
         router.get("/users/:user/get-stats", <any>[ownerRights, this.getStats.bind(this)]);
         router.get("/users/:user/buckets", <any>[ownerRights, this.getBuckets.bind(this)]);
         router.delete("/buckets/:buckets", <any>[requireUser, this.removeBuckets.bind(this)]);

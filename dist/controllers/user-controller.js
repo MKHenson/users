@@ -44,10 +44,10 @@ var UserController = (function (_super) {
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/users/:user/request-password-reset", this.requestPasswordReset.bind(this));
         router.delete("/sessions/:id", [permission_controller_1.ownerRights, this.deleteSession.bind(this)]);
-        router.delete("/users/:user/remove-user", [permission_controller_1.ownerRights, this.removeUser.bind(this)]);
-        router.post("/login", this.login.bind(this));
-        router.post("/register", this.register.bind(this));
-        router.post("/create-user", [permission_controller_1.ownerRights, this.createUser.bind(this)]);
+        router.delete("/users/:user", [permission_controller_1.ownerRights, this.removeUser.bind(this)]);
+        router.post("/users/login", this.login.bind(this));
+        router.post("/users/register", this.register.bind(this));
+        router.post("/users", [permission_controller_1.ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
         router.post("/users/:user/meta/:name", [permission_controller_1.adminRights, this.setVal.bind(this)]);
         router.post("/users/:user/meta", [permission_controller_1.adminRights, this.setData.bind(this)]);

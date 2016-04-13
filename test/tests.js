@@ -46,7 +46,7 @@ describe('Testing user API functions', function(){
 
 		it('did not log in with empty credentials', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username:"", password:""})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -59,7 +59,7 @@ describe('Testing user API functions', function(){
 
 		it('did not log in with bad credentials', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username:"$%^\}{}\"&*[]@~�&$", password:"$%^&*�&@#`{}/\"�%\"$"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -72,7 +72,7 @@ describe('Testing user API functions', function(){
 
 		it('did not log in with false credentials', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username:"GeorgeTheTwat", password:"FakePass"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -85,7 +85,7 @@ describe('Testing user API functions', function(){
 
 		it('did not log in with a valid username but invalid password', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: config.adminUser.username, password:"FakePass"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -98,7 +98,7 @@ describe('Testing user API functions', function(){
 
 		it('did log in with a valid username & valid password', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: config.adminUser.username, password: config.adminUser.password })
 				.end(function(err, res){
 					if (err) return done(err);
@@ -393,7 +393,7 @@ describe('Testing user API functions', function(){
 
 		it('should not be able to create a new user', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "George", password:"Password", email:"george@webinate.net", privileges: 1})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -421,7 +421,7 @@ describe('Testing user API functions', function(){
 	describe('Registering as a new user', function(){
 		it('should not register with blank credentials', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "", password:""})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -434,7 +434,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with existing username', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: config.adminUser.username, password:"FakePass"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -447,7 +447,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with blank username', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "", password:"FakePass"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -460,7 +460,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with blank password', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "sdfsdsdfsdfdf", password:""})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -473,7 +473,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with bad characters', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "!\"�$%^^&&*()-=~#}{}", password:"!\"./<>;�$$%^&*()_+"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -486,7 +486,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with valid information but no email', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "George", password:"Password"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -499,7 +499,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with valid information but invalid email', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "George", password:"Password", email: "bad_email"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -512,7 +512,7 @@ describe('Testing user API functions', function(){
 
 		it('should not register with valid information, email & no captcha', function(done){
 			agent
-				.post('/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/register').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "George", password:"Password", email:"george@webinate.net"})
 				.end(function(err, res){
 					if (err) return done(err);
@@ -528,7 +528,7 @@ describe('Testing user API functions', function(){
 
 		it('did log in with an admin username & valid password', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: config.adminUser.username, password: config.adminUser.password })
 				.end(function(err, res){
 					if (err) return done(err);
@@ -544,7 +544,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user without a username', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "", password: "" })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -558,7 +558,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user without a password', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "", email: "thisisatest@test.com" })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -572,7 +572,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user with invalid characters', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "!\"�$%^&*()", password: "password" })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -586,7 +586,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user without email', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password" })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -600,7 +600,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user with invalid email', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password", email: "matmat" })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -614,7 +614,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user with invalid privilege', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password", email: "matmat@yahoo.com", privileges: 4 })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -628,7 +628,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user with an existing username', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: config.adminUser.username, password: "password", email: "matmat@yahoo.com", privileges: 2 })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -642,7 +642,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user with an existing email', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password", email: config.adminUser.email, privileges: 2 })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -656,7 +656,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create user george with super admin privileges', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password", email: "thisisatest@test.com", privileges: 1 })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -670,7 +670,7 @@ describe('Testing user API functions', function(){
 
 		it('did create regular user george with valid details', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password", email: "thisisatest@test.com", privileges: 3 })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -695,7 +695,7 @@ describe('Testing user API functions', function(){
 
 		it('did create another regular user george2 with valid details', function(done){
 			agent
-				.post('/create-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george2", password: "password", email: "thisisatest2@test.com", privileges: 3 })
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
@@ -742,7 +742,7 @@ describe('Testing user API functions', function(){
 
 		it('did not log in with an activation code present', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password" })
 				.end(function(err, res){
 					if (err) return done(err);
@@ -808,7 +808,7 @@ describe('Testing user API functions', function(){
 					// We need to get the new key - so we log in as admin, get the user details and then log out again
 					// Login as admin
 					agent
-						.post('/login').set('Accept', 'application/json')
+						.post('/users/login').set('Accept', 'application/json')
 						.send({username: config.adminUser.username, password: config.adminUser.password })
 						.end(function(err, res){
 							if (err) return done(err);
@@ -850,7 +850,7 @@ describe('Testing user API functions', function(){
 
 		it('did log in with valid details and an activated account', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george", password: "password" })
 				.end(function(err, res){
 					if (err) return done(err);
@@ -893,7 +893,7 @@ describe('Testing user API functions', function(){
 
 		it('did not remove the admin user (no permission)', function(done){
 			agent
-				.delete("/users/" + config.adminUser.username + "/remove-user" ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.delete("/users/" + config.adminUser.username ).set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
@@ -919,7 +919,7 @@ describe('Testing user API functions', function(){
 
 		it('did not create a new user (no permission)', function(done){
 			agent
-				.post("/create-user/").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post("/users").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
@@ -1138,7 +1138,7 @@ describe('Checking media API', function(){
 
 		it('did not get files for another user\'s bucket', function(done){
 			agent
-				.get("/users/"+ config.adminUser.username +"/buckets/BAD_ENTRY/get-files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.get("/users/"+ config.adminUser.username +"/buckets/BAD_ENTRY/files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
@@ -1152,7 +1152,7 @@ describe('Checking media API', function(){
 
 		it('did not get files for a non existant bucket', function(done){
 			agent
-				.get("/users/george/buckets/test/get-files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.get("/users/george/buckets/test/files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
@@ -1298,7 +1298,7 @@ describe('Checking media API', function(){
 
 		it('fetched the files of the dinosaur bucket', function(done){
 			agent
-				.get("/users/george/buckets/dinosaurs/get-files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.get("/users/george/buckets/dinosaurs/files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.attach('small-image', "file.png")
 				.end(function(err, res){
@@ -1389,15 +1389,6 @@ describe('Checking media API', function(){
 					done()
 				});
 		}).timeout(20000)
-
-		it('did not download the file off the bucket when private', function(done){
-			test.httpAgent(publicURL)
-				.get("").expect(403)
-				.end(function(err, res){
-					if (err) return done(err);
-					done();
-				});
-		})
 
 		it('updated its stats accordingly', function(done){
 			agent
@@ -1504,7 +1495,7 @@ describe('Checking media API', function(){
 
 		it('fetched the uploaded file Id of the dinosaur2 bucket', function(done){
 			agent
-				.get("/users/george/buckets/dinosaurs2/get-files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.get("/users/george/buckets/dinosaurs2/files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
 				.end(function(err, res){
 					if (err) return done(err);
@@ -1655,7 +1646,7 @@ describe('Checking media API', function(){
 
 		it('did log in with valid details for george2', function(done){
 			agent
-				.post('/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.post('/users/login').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.send({username: "george2", password: "password" })
 				.end(function(err, res){
 					if (err) return done(err);
@@ -1674,7 +1665,7 @@ describe('Cleaning up', function(){
 
 		it('did remove any users called george', function(done){
 			agent
-				.delete('/users/george/remove-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.delete('/users/george').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
 					if (err) return done(err);
@@ -1685,7 +1676,7 @@ describe('Cleaning up', function(){
 
 		it('did remove any users called george2', function(done){
 			agent
-				.delete('/users/george2/remove-user').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.delete('/users/george2').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', adminCookie)
 				.end(function(err, res){
 					if (err) return done(err);

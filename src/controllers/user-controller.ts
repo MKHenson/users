@@ -57,10 +57,10 @@ export class UserController extends Controller
         router.get("/activate-account", this.activateAccount.bind(this));
         router.get("/users/:user/request-password-reset", this.requestPasswordReset.bind(this));
         router.delete("/sessions/:id", <any>[ownerRights, this.deleteSession.bind(this)]);
-        router.delete("/users/:user/remove-user", <any>[ownerRights, this.removeUser.bind(this)]);
-		router.post("/login", this.login.bind(this));
-		router.post("/register", this.register.bind(this));
-        router.post("/create-user", <any>[ownerRights, this.createUser.bind(this)]);
+        router.delete("/users/:user", <any>[ownerRights, this.removeUser.bind(this)]);
+		router.post("/users/login", this.login.bind(this));
+		router.post("/users/register", this.register.bind(this));
+        router.post("/users", <any>[ownerRights, this.createUser.bind(this)]);
         router.post("/message-webmaster", this.messageWebmaster.bind(this));
         router.post("/users/:user/meta/:name", <any>[adminRights, this.setVal.bind(this)]);
         router.post("/users/:user/meta", <any>[adminRights, this.setData.bind(this)]);

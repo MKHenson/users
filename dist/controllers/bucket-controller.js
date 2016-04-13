@@ -37,7 +37,7 @@ var BucketController = (function (_super) {
         router.use(bodyParser.json());
         router.use(bodyParser.json({ type: 'application/vnd.api+json' }));
         router.get("/files/:id/download", [this.getFile.bind(this)]);
-        router.get("/users/:user/buckets/:bucket/get-files", [permission_controller_1.ownerRights, this.getFiles.bind(this)]);
+        router.get("/users/:user/buckets/:bucket/files", [permission_controller_1.ownerRights, this.getFiles.bind(this)]);
         router.get("/users/:user/get-stats", [permission_controller_1.ownerRights, this.getStats.bind(this)]);
         router.get("/users/:user/buckets", [permission_controller_1.ownerRights, this.getBuckets.bind(this)]);
         router.delete("/buckets/:buckets", [permission_controller_1.requireUser, this.removeBuckets.bind(this)]);
