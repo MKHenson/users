@@ -233,7 +233,7 @@ var UserManager = (function () {
     * @returns {string}
     */
     UserManager.prototype.createActivationLink = function (user, origin) {
-        return "" + (this._config.ssl ? "https://" : "http://") + this._config.host + ":" + (this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) + this._config.apiPrefix + "/activate-account?key=" + user.dbEntry.registerKey + "&user=" + user.dbEntry.username + "&origin=" + origin;
+        return "" + (this._config.ssl ? "https://" : "http://") + this._config.host + ":" + (this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) + this._config.apiPrefix + "activate-account?key=" + user.dbEntry.registerKey + "&user=" + user.dbEntry.username + "&origin=" + origin;
     };
     /**
     * Creates the link to send to the user for password reset
