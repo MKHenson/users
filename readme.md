@@ -53,6 +53,9 @@ The file must be formatted as a valid JSON.
 Please have a look at the [latest config definition](https://github.com/MKHenson/users/blob/master/src/definitions/custom/definitions.d.ts#L331)
 for details of what each parameter does.
 
+## Socket API
+Users has some basic support for websockets that are used to communicate events and other services to approved clients.
+You can find out more information from [here](./documents/users-ws-api.md)
 
 ## REST Functions
 Below is a list of function calls you can make once the server is running. Each call returns a JSON
