@@ -72,7 +72,7 @@ wsClient.on('message', function (data) {
 ## Sending a message to users
 
 You can send users a message from the socket api. Below is an example of how to do it. Note however that the server
-only accepts data in the format of the [events](../src/definitions/custom/definition.d.ts/#L11) interfaces. Let's look at the example
+only accepts data in the format of the [events](../src/definitions/custom/definitions.d.ts/#L11) interfaces. Let's look at the example
 of the echo event IEchoEvent.
 
 ```
