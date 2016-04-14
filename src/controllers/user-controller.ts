@@ -10,7 +10,7 @@ import * as def from "webinate-users";
 import * as mongodb from "mongodb";
 import {Session} from "../session";
 import {UserManager, User, UserPrivileges} from "../users";
-import {ownerRights, adminRights, secret, identifyUser} from "../permission-controller";
+import {ownerRights, adminRights, identifyUser} from "../permission-controller";
 import {Controller} from "./controller"
 import {BucketManager} from "../bucket-manager";
 import * as compression from "compression";
@@ -36,7 +36,6 @@ export class UserController extends Controller
         super();
 
         this._config = config;
-        secret.key = config.secret;
 
 		// Setup the rest calls
         var router = express.Router();
@@ -681,12 +680,7 @@ export class UserController extends Controller
         if (!toRemove)
             return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
 
-        that._userManager.removeUser(toRemove)//.then(function ()
-        //{
-        //    return BucketManager.get.removeBucketsByUser(toRemove);
-        //
-        //})
-            .then(function ()
+        that._userManager.removeUser(toRemove).then(function ()
 		{
 			var token: def.IResponse = {
 				error: false,

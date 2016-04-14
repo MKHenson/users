@@ -1,6 +1,5 @@
 "use strict";
 var users_1 = require("./users");
-exports.secret = { key: "" };
 /**
 * Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
 * @param {def.AuthRequest} req
@@ -31,11 +30,7 @@ function adminRights(req, res, next) {
         if (!user)
             return res.end(JSON.stringify({ message: "You must be logged in to make this request", error: true }));
         req._user = user;
-        // Allow certain user requests that have the secret key
-        var secretKey = (req.body ? req.body.secret : null);
-        if (secretKey && secretKey == exports.secret.key)
-            next();
-        else if (user.dbEntry.privileges > users_1.UserPrivileges.Admin)
+        if (user.dbEntry.privileges > users_1.UserPrivileges.Admin)
             return res.end(JSON.stringify({ message: "You don't have permission to make this request", error: true }));
         else
             next();

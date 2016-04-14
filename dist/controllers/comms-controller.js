@@ -1,19 +1,67 @@
 "use strict";
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var ws = require("ws");
+var events = require("events");
 var https = require("https");
 var fs = require("fs");
 var winston = require("winston");
 var users_1 = require("../users");
 /**
+* Describes the event being sent to connected clients
+*/
+(function (EventType) {
+    EventType[EventType["Login"] = 1] = "Login";
+    EventType[EventType["Logout"] = 2] = "Logout";
+    EventType[EventType["Activated"] = 3] = "Activated";
+    EventType[EventType["Removed"] = 4] = "Removed";
+    EventType[EventType["FilesUploaded"] = 5] = "FilesUploaded";
+    EventType[EventType["FilesRemoved"] = 6] = "FilesRemoved";
+    EventType[EventType["BucketUploaded"] = 7] = "BucketUploaded";
+    EventType[EventType["BucketRemoved"] = 8] = "BucketRemoved";
+    EventType[EventType["MetaRequest"] = 9] = "MetaRequest";
+    EventType[EventType["Echo"] = 10] = "Echo";
+})(exports.EventType || (exports.EventType = {}));
+var EventType = exports.EventType;
+/** Describes how users should respond to a socket events
+ */
+(function (EventResponseType) {
+    /** The default the response is EventResponseType.NoResponse. */
+    EventResponseType[EventResponseType["NoResponse"] = 0] = "NoResponse";
+    /** A response event is sent back to the initiating client. */
+    EventResponseType[EventResponseType["RespondClient"] = 1] = "RespondClient";
+    /** A response event is sent to all connected clients. */
+    EventResponseType[EventResponseType["ReBroadcast"] = 2] = "ReBroadcast";
+})(exports.EventResponseType || (exports.EventResponseType = {}));
+var EventResponseType = exports.EventResponseType;
+/**
+ * An event class that is emitted to all listeners of the communications controller.
+ * This wraps data around events sent via the web socket to the users server. Optionally
+ * these events can respond to the client who initiated the event as well as to all listeners.
+ */
+var ClientEvent = (function () {
+    function ClientEvent(event, client) {
+        this.client = client;
+        this.clientEvent = event;
+        this.responseType = EventResponseType.NoResponse;
+    }
+    return ClientEvent;
+})();
+exports.ClientEvent = ClientEvent;
+/**
  * A wrapper class for client connections made to the CommsController
  */
 var ClientConnection = (function () {
-    function ClientConnection(ws, clientType) {
+    function ClientConnection(ws, domain, controller) {
         var that = this;
-        this.clientType = clientType;
+        this.domain = domain;
+        this._controller = controller;
         users_1.UserManager.get.loggedIn(ws.upgradeReq, null).then(function (user) {
             ws.clientConnection = that;
-            that._ws = ws;
+            that.ws = ws;
             that.user = user;
             ws.on('message', that.onMessage.bind(that));
             ws.on('close', that.onClose.bind(that));
@@ -26,16 +74,24 @@ var ClientConnection = (function () {
     */
     ClientConnection.prototype.onMessage = function (message) {
         winston.info("Received message from client: '" + message + "'", { process: process.pid });
+        try {
+            var event = JSON.parse(message);
+            this._controller.alertMessage(new ClientEvent(event, this));
+        }
+        catch (err) {
+            winston.error("Could not parse socket message: '" + err + "'", { process: process.pid });
+        }
     };
     /**
     * Called whenever a client disconnnects
     */
     ClientConnection.prototype.onClose = function () {
-        this._ws.removeAllListeners("message");
-        this._ws.removeAllListeners("close");
-        this._ws.removeAllListeners("error");
-        this._ws.clientConnection = null;
-        this._ws = null;
+        this.ws.removeAllListeners("message");
+        this.ws.removeAllListeners("close");
+        this.ws.removeAllListeners("error");
+        this.ws.clientConnection = null;
+        this.ws = null;
+        this._controller = null;
     };
     /**
     * Called whenever an error has occurred
@@ -47,28 +103,16 @@ var ClientConnection = (function () {
     return ClientConnection;
 })();
 /**
-* Describes the event being sent to connected clients
-*/
-(function (EventType) {
-    EventType[EventType["Login"] = 0] = "Login";
-    EventType[EventType["Logout"] = 1] = "Logout";
-    EventType[EventType["Activated"] = 2] = "Activated";
-    EventType[EventType["Removed"] = 3] = "Removed";
-    EventType[EventType["FilesUploaded"] = 4] = "FilesUploaded";
-    EventType[EventType["FilesRemoved"] = 5] = "FilesRemoved";
-    EventType[EventType["BucketUploaded"] = 6] = "BucketUploaded";
-    EventType[EventType["BucketRemoved"] = 7] = "BucketRemoved";
-})(exports.EventType || (exports.EventType = {}));
-var EventType = exports.EventType;
-/**
 * A controller that deals with any any IPC or web socket communications
 */
-var CommsController = (function () {
+var CommsController = (function (_super) {
+    __extends(CommsController, _super);
     /**
     * Creates an instance of the Communication server
     * @param {IConfig} cfg
     */
     function CommsController(cfg) {
+        _super.call(this);
         var that = this;
         CommsController.singleton = this;
         // dummy request processing - this is not actually called as its handed off to the socket api
@@ -99,23 +143,66 @@ var CommsController = (function () {
         this._server.on('connection', function connection(ws) {
             var headers = ws.upgradeReq.headers;
             var clientApproved = false;
-            for (var i = 0, l = cfg.websocket.clients.length; i < l; i++) {
-                if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.clients[i].origin)))) {
-                    new ClientConnection(ws, cfg.websocket.clients[i]);
+            for (var i = 0, l = cfg.websocket.approvedSocketDomains.length; i < l; i++) {
+                if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.approvedSocketDomains[i])))) {
+                    new ClientConnection(ws, cfg.websocket.approvedSocketDomains[i], that);
                     clientApproved = true;
                 }
             }
             if (!clientApproved) {
                 winston.error("A connection was made by " + (headers.host || headers.origin) + " but it is not on the approved domain list");
                 ws.terminate();
+                ws.close();
             }
+        });
+        // Setup a basic echo listener
+        this.on(EventType[EventType.Echo], function (e) {
+            e.responseEvent = {
+                eventType: EventType.Echo,
+                message: e.clientEvent.message
+            };
+            if (e.clientEvent.broadcast)
+                e.responseType = EventResponseType.ReBroadcast;
+            else
+                e.responseType = EventResponseType.RespondClient;
         });
     }
     /**
     * Sends an event to all connected clients of this server listening for a specific event
+    * @param {ClientEvent<def.SocketEvents.IEvent>} event The event to alert the server of
+    */
+    CommsController.prototype.alertMessage = function (event) {
+        if (!event.clientEvent)
+            return winston.error("Websocket alert error: No ClientEvent set", { process: process.pid });
+        this.emit(EventType[event.clientEvent.eventType], event);
+        if (event.responseType == EventResponseType.NoResponse && !event.responseEvent)
+            return winston.error("Websocket alert error: The response type is expeciting a responseEvent but one is not created", { process: process.pid });
+        if (event.responseType == EventResponseType.RespondClient)
+            this.broadcastEventToClient(event.responseEvent, event.client);
+        else if (event.responseType == EventResponseType.ReBroadcast)
+            this.broadcastEventToAll(event.responseEvent);
+    };
+    /**
+    * Sends an event to the client specified
     * @param {IEvent} event The event to broadcast
     */
-    CommsController.prototype.broadcastEvent = function (event) {
+    CommsController.prototype.broadcastEventToClient = function (event, client) {
+        var that = this;
+        return new Promise(function (resolve, reject) {
+            client.ws.send(JSON.stringify(event), undefined, function (error) {
+                if (error) {
+                    winston.error("Websocket broadcase error: '" + error + "'", { process: process.pid });
+                    return reject();
+                }
+                return resolve();
+            });
+        });
+    };
+    /**
+    * Sends an event to all connected clients of this server listening for a specific event
+    * @param {IEvent} event The event to broadcast
+    */
+    CommsController.prototype.broadcastEventToAll = function (event) {
         var that = this;
         return new Promise(function (resolve, reject) {
             var numResponded = 0, errorOccurred = false, releventClients = [];
@@ -132,6 +219,7 @@ var CommsController = (function () {
                     if (errorOccurred)
                         return;
                     if (error) {
+                        winston.error("Websocket broadcase error: '" + error + "'", { process: process.pid });
                         errorOccurred = true;
                         return reject();
                     }
@@ -154,5 +242,5 @@ var CommsController = (function () {
         return Promise.resolve(null);
     };
     return CommsController;
-})();
+})(events.EventEmitter);
 exports.CommsController = CommsController;

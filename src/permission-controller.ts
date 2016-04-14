@@ -8,9 +8,6 @@ import * as http from "http";
 import * as def from "webinate-users";
 import {UserManager, User, UserPrivileges} from "./users";
 
-export var secret = { key : "" };
-
-
 /**
 * Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
 * @param {def.AuthRequest} req
@@ -48,12 +45,7 @@ export function adminRights(req: def.AuthRequest, res: express.Response, next: F
             return res.end(JSON.stringify(<def.IResponse>{ message: "You must be logged in to make this request", error: true }));
 
         req._user = user;
-
-        // Allow certain user requests that have the secret key
-        var secretKey = (req.body ? req.body.secret : null)
-        if (secretKey && secretKey == secret.key)
-            next();
-        else if (user.dbEntry.privileges > UserPrivileges.Admin)
+        if (user.dbEntry.privileges > UserPrivileges.Admin)
             return res.end(JSON.stringify(<def.IResponse>{ message: "You don't have permission to make this request", error: true }));
         else
             next();
