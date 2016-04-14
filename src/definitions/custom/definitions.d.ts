@@ -173,7 +173,7 @@
         /**
         * An array of expected clients
         * [
-        *   { origin: "webinate.net", eventListeners: [1,4,5,6] }
+        *   { origin: "webinate.net" }
         * ]
         */
         clients: Array<IWebsocketClient>;
