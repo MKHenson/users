@@ -3,6 +3,7 @@ var gcloud = require("gcloud");
 var zlib = require("zlib");
 var compressible = require("compressible");
 var comms_controller_1 = require("./controllers/comms-controller");
+var socket_event_types_1 = require("./socket-event-types");
 /**
 * Class responsible for managing buckets and uploads to Google storage
 */
@@ -233,7 +234,7 @@ var BucketManager = (function () {
                             return stats.updateOne({ user: user }, { $inc: { apiCallsUsed: 1 } });
                         }).then(function (updateResult) {
                             // Send bucket added events to sockets
-                            var fEvent = { eventType: comms_controller_1.EventType.BucketUploaded, bucket: newBucket, username: user };
+                            var fEvent = { eventType: socket_event_types_1.EventType.BucketUploaded, bucket: newBucket, username: user };
                             return comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                         }).then(function () {
                             return resolve(bucket);
@@ -269,7 +270,7 @@ var BucketManager = (function () {
                         toRemove.push(bucket.identifier);
                         if (attempts == l) {
                             // Send events to sockets
-                            var fEvent = { eventType: comms_controller_1.EventType.BucketRemoved, bucket: bucket };
+                            var fEvent = { eventType: socket_event_types_1.EventType.BucketRemoved, bucket: bucket };
                             comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent).then(function () {
                                 resolve(toRemove);
                             });
@@ -408,7 +409,7 @@ var BucketManager = (function () {
                         filesRemoved.push(fileEntry);
                         if (attempts == l) {
                             // Update any listeners on the sockets
-                            var fEvent = { eventType: comms_controller_1.EventType.FilesRemoved, files: filesRemoved };
+                            var fEvent = { eventType: socket_event_types_1.EventType.FilesRemoved, files: filesRemoved };
                             comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent).then(function () {
                                 resolve(filesRemoved);
                             });

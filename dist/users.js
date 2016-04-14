@@ -5,6 +5,7 @@ var bcrypt = require("bcryptjs");
 var recaptcha = require("recaptcha-async");
 var winston = require("winston");
 var comms_controller_1 = require("./controllers/comms-controller");
+var socket_event_types_1 = require("./socket-event-types");
 var session_1 = require("./session");
 var bucket_manager_1 = require("./bucket-manager");
 var mailer_1 = require("./mailer");
@@ -121,7 +122,7 @@ var UserManager = (function () {
         this._userCollection.find({ sessionId: sessionId }).limit(1).next().then(function (useEntry) {
             if (useEntry) {
                 // Send logged in event to socket
-                var sEvent = { username: useEntry.username, eventType: comms_controller_1.EventType.Logout };
+                var sEvent = { username: useEntry.username, eventType: socket_event_types_1.EventType.Logout };
                 comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent).then(function () {
                     winston.info("User '" + useEntry.username + "' has logged out", { process: process.pid });
                 });
@@ -259,7 +260,7 @@ var UserManager = (function () {
                 // Clear the user's activation
                 that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
-                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
+                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Activated };
                     return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     winston.info("User '" + username + "' has been activated", { process: process.pid });
@@ -452,7 +453,7 @@ var UserManager = (function () {
                 // Update the key to be blank
                 that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
-                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
+                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Activated };
                     return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     winston.info("User '" + username + "' has been activated", { process: process.pid });
@@ -612,7 +613,7 @@ var UserManager = (function () {
                 if (result.result.n == 0)
                     return reject(new Error("Could not remove the user from the database"));
                 // Send event to sockets
-                var sEvent = { username: username, eventType: comms_controller_1.EventType.Removed };
+                var sEvent = { username: username, eventType: socket_event_types_1.EventType.Removed };
                 comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent).then(function () {
                     winston.info("User '" + username + "' has been removed", { process: process.pid });
                 });
@@ -702,7 +703,7 @@ var UserManager = (function () {
                     if (result.matchedCount === 0)
                         return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
                     // Send logged in event to socket
-                    var sEvent = { username: username, eventType: comms_controller_1.EventType.Login };
+                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Login };
                     return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     return resolve(user);

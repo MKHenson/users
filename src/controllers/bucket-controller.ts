@@ -17,7 +17,8 @@ import * as compression from "compression";
 import * as winston from "winston";
 import * as gcloud from "gcloud";
 
-import {CommsController, EventType} from "./comms-controller";
+import {CommsController} from "./comms-controller";
+import {EventType} from "../socket-event-types";
 import * as def from "webinate-users";
 
 /**

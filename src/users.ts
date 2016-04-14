@@ -9,7 +9,8 @@ import * as bodyParser from "body-parser";
 import * as express from "express";
 import * as winston from "winston";
 
-import {CommsController, EventType} from "./controllers/comms-controller";
+import {CommsController} from "./controllers/comms-controller";
+import {EventType} from "./socket-event-types";
 import * as def from "webinate-users";
 import {SessionManager, Session} from "./session";
 import {BucketManager} from "./bucket-manager";

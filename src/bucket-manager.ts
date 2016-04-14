@@ -10,7 +10,8 @@ import {User} from "./users"
 import * as zlib from "zlib"
 import * as compressible from "compressible"
 import express = require("express");
-import {CommsController, EventType} from "./controllers/comms-controller";
+import {CommsController} from "./controllers/comms-controller";
+import {EventType} from "./socket-event-types";
 import * as def from "webinate-users";
 
 /**

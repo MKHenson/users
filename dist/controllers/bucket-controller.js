@@ -15,6 +15,7 @@ var multiparty = require("multiparty");
 var compression = require("compression");
 var winston = require("winston");
 var comms_controller_1 = require("./comms-controller");
+var socket_event_types_1 = require("../socket-event-types");
 /**
 * Main class to use for managing users
 */
@@ -666,7 +667,7 @@ var BucketController = (function (_super) {
                         var promise;
                         if (filesUploaded.length > 0) {
                             // Send file added events to sockets
-                            var fEvent = { username: username, eventType: comms_controller_1.EventType.FilesUploaded, files: filesUploaded };
+                            var fEvent = { username: username, eventType: socket_event_types_1.EventType.FilesUploaded, files: filesUploaded };
                             promise = comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                         }
                         else

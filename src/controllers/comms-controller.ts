@@ -9,37 +9,7 @@ import * as http from "http";
 import * as fs from "fs";
 import * as winston from "winston";
 import {UserManager, User} from "../users";
-
-/**
-* Describes the event being sent to connected clients
-*/
-export enum EventType
-{
-    Login = 1,
-    Logout = 2,
-    Activated = 3,
-    Removed = 4,
-    FilesUploaded = 5,
-    FilesRemoved = 6,
-    BucketUploaded = 7,
-    BucketRemoved = 8,
-    MetaRequest = 9,
-    Echo = 10
-}
-
-/** Describes how users should respond to a socket events
- */
-export enum EventResponseType
-{
-    /** The default the response is EventResponseType.NoResponse. */
-    NoResponse,
-
-    /** A response event is sent back to the initiating client. */
-    RespondClient,
-
-    /** A response event is sent to all connected clients. */
-    ReBroadcast
-}
+import {EventResponseType, EventType} from "../socket-event-types";
 
 interface ISocketClient extends ws
 {

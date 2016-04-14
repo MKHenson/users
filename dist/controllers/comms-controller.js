@@ -10,33 +10,7 @@ var https = require("https");
 var fs = require("fs");
 var winston = require("winston");
 var users_1 = require("../users");
-/**
-* Describes the event being sent to connected clients
-*/
-(function (EventType) {
-    EventType[EventType["Login"] = 1] = "Login";
-    EventType[EventType["Logout"] = 2] = "Logout";
-    EventType[EventType["Activated"] = 3] = "Activated";
-    EventType[EventType["Removed"] = 4] = "Removed";
-    EventType[EventType["FilesUploaded"] = 5] = "FilesUploaded";
-    EventType[EventType["FilesRemoved"] = 6] = "FilesRemoved";
-    EventType[EventType["BucketUploaded"] = 7] = "BucketUploaded";
-    EventType[EventType["BucketRemoved"] = 8] = "BucketRemoved";
-    EventType[EventType["MetaRequest"] = 9] = "MetaRequest";
-    EventType[EventType["Echo"] = 10] = "Echo";
-})(exports.EventType || (exports.EventType = {}));
-var EventType = exports.EventType;
-/** Describes how users should respond to a socket events
- */
-(function (EventResponseType) {
-    /** The default the response is EventResponseType.NoResponse. */
-    EventResponseType[EventResponseType["NoResponse"] = 0] = "NoResponse";
-    /** A response event is sent back to the initiating client. */
-    EventResponseType[EventResponseType["RespondClient"] = 1] = "RespondClient";
-    /** A response event is sent to all connected clients. */
-    EventResponseType[EventResponseType["ReBroadcast"] = 2] = "ReBroadcast";
-})(exports.EventResponseType || (exports.EventResponseType = {}));
-var EventResponseType = exports.EventResponseType;
+var socket_event_types_1 = require("../socket-event-types");
 /**
  * An event class that is emitted to all listeners of the communications controller.
  * This wraps data around events sent via the web socket to the users server. Optionally
@@ -46,7 +20,7 @@ var ClientEvent = (function () {
     function ClientEvent(event, client) {
         this.client = client;
         this.clientEvent = event;
-        this.responseType = EventResponseType.NoResponse;
+        this.responseType = socket_event_types_1.EventResponseType.NoResponse;
     }
     return ClientEvent;
 })();
@@ -156,15 +130,15 @@ var CommsController = (function (_super) {
             }
         });
         // Setup a basic echo listener
-        this.on(EventType[EventType.Echo], function (e) {
+        this.on(socket_event_types_1.EventType[socket_event_types_1.EventType.Echo], function (e) {
             e.responseEvent = {
-                eventType: EventType.Echo,
+                eventType: socket_event_types_1.EventType.Echo,
                 message: e.clientEvent.message
             };
             if (e.clientEvent.broadcast)
-                e.responseType = EventResponseType.ReBroadcast;
+                e.responseType = socket_event_types_1.EventResponseType.ReBroadcast;
             else
-                e.responseType = EventResponseType.RespondClient;
+                e.responseType = socket_event_types_1.EventResponseType.RespondClient;
         });
     }
     /**
@@ -174,12 +148,12 @@ var CommsController = (function (_super) {
     CommsController.prototype.alertMessage = function (event) {
         if (!event.clientEvent)
             return winston.error("Websocket alert error: No ClientEvent set", { process: process.pid });
-        this.emit(EventType[event.clientEvent.eventType], event);
-        if (event.responseType == EventResponseType.NoResponse && !event.responseEvent)
+        this.emit(socket_event_types_1.EventType[event.clientEvent.eventType], event);
+        if (event.responseType == socket_event_types_1.EventResponseType.NoResponse && !event.responseEvent)
             return winston.error("Websocket alert error: The response type is expeciting a responseEvent but one is not created", { process: process.pid });
-        if (event.responseType == EventResponseType.RespondClient)
+        if (event.responseType == socket_event_types_1.EventResponseType.RespondClient)
             this.broadcastEventToClient(event.responseEvent, event.client);
-        else if (event.responseType == EventResponseType.ReBroadcast)
+        else if (event.responseType == socket_event_types_1.EventResponseType.ReBroadcast)
             this.broadcastEventToAll(event.responseEvent);
     };
     /**
