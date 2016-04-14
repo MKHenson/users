@@ -122,7 +122,7 @@ var UserManager = (function () {
             if (useEntry) {
                 // Send logged in event to socket
                 var sEvent = { username: useEntry.username, eventType: comms_controller_1.EventType.Logout };
-                comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent).then(function () {
                     winston.info("User '" + useEntry.username + "' has logged out", { process: process.pid });
                 });
             }
@@ -260,7 +260,7 @@ var UserManager = (function () {
                 that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
                     var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
-                    return comms_controller_1.CommsController.singleton.broadcastEvent(sEvent);
+                    return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     winston.info("User '" + username + "' has been activated", { process: process.pid });
                     return resolve();
@@ -453,7 +453,7 @@ var UserManager = (function () {
                 that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
                     var sEvent = { username: username, eventType: comms_controller_1.EventType.Activated };
-                    return comms_controller_1.CommsController.singleton.broadcastEvent(sEvent);
+                    return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     winston.info("User '" + username + "' has been activated", { process: process.pid });
                     return resolve(true);
@@ -613,7 +613,7 @@ var UserManager = (function () {
                     return reject(new Error("Could not remove the user from the database"));
                 // Send event to sockets
                 var sEvent = { username: username, eventType: comms_controller_1.EventType.Removed };
-                comms_controller_1.CommsController.singleton.broadcastEvent(sEvent).then(function () {
+                comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent).then(function () {
                     winston.info("User '" + username + "' has been removed", { process: process.pid });
                 });
                 return resolve();
@@ -703,7 +703,7 @@ var UserManager = (function () {
                         return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
                     // Send logged in event to socket
                     var sEvent = { username: username, eventType: comms_controller_1.EventType.Login };
-                    return comms_controller_1.CommsController.singleton.broadcastEvent(sEvent);
+                    return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     return resolve(user);
                 }).catch(function (err) {

@@ -1,6 +1,6 @@
 var test = require('unit.js');
 var fs = require('fs');
-
+var ws = require('ws');
 
 // Load the file
 var jsonConfig = fs.readFileSync("../dist/config.json", "utf8")
@@ -25,6 +25,197 @@ var george2Cookie = "";
 var activation = "";
 var fileId = "";
 var publicURL = "";
+var wsClient;
+var wsClient2;
+
+// A map of all web socket events
+var socketEvents = {
+    login: null,
+    logout: null,
+    activated: null,
+    removed: null,
+    filesUploaded: null,
+    filesRemoved: null,
+    bucketUploaded: null,
+    bucketRemoved: null,
+    metaRequest: null,
+};
+
+var numWSCalls = {
+    login: 0,
+    logout: 0,
+    activated: 0,
+    removed: 0,
+    filesUploaded: 0,
+    filesRemoved: 0,
+    bucketUploaded: 0,
+    bucketRemoved: 0,
+    metaRequest: 0,
+};
+
+/**
+ * This function catches all events from the web socket and stores them for later inspection
+ */
+function onWsEvent(data) {
+
+    var event = JSON.parse(data);
+
+    if (!event.eventType)
+        throw new Error("eventType does not exist on socket event");
+
+    switch (event.eventType)
+    {
+        case 1: // Login
+            socketEvents.login = event;
+            numWSCalls.login++;
+            break;
+        case 2: // Logout
+            socketEvents.logout = event;
+            numWSCalls.logout++;
+            break;
+        case 3: // Activated
+            socketEvents.activated = event;
+            numWSCalls.activated++;
+            break;
+        case 4: // Removed
+            socketEvents.removed = event;
+            numWSCalls.removed++;
+            break;
+        case 5: // FilesUploaded
+            socketEvents.filesUploaded = event;
+            numWSCalls.filesUploaded++;
+            break;
+        case 6: // FilesRemoved
+            socketEvents.filesRemoved = event;
+            numWSCalls.filesRemoved++;
+            break;
+        case 7: // BucketUploaded
+            socketEvents.bucketUploaded = event;
+            numWSCalls.bucketUploaded++;
+            break;
+        case 8: // BucketRemoved
+            socketEvents.bucketRemoved = event;
+            numWSCalls.bucketRemoved++;
+            break;
+        case 9: // MetaRequest
+            socketEvents.metaRequest = event;
+            numWSCalls.metaRequest++;
+            break;
+    }
+}
+
+/** Empty listener to ensure the client isn't garbage collected */
+function onSocketMessage( data, flags ) {
+}
+
+
+describe('Testing WS connectivity', function() {
+
+    it('should not connect when the origin is not approved', function(done) {
+
+        var socketUrl = "ws://localhost:" + config.websocket.port;
+        wsClient = new ws( socketUrl, { headers: { origin: "badhost" } });
+
+        // Opens a stream to the users socket events
+        wsClient.on('close', function ()
+        {
+            wsClient.close();
+            return done();
+        });
+    })
+
+    it('connected to the users socket API', function(done) {
+
+        var socketUrl = "ws://localhost:" + config.websocket.port;
+        wsClient = new ws( socketUrl, { headers: { origin: "localhost" } });
+
+        // Opens a stream to the users socket events
+        wsClient.on('open', function () {
+            wsClient.on( 'message', onSocketMessage );
+            return done();
+        });
+
+        // Report if there are any errors
+        wsClient.on('error', function (err) {
+            return done(err);
+        });
+    })
+
+    it('connected a separate WS connection', function(done) {
+
+        var socketUrl = "ws://localhost:" + config.websocket.port;
+        wsClient2 = new ws( socketUrl, { headers: { origin: "localhost" } });
+
+        // Opens a stream to the users socket events
+        wsClient2.on('open', function () {
+            wsClient2.on( 'message', onSocketMessage );
+            return done();
+        });
+
+        // Report if there are any errors
+        wsClient2.on('error', function (err) {
+            return done(err);
+        });
+    })
+
+    it('recieved an echo test to sender', function(done) {
+
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            wsClient2.removeListener( 'message', onMessge );
+
+            test.string(response.message).is("Echo worked!")
+            test.number(response.eventType).is(10)
+            done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient2.on( 'message', onMessge );
+
+        wsClient.send( JSON.stringify({ eventType: 10, message : "Echo worked!" }), function(err) {
+             wsClient.removeListener( 'message', onMessge );
+             wsClient2.removeListener( 'message', onMessge );
+             done(err);
+        });
+    });
+
+    it('recieved a broadcast echo test', function(done) {
+
+        var echoCount = 0;
+
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            wsClient2.removeListener( 'message', onMessge );
+            echoCount++;
+
+            test.string(response.message).is("Echo worked!")
+            test.number(response.eventType).is(10)
+            if (echoCount == 2)
+                done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient2.on( 'message', onMessge );
+
+        wsClient.send( JSON.stringify({ eventType: 10, message : "Echo worked!", broadcast: true }), function(err) {
+             wsClient.removeListener( 'message', onMessge );
+             wsClient2.removeListener( 'message', onMessge );
+             done(err);
+        });
+    });
+})
+
+
+describe('Hook WS API events', function() {
+
+    it('hooked all relevant events to (onWsEvent) event handler', function(done) {
+        wsClient.on( 'message', onWsEvent );
+        done();
+    });
+});
+
 
 describe('Testing user API functions', function(){
 
@@ -717,7 +908,7 @@ describe('Testing user API functions', function(){
 				});
 		}).timeout(20000)
 
-		it('did active george2 through the admin', function(done){
+		it('did activate george2 through the admin', function(done){
 			agent
 				.put('/users/george2/approve-activation').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', adminCookie)
@@ -1612,7 +1803,7 @@ describe('Checking media API', function(){
 				});
 		}).timeout(20000)
 
-		it('did not remove the bucket dinosaurs2', function(done){
+		it('did remove the bucket dinosaurs2', function(done){
 			agent
 				.delete("/buckets/dinosaurs2").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
 				.set('Cookie', georgeCookie)
@@ -1663,27 +1854,112 @@ describe('Checking media API', function(){
 
 describe('Cleaning up', function(){
 
-		it('did remove any users called george', function(done){
-			agent
-				.delete('/users/george').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', adminCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					 test.string(res.body.message).is("User george has been removed")
-					done();
-				});
-		}).timeout(25000)
+    it('did remove any users called george', function(done){
+        agent
+            .delete('/users/george').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+            .set('Cookie', adminCookie)
+            .end(function(err, res){
+                if (err) return done(err);
+                    test.string(res.body.message).is("User george has been removed")
+                done();
+            });
+    }).timeout(25000)
 
-		it('did remove any users called george2', function(done){
-			agent
-				.delete('/users/george2').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-				.set('Cookie', adminCookie)
-				.end(function(err, res){
-					if (err) return done(err);
-					test.string(res.body.message).is("User george2 has been removed")
-					done();
-				});
-		}).timeout(25000)
+    it('did remove any users called george2', function(done){
+        agent
+            .delete('/users/george2').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+            .set('Cookie', adminCookie)
+            .end(function(err, res){
+                if (err) return done(err);
+                test.string(res.body.message).is("User george2 has been removed")
+                done();
+            });
+    }).timeout(25000)
 })
+
+describe('Test WS API events are valid', function() {
+
+    it('has valid user event properties', function(done) {
+        test.object(socketEvents.login).hasProperty('username');
+        test.object(socketEvents.logout).hasProperty('username');
+        test.object(socketEvents.activated).hasProperty('username');
+        done();
+    });
+
+    it('has valid filesAdded event properties', function(done) {
+        test.object(socketEvents.filesUploaded).hasProperty('username');
+        test.object(socketEvents.filesUploaded).hasProperty('files');
+        done();
+    });
+
+    it('has valid filesAdded event properties', function(done) {
+        test.object(socketEvents.filesRemoved).hasProperty('files');
+        done();
+    });
+
+    it('has valid bucket added event properties', function(done) {
+
+        test.object(socketEvents.bucketUploaded).hasProperty('username');
+        test.object(socketEvents.bucketUploaded).hasProperty('bucket');
+        test.string(socketEvents.bucketUploaded.bucket.name)
+        test.string(socketEvents.bucketUploaded.bucket.identifier)
+        test.string(socketEvents.bucketUploaded.bucket.user)
+        test.number(socketEvents.bucketUploaded.bucket.created)
+        test.number(socketEvents.bucketUploaded.bucket.memoryUsed)
+        test.string(socketEvents.bucketUploaded.bucket._id)
+        done();
+    });
+
+    it('has valid bucket removed event properties', function(done) {
+        test.object(socketEvents.bucketRemoved).hasProperty('bucket');
+        test.string(socketEvents.bucketRemoved.bucket.name)
+        test.string(socketEvents.bucketRemoved.bucket.identifier)
+        test.string(socketEvents.bucketRemoved.bucket.user)
+        test.number(socketEvents.bucketRemoved.bucket.created)
+        test.number(socketEvents.bucketRemoved.bucket.memoryUsed)
+        test.string(socketEvents.bucketRemoved.bucket._id)
+        done();
+    });
+
+    it('has the correct number of events registered', function(done) {
+        test.number(numWSCalls.login).is(5)
+        test.number(numWSCalls.logout).is(1)
+        test.number(numWSCalls.activated).is(2)
+        test.number(numWSCalls.bucketRemoved).is(3)
+        test.number(numWSCalls.bucketUploaded).is(4)
+        test.number(numWSCalls.filesRemoved).is(3)
+        test.number(numWSCalls.filesUploaded).is(3)
+        test.number(numWSCalls.metaRequest).is(0)
+        test.number(numWSCalls.removed).is(2)
+        done();
+    });
+});
+
+describe('Cleaning up socket', function(){
+
+    it('closed the sockets', function(done){
+
+        if ( wsClient )
+        {
+             wsClient2.removeListener( 'message', onSocketMessage );
+             wsClient.removeListener( 'message', onSocketMessage );
+             wsClient.close();
+             wsClient2.close();
+             wsClient = null;
+             wsClient2 = null;
+        }
+        done();
+    })
+})
+
+
+
+
+
+
+
+
+
+
 
 

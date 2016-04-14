@@ -667,7 +667,7 @@ var BucketController = (function (_super) {
                         if (filesUploaded.length > 0) {
                             // Send file added events to sockets
                             var fEvent = { username: username, eventType: comms_controller_1.EventType.FilesUploaded, files: filesUploaded };
-                            promise = comms_controller_1.CommsController.singleton.broadcastEvent(fEvent);
+                            promise = comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                         }
                         else
                             promise = Promise.resolve(true);

@@ -157,7 +157,7 @@ export class UserManager
             {
                 // Send logged in event to socket
                 var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout };
-                CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                CommsController.singleton.broadcastEventToAll(sEvent).then(function ()
                 {
                     winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
                 });
@@ -327,7 +327,7 @@ export class UserManager
 
                     // Send activated event
                     var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
-                    return CommsController.singleton.broadcastEvent(sEvent);
+                    return CommsController.singleton.broadcastEventToAll(sEvent);
 
                 }).then(function () {
 
@@ -613,7 +613,7 @@ export class UserManager
 
                     // Send activated event
                     var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
-                    return CommsController.singleton.broadcastEvent(sEvent);
+                    return CommsController.singleton.broadcastEventToAll(sEvent);
 
                 }).then(function () {
 
@@ -834,7 +834,7 @@ export class UserManager
 
                 // Send event to sockets
                 var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed };
-                CommsController.singleton.broadcastEvent(sEvent).then(function ()
+                CommsController.singleton.broadcastEventToAll(sEvent).then(function ()
                 {
                     winston.info(`User '${username}' has been removed`, { process: process.pid });
                 });
@@ -959,7 +959,7 @@ export class UserManager
 
                     // Send logged in event to socket
                     var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login };
-                    return CommsController.singleton.broadcastEvent(sEvent);
+                    return CommsController.singleton.broadcastEventToAll(sEvent);
 
                 }).then(function () {
 

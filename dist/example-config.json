@@ -5,8 +5,18 @@
     "passwordResetURL": "http://host.com/admin/password-reset-form",
     "userCollection": "users",
     "sessionCollection": "sessions",
-    "approvedDomains": [ "webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1" ],
-    "secret": "",
+    "approvedDomains": [
+        "webinate\\.net",
+        "127.0.0.1:80",
+        "http:\/\/127.0.0.1",
+        "localhost",
+        "^ws://www.webinate.net:123$",
+        "^webinate\\.net:80$",
+        "^webinate\\.net$",
+        "^.+\\.webinate\\.com$",
+        "^webinate\\.org",
+        "^.+\\.webinate\\.org",
+     ],
     "portHTTP": 80,
     "portHTTPS": 443,
     "databaseHost": "127.0.0.1",
@@ -46,10 +56,14 @@
     },
     "websocket": {
         "port": 8080,
-        "clients": [
-            {
-                "origin": ""
-            }
+        "approvedSocketDomains": [
+            "localhost",
+            "^ws://www.webinate.net:123$",
+            "^webinate\\.net:80$",
+            "^example\\.com$",
+            "^.+\\.example\\.com$",
+            "^example\\.org",
+            "^.+\\.example\\.org",
         ]
     }
 }

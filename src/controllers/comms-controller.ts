@@ -1,6 +1,7 @@
 ﻿"use strict";
 
 import * as ws from "ws";
+import * as events from "events";
 import * as mongodb from "mongodb";
 import * as def from "webinate-users";
 import * as https from "https";
@@ -9,9 +10,70 @@ import * as fs from "fs";
 import * as winston from "winston";
 import {UserManager, User} from "../users";
 
+/**
+* Describes the event being sent to connected clients
+*/
+export enum EventType
+{
+    Login = 1,
+    Logout = 2,
+    Activated = 3,
+    Removed = 4,
+    FilesUploaded = 5,
+    FilesRemoved = 6,
+    BucketUploaded = 7,
+    BucketRemoved = 8,
+    MetaRequest = 9,
+    Echo = 10
+}
+
+/** Describes how users should respond to a socket events
+ */
+export enum EventResponseType
+{
+    /** The default the response is EventResponseType.NoResponse. */
+    NoResponse,
+
+    /** A response event is sent back to the initiating client. */
+    RespondClient,
+
+    /** A response event is sent to all connected clients. */
+    ReBroadcast
+}
+
 interface ISocketClient extends ws
 {
     clientConnection: ClientConnection;
+}
+
+/**
+ * An event class that is emitted to all listeners of the communications controller.
+ * This wraps data around events sent via the web socket to the users server. Optionally
+ * these events can respond to the client who initiated the event as well as to all listeners.
+ */
+export class ClientEvent<T extends def.SocketEvents.IEvent>
+{
+    /** The client who initiated the request */
+    client: ClientConnection;
+
+    /** The event sent from the client */
+    clientEvent: T;
+
+    /** An optional response event to be sent back to the client or all connected clients. This is dependent on the responseType */
+    responseEvent: def.SocketEvents.IEvent;
+
+    /** Describes how users should respond to a socket event. By default the response is EventResponseType.NoResponse.
+     * if EventResponseType.RespondClient then the responseEvent is sent back to the initiating client.
+     * if EventResponseType.ReBroadcast then the responseEvent is sent to all clients.
+     */
+    responseType: EventResponseType;
+
+    constructor(event: T, client: ClientConnection)
+    {
+        this.client = client;
+        this.clientEvent = event;
+        this.responseType = EventResponseType.NoResponse;
+    }
 }
 
 /**
@@ -19,19 +81,21 @@ interface ISocketClient extends ws
  */
 class ClientConnection
 {
-    private _ws: ISocketClient;
+    public ws: ISocketClient;
     public user: User;
-    public clientType: def.IWebsocketClient;
+    public domain: string;
+    private _controller: CommsController;
 
-    constructor(ws: ws, clientType: def.IWebsocketClient)
+    constructor(ws: ws, domain: string, controller : CommsController)
     {
         var that = this;
-        this.clientType = clientType;
+        this.domain = domain;
+        this._controller = controller;
 
         UserManager.get.loggedIn(ws.upgradeReq, null).then(function (user)
         {
             (<ISocketClient>ws).clientConnection = that;
-            that._ws = (<ISocketClient>ws);
+            that.ws = (<ISocketClient>ws);
             that.user = user;
             ws.on('message', that.onMessage.bind(that));
             ws.on('close', that.onClose.bind(that));
@@ -47,6 +111,13 @@ class ClientConnection
     private onMessage(message: string)
     {
         winston.info(`Received message from client: '${message}'`, { process: process.pid } );
+        try {
+            var event : def.SocketEvents.IEvent = JSON.parse(message);
+            this._controller.alertMessage(new ClientEvent(event, this));
+        }
+        catch(err) {
+            winston.error(`Could not parse socket message: '${err}'`, { process: process.pid } );
+        }
     }
 
     /**
@@ -54,11 +125,12 @@ class ClientConnection
 	*/
     private onClose()
     {
-        this._ws.removeAllListeners("message");
-        this._ws.removeAllListeners("close");
-        this._ws.removeAllListeners("error");
-        this._ws.clientConnection = null;
-        this._ws = null;
+        this.ws.removeAllListeners("message");
+        this.ws.removeAllListeners("close");
+        this.ws.removeAllListeners("error");
+        this.ws.clientConnection = null;
+        this.ws = null;
+        this._controller = null;
     }
 
     /**
@@ -71,25 +143,12 @@ class ClientConnection
     }
 }
 
-/**
-* Describes the event being sent to connected clients
-*/
-export enum EventType
-{
-    Login,
-    Logout,
-    Activated,
-    Removed,
-    FilesUploaded,
-    FilesRemoved,
-    BucketUploaded,
-    BucketRemoved
-}
+
 
 /**
 * A controller that deals with any any IPC or web socket communications
 */
-export class CommsController
+export class CommsController extends events.EventEmitter
 {
     public static singleton: CommsController;
     private _server: ws.Server;
@@ -100,6 +159,7 @@ export class CommsController
 	*/
     constructor(cfg: def.IConfig)
     {
+        super();
         var that = this;
 
         CommsController.singleton = this;
@@ -140,11 +200,11 @@ export class CommsController
             var headers = (<http.ServerRequest>ws.upgradeReq).headers;
 
             var clientApproved = false;
-            for (var i = 0, l = cfg.websocket.clients.length; i < l; i++)
+            for (var i = 0, l = cfg.websocket.approvedSocketDomains.length; i < l; i++)
             {
-                if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.clients[i].origin))))
+                if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.approvedSocketDomains[i]))))
                 {
-                    new ClientConnection(ws, cfg.websocket.clients[i]);
+                    new ClientConnection(ws, cfg.websocket.approvedSocketDomains[i], that);
                     clientApproved = true;
                 }
             }
@@ -153,7 +213,64 @@ export class CommsController
             {
                 winston.error(`A connection was made by ${headers.host || headers.origin} but it is not on the approved domain list`);
                 ws.terminate();
+                ws.close();
             }
+        });
+
+        // Setup a basic echo listener
+        this.on( EventType[EventType.Echo], function( e: ClientEvent<def.SocketEvents.IEchoEvent> ) {
+            e.responseEvent = <def.SocketEvents.IEchoEvent> {
+                eventType: EventType.Echo,
+                message : e.clientEvent.message
+            };
+
+            if ( e.clientEvent.broadcast )
+                e.responseType = EventResponseType.ReBroadcast;
+            else
+                e.responseType = EventResponseType.RespondClient;
+        })
+    }
+
+    /**
+	* Sends an event to all connected clients of this server listening for a specific event
+    * @param {ClientEvent<def.SocketEvents.IEvent>} event The event to alert the server of
+	*/
+    alertMessage( event: ClientEvent<def.SocketEvents.IEvent> )
+    {
+        if (!event.clientEvent)
+            return winston.error(`Websocket alert error: No ClientEvent set`, { process: process.pid } );
+
+        this.emit( EventType[event.clientEvent.eventType], event );
+
+        if (event.responseType == EventResponseType.NoResponse && !event.responseEvent)
+            return winston.error(`Websocket alert error: The response type is expeciting a responseEvent but one is not created`, { process: process.pid } );
+
+        if ( event.responseType == EventResponseType.RespondClient )
+            this.broadcastEventToClient(event.responseEvent, event.client);
+        else if ( event.responseType == EventResponseType.ReBroadcast )
+            this.broadcastEventToAll(event.responseEvent);
+
+    }
+
+    /**
+	* Sends an event to the client specified
+    * @param {IEvent} event The event to broadcast
+	*/
+    broadcastEventToClient(event: def.SocketEvents.IEvent, client : ClientConnection ): Promise<any>
+    {
+        var that = this;
+        return new Promise(function (resolve, reject)
+        {
+            client.ws.send(JSON.stringify(event), undefined, function (error: Error)
+            {
+                if (error)
+                {
+                    winston.error(`Websocket broadcase error: '${error}'`, { process: process.pid } );
+                    return reject();
+                }
+
+                return resolve();
+            });
         });
     }
 
@@ -161,7 +278,7 @@ export class CommsController
 	* Sends an event to all connected clients of this server listening for a specific event
     * @param {IEvent} event The event to broadcast
 	*/
-    broadcastEvent(event: def.SocketEvents.IEvent): Promise<any>
+    broadcastEventToAll(event: def.SocketEvents.IEvent): Promise<any>
     {
         var that = this;
         return new Promise(function (resolve, reject)
@@ -189,6 +306,7 @@ export class CommsController
 
                     if (error)
                     {
+                        winston.error(`Websocket broadcase error: '${error}'`, { process: process.pid } );
                         errorOccurred = true;
                         return reject();
                     }

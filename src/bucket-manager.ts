@@ -296,6 +296,7 @@ export class BucketManager
                         return reject(new Error(`Could not create a new bucket: '${err.message}'`));
                     else
                     {
+                        var newBucket = null;
                         var newEntry: users.IBucketEntry = {
                             name: name,
                             identifier: bucketID,
@@ -306,6 +307,7 @@ export class BucketManager
 
                         // Save the new entry into the database
                         bucketCollection.insertOne(newEntry).then(function(insertResult) {
+                            newBucket = insertResult.ops[0];
 
                             // Increments the API calls
                             return stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } });
@@ -313,8 +315,8 @@ export class BucketManager
                         }).then( function (updateResult) {
 
                             // Send bucket added events to sockets
-                            var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: bucket, username: user };
-                            return CommsController.singleton.broadcastEvent(fEvent);
+                            var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: newBucket, username: user };
+                            return CommsController.singleton.broadcastEventToAll(fEvent);
 
                         }).then(function() {
                            return resolve(bucket);
@@ -363,7 +365,7 @@ export class BucketManager
                         {
                             // Send events to sockets
                             var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket };
-                            CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                            CommsController.singleton.broadcastEventToAll(fEvent).then(function ()
                             {
                                 resolve(toRemove);
                             });
@@ -545,7 +547,7 @@ export class BucketManager
                         {
                             // Update any listeners on the sockets
                             var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved };
-                            CommsController.singleton.broadcastEvent(fEvent).then(function ()
+                            CommsController.singleton.broadcastEventToAll(fEvent).then(function ()
                             {
                                 resolve(filesRemoved);
                             });

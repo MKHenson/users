@@ -25,7 +25,6 @@ var UserController = (function (_super) {
     function UserController(e, config) {
         _super.call(this);
         this._config = config;
-        permission_controller_1.secret.key = config.secret;
         // Setup the rest calls
         var router = express.Router();
         router.use(compression());
@@ -526,8 +525,7 @@ var UserController = (function (_super) {
         var toRemove = req.params.user;
         if (!toRemove)
             return res.end(JSON.stringify({ message: "No user found", error: true }));
-        that._userManager.removeUser(toRemove) //.then(function ()
-            .then(function () {
+        that._userManager.removeUser(toRemove).then(function () {
             var token = {
                 error: false,
                 message: "User " + toRemove + " has been removed"

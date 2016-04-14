@@ -218,6 +218,7 @@ var BucketManager = (function () {
                     if (err)
                         return reject(new Error("Could not create a new bucket: '" + err.message + "'"));
                     else {
+                        var newBucket = null;
                         var newEntry = {
                             name: name,
                             identifier: bucketID,
@@ -227,12 +228,13 @@ var BucketManager = (function () {
                         };
                         // Save the new entry into the database
                         bucketCollection.insertOne(newEntry).then(function (insertResult) {
+                            newBucket = insertResult.ops[0];
                             // Increments the API calls
                             return stats.updateOne({ user: user }, { $inc: { apiCallsUsed: 1 } });
                         }).then(function (updateResult) {
                             // Send bucket added events to sockets
-                            var fEvent = { eventType: comms_controller_1.EventType.BucketUploaded, bucket: bucket, username: user };
-                            return comms_controller_1.CommsController.singleton.broadcastEvent(fEvent);
+                            var fEvent = { eventType: comms_controller_1.EventType.BucketUploaded, bucket: newBucket, username: user };
+                            return comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                         }).then(function () {
                             return resolve(bucket);
                         }).catch(function (err) {
@@ -268,7 +270,7 @@ var BucketManager = (function () {
                         if (attempts == l) {
                             // Send events to sockets
                             var fEvent = { eventType: comms_controller_1.EventType.BucketRemoved, bucket: bucket };
-                            comms_controller_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                            comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent).then(function () {
                                 resolve(toRemove);
                             });
                         }
@@ -407,7 +409,7 @@ var BucketManager = (function () {
                         if (attempts == l) {
                             // Update any listeners on the sockets
                             var fEvent = { eventType: comms_controller_1.EventType.FilesRemoved, files: filesRemoved };
-                            comms_controller_1.CommsController.singleton.broadcastEvent(fEvent).then(function () {
+                            comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent).then(function () {
                                 resolve(filesRemoved);
                             });
                         }
