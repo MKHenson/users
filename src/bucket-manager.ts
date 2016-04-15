@@ -316,7 +316,7 @@ export class BucketManager
                         }).then( function (updateResult) {
 
                             // Send bucket added events to sockets
-                            var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: newBucket, username: user };
+                            var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: newBucket, username: user, error : undefined };
                             return CommsController.singleton.broadcastEventToAll(fEvent);
 
                         }).then(function() {
@@ -365,7 +365,7 @@ export class BucketManager
                         if (attempts == l)
                         {
                             // Send events to sockets
-                            var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket };
+                            var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket, error : undefined };
                             CommsController.singleton.broadcastEventToAll(fEvent).then(function ()
                             {
                                 resolve(toRemove);
@@ -547,7 +547,7 @@ export class BucketManager
                         if (attempts == l)
                         {
                             // Update any listeners on the sockets
-                            var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved };
+                            var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved, error : undefined };
                             CommsController.singleton.broadcastEventToAll(fEvent).then(function ()
                             {
                                 resolve(filesRemoved);

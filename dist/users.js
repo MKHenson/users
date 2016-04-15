@@ -122,7 +122,7 @@ var UserManager = (function () {
         this._userCollection.find({ sessionId: sessionId }).limit(1).next().then(function (useEntry) {
             if (useEntry) {
                 // Send logged in event to socket
-                var sEvent = { username: useEntry.username, eventType: socket_event_types_1.EventType.Logout };
+                var sEvent = { username: useEntry.username, eventType: socket_event_types_1.EventType.Logout, error: undefined };
                 comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent).then(function () {
                     winston.info("User '" + useEntry.username + "' has logged out", { process: process.pid });
                 });
@@ -260,7 +260,7 @@ var UserManager = (function () {
                 // Clear the user's activation
                 that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
-                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Activated };
+                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Activated, error: undefined };
                     return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     winston.info("User '" + username + "' has been activated", { process: process.pid });
@@ -453,7 +453,7 @@ var UserManager = (function () {
                 // Update the key to be blank
                 that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { registerKey: "" } }).then(function (result) {
                     // Send activated event
-                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Activated };
+                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Activated, error: undefined };
                     return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     winston.info("User '" + username + "' has been activated", { process: process.pid });
@@ -613,7 +613,7 @@ var UserManager = (function () {
                 if (result.result.n == 0)
                     return reject(new Error("Could not remove the user from the database"));
                 // Send event to sockets
-                var sEvent = { username: username, eventType: socket_event_types_1.EventType.Removed };
+                var sEvent = { username: username, eventType: socket_event_types_1.EventType.Removed, error: undefined };
                 comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent).then(function () {
                     winston.info("User '" + username + "' has been removed", { process: process.pid });
                 });
@@ -703,7 +703,7 @@ var UserManager = (function () {
                     if (result.matchedCount === 0)
                         return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
                     // Send logged in event to socket
-                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Login };
+                    var sEvent = { username: username, eventType: socket_event_types_1.EventType.Login, error: undefined };
                     return comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 }).then(function () {
                     return resolve(user);
@@ -748,7 +748,7 @@ var UserManager = (function () {
     * @param {any} data The meta data object to set
     * @param {http.ServerRequest} request
     * @param {http.ServerResponse} response
-    * @returns {Promise<boolean>} True if the user was in the DB or false if they were not
+    * @returns {Promise<boolean>} Returns the data set
     */
     UserManager.prototype.setMeta = function (user, data, request, response) {
         var that = this;
@@ -758,7 +758,7 @@ var UserManager = (function () {
                 return reject(false);
             // Remove the user from the DB
             that._userCollection.updateOne({ _id: user._id }, { $set: { meta: (data ? data : {}) } }).then(function (result) {
-                return resolve(true);
+                return resolve(data);
             }).catch(function (error) {
                 return reject(error);
             });
@@ -771,7 +771,7 @@ var UserManager = (function () {
     * @param {any} data The value of the meta to set
     * @param {http.ServerRequest} request
     * @param {http.ServerResponse} response
-    * @returns {Promise<boolean>} True if the user was in the DB or false if they were not
+    * @returns {Promise<any>} Returns the value of the set
     */
     UserManager.prototype.setMetaVal = function (user, name, val, request, response) {
         var that = this;
@@ -784,7 +784,7 @@ var UserManager = (function () {
             updateToken.$set[datum] = val;
             // Remove the user from the DB
             that._userCollection.updateOne({ _id: user._id }, updateToken).then(function (result) {
-                return resolve(true);
+                return resolve(val);
             }).catch(function (error) {
                 return reject(error);
             });

@@ -157,7 +157,7 @@ export class UserManager
             if (useEntry)
             {
                 // Send logged in event to socket
-                var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout };
+                var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout, error : undefined };
                 CommsController.singleton.broadcastEventToAll(sEvent).then(function ()
                 {
                     winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
@@ -327,7 +327,7 @@ export class UserManager
 				that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }).then(function (result) {
 
                     // Send activated event
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
                     return CommsController.singleton.broadcastEventToAll(sEvent);
 
                 }).then(function () {
@@ -613,7 +613,7 @@ export class UserManager
 				that._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }).then(function (result) {
 
                     // Send activated event
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated };
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
                     return CommsController.singleton.broadcastEventToAll(sEvent);
 
                 }).then(function () {
@@ -834,7 +834,7 @@ export class UserManager
                     return reject(new Error("Could not remove the user from the database"));
 
                 // Send event to sockets
-                var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed };
+                var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed, error : undefined };
                 CommsController.singleton.broadcastEventToAll(sEvent).then(function ()
                 {
                     winston.info(`User '${username}' has been removed`, { process: process.pid });
@@ -959,7 +959,7 @@ export class UserManager
                         return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
 
                     // Send logged in event to socket
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login };
+                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login, error : undefined };
                     return CommsController.singleton.broadcastEventToAll(sEvent);
 
                 }).then(function () {
@@ -1015,7 +1015,7 @@ export class UserManager
     * @param {any} data The meta data object to set
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
-	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
+	* @returns {Promise<boolean>} Returns the data set
 	*/
     setMeta(user: def.IUserEntry, data?: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
     {
@@ -1029,7 +1029,7 @@ export class UserManager
 
             // Remove the user from the DB
             that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } }).then(function (result) {
-                return resolve(true);
+                return resolve(data);
             }).catch(function(error: Error){
                 return reject(error);
             });
@@ -1043,9 +1043,9 @@ export class UserManager
     * @param {any} data The value of the meta to set
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
-	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
+	* @returns {Promise<any>} Returns the value of the set
 	*/
-    setMetaVal(user: def.IUserEntry, name : string, val: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+    setMetaVal(user: def.IUserEntry, name : string, val: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<any>
     {
         var that = this;
 
@@ -1062,7 +1062,7 @@ export class UserManager
 
             // Remove the user from the DB
             that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, updateToken).then(function (result) {
-                return resolve(true);
+                return resolve(val);
             }).catch(function(error: Error){
                 return reject(error);
             });

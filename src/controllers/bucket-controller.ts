@@ -878,7 +878,7 @@ export class BucketController extends Controller
                         if (filesUploaded.length > 0)
                         {
                             // Send file added events to sockets
-                            var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, files: filesUploaded };
+                            var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, files: filesUploaded, error : undefined };
                             promise = CommsController.singleton.broadcastEventToAll(fEvent)
                         }
                         else
