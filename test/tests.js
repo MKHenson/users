@@ -1145,6 +1145,75 @@ describe('Testing user API functions', function(){
 	})
 })
 
+describe('Testing WS API calls', function(){
+
+	it('Cannot set meta data for unkown user', function(done) {
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            test.string(response.error).is("Could not find user george3")
+            done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient.send( JSON.stringify({ eventType: 9, val : { sister : "sam", brother: "mat" }, username : "george3"  }));
+	});
+
+	it('Can set meta data for user george', function(done) {
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            test.value(response.error).isUndefined()
+			test.string(response.val.sister).is("sam")
+			test.string(response.val.brother).is("mat")
+            done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient.send( JSON.stringify({ eventType: 9, val : { sister : "sam", brother: "mat" }, username : "george"  }));
+	});
+
+	it('Can get meta data for user george', function(done) {
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            test.value(response.error).isUndefined()
+			test.string(response.val.sister).is("sam")
+			test.string(response.val.brother).is("mat")
+            done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient.send( JSON.stringify({ eventType: 9, username : "george"  }));
+	});
+
+	it('Can set the meta property "brother" for user george', function(done) {
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            test.value(response.error).isUndefined()
+			test.string(response.val).is("George's brother")
+            done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient.send( JSON.stringify({ eventType: 9, property: "brother", val : "George's brother", username : "george"  }));
+	});
+
+	it('Can get the meta property "brother" for user george', function(done) {
+        var onMessge = function(data) {
+            var response = JSON.parse(data);
+            wsClient.removeListener( 'message', onMessge );
+            test.value(response.error).isUndefined()
+			test.string(response.val).is("George's brother")
+            done();
+        }
+
+        wsClient.on( 'message', onMessge );
+        wsClient.send( JSON.stringify({ eventType: 9, property: "brother", username : "george"  }));
+	});
+})
+
 describe('Checking media API', function(){
 
 	describe('Getting/Setting data when a Regular user', function(){
@@ -1929,7 +1998,7 @@ describe('Test WS API events are valid', function() {
         test.number(numWSCalls.bucketUploaded).is(4)
         test.number(numWSCalls.filesRemoved).is(3)
         test.number(numWSCalls.filesUploaded).is(3)
-        test.number(numWSCalls.metaRequest).is(0)
+        test.number(numWSCalls.metaRequest).is(5)
         test.number(numWSCalls.removed).is(2)
         done();
     });

@@ -10,6 +10,7 @@ import * as fs from "fs";
 import * as winston from "winston";
 import {UserManager, User} from "../users";
 import {EventResponseType, EventType} from "../socket-event-types";
+import {SocketAPI} from "../socket-api";
 
 interface ISocketClient extends ws
 {
@@ -38,9 +39,15 @@ export class ClientEvent<T extends def.SocketEvents.IEvent>
      */
     responseType: EventResponseType;
 
+    /**
+     * BY default the error is null, but if set, then an error response is given to the client
+     */
+    error : Error;
+
     constructor(event: T, client: ClientConnection)
     {
         this.client = client;
+        this.error = null;
         this.clientEvent = event;
         this.responseType = EventResponseType.NoResponse;
     }
@@ -112,8 +119,6 @@ class ClientConnection
         winston.error(`An error has occurred for web socket : '${err.message}'`, { process: process.pid })
     }
 }
-
-
 
 /**
 * A controller that deals with any any IPC or web socket communications
@@ -187,18 +192,8 @@ export class CommsController extends events.EventEmitter
             }
         });
 
-        // Setup a basic echo listener
-        this.on( EventType[EventType.Echo], function( e: ClientEvent<def.SocketEvents.IEchoEvent> ) {
-            e.responseEvent = <def.SocketEvents.IEchoEvent> {
-                eventType: EventType.Echo,
-                message : e.clientEvent.message
-            };
-
-            if ( e.clientEvent.broadcast )
-                e.responseType = EventResponseType.ReBroadcast;
-            else
-                e.responseType = EventResponseType.RespondClient;
-        })
+        // Setup the socket API
+        new SocketAPI(this);
     }
 
     /**
@@ -212,8 +207,8 @@ export class CommsController extends events.EventEmitter
 
         this.emit( EventType[event.clientEvent.eventType], event );
 
-        if (event.responseType == EventResponseType.NoResponse && !event.responseEvent)
-            return winston.error(`Websocket alert error: The response type is expeciting a responseEvent but one is not created`, { process: process.pid } );
+        if (event.responseType != EventResponseType.NoResponse && !event.responseEvent)
+            return winston.error(`Websocket alert error: The response type is expecting a responseEvent but one is not created`, { process: process.pid } );
 
         if ( event.responseType == EventResponseType.RespondClient )
             this.broadcastEventToClient(event.responseEvent, event.client);

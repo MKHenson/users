@@ -234,7 +234,7 @@ var BucketManager = (function () {
                             return stats.updateOne({ user: user }, { $inc: { apiCallsUsed: 1 } });
                         }).then(function (updateResult) {
                             // Send bucket added events to sockets
-                            var fEvent = { eventType: socket_event_types_1.EventType.BucketUploaded, bucket: newBucket, username: user };
+                            var fEvent = { eventType: socket_event_types_1.EventType.BucketUploaded, bucket: newBucket, username: user, error: undefined };
                             return comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                         }).then(function () {
                             return resolve(bucket);
@@ -270,7 +270,7 @@ var BucketManager = (function () {
                         toRemove.push(bucket.identifier);
                         if (attempts == l) {
                             // Send events to sockets
-                            var fEvent = { eventType: socket_event_types_1.EventType.BucketRemoved, bucket: bucket };
+                            var fEvent = { eventType: socket_event_types_1.EventType.BucketRemoved, bucket: bucket, error: undefined };
                             comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent).then(function () {
                                 resolve(toRemove);
                             });
@@ -409,7 +409,7 @@ var BucketManager = (function () {
                         filesRemoved.push(fileEntry);
                         if (attempts == l) {
                             // Update any listeners on the sockets
-                            var fEvent = { eventType: socket_event_types_1.EventType.FilesRemoved, files: filesRemoved };
+                            var fEvent = { eventType: socket_event_types_1.EventType.FilesRemoved, files: filesRemoved, error: undefined };
                             comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent).then(function () {
                                 resolve(filesRemoved);
                             });

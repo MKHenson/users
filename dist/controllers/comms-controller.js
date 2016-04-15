@@ -11,6 +11,7 @@ var fs = require("fs");
 var winston = require("winston");
 var users_1 = require("../users");
 var socket_event_types_1 = require("../socket-event-types");
+var socket_api_1 = require("../socket-api");
 /**
  * An event class that is emitted to all listeners of the communications controller.
  * This wraps data around events sent via the web socket to the users server. Optionally
@@ -19,6 +20,7 @@ var socket_event_types_1 = require("../socket-event-types");
 var ClientEvent = (function () {
     function ClientEvent(event, client) {
         this.client = client;
+        this.error = null;
         this.clientEvent = event;
         this.responseType = socket_event_types_1.EventResponseType.NoResponse;
     }
@@ -129,17 +131,8 @@ var CommsController = (function (_super) {
                 ws.close();
             }
         });
-        // Setup a basic echo listener
-        this.on(socket_event_types_1.EventType[socket_event_types_1.EventType.Echo], function (e) {
-            e.responseEvent = {
-                eventType: socket_event_types_1.EventType.Echo,
-                message: e.clientEvent.message
-            };
-            if (e.clientEvent.broadcast)
-                e.responseType = socket_event_types_1.EventResponseType.ReBroadcast;
-            else
-                e.responseType = socket_event_types_1.EventResponseType.RespondClient;
-        });
+        // Setup the socket API
+        new socket_api_1.SocketAPI(this);
     }
     /**
     * Sends an event to all connected clients of this server listening for a specific event
@@ -149,8 +142,8 @@ var CommsController = (function (_super) {
         if (!event.clientEvent)
             return winston.error("Websocket alert error: No ClientEvent set", { process: process.pid });
         this.emit(socket_event_types_1.EventType[event.clientEvent.eventType], event);
-        if (event.responseType == socket_event_types_1.EventResponseType.NoResponse && !event.responseEvent)
-            return winston.error("Websocket alert error: The response type is expeciting a responseEvent but one is not created", { process: process.pid });
+        if (event.responseType != socket_event_types_1.EventResponseType.NoResponse && !event.responseEvent)
+            return winston.error("Websocket alert error: The response type is expecting a responseEvent but one is not created", { process: process.pid });
         if (event.responseType == socket_event_types_1.EventResponseType.RespondClient)
             this.broadcastEventToClient(event.responseEvent, event.client);
         else if (event.responseType == socket_event_types_1.EventResponseType.ReBroadcast)
