@@ -88,8 +88,8 @@ var UserController = (function (_super) {
         });
     };
     /**
-    * Gets a specific user by username or email - the "username" parameter must be set. The user data will be obscured unless the verbose parameter
-    * is specified. Specify the verbose=true parameter in order to get all user data
+    * Gets a specific user by username or email - the "username" parameter must be set. Some of the user data will be obscured unless the verbose parameter
+    * is specified. Specify the verbose=true parameter in order to get all user data.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
@@ -114,7 +114,7 @@ var UserController = (function (_super) {
     };
     /**
     * Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
-    * Also specify the verbose=true parameter in order to get all user data. You can also search with the
+    * Also specify the verbose=true parameter in order to get all user data. You can also filter usernames with the
     * search query
     * @param {def.AuthRequest} req
     * @param {express.Response} res

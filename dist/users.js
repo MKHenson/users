@@ -1,5 +1,4 @@
 "use strict";
-var mongodb = require("mongodb");
 var validator = require("validator");
 var bcrypt = require("bcryptjs");
 var recaptcha = require("recaptcha-async");
@@ -31,28 +30,37 @@ var User = (function () {
     }
     /**
     * Generates an object that can be sent to clients.
-    * @param {boolean} showPrivate If true, sensitive database data will be sent (things like passwords will still be safe - but hashed)
+    * @param {boolean} verbose If true, sensitive database data will be sent (things like passwords will still be obscured)
     * @returns {IUserEntry}
     */
-    User.prototype.generateCleanedData = function (showPrivate) {
-        if (showPrivate === void 0) { showPrivate = false; }
+    User.prototype.generateCleanedData = function (verbose) {
+        if (verbose === void 0) { verbose = false; }
         if (!this.dbEntry.passwordTag)
             this.dbEntry.passwordTag = "";
         if (!this.dbEntry.sessionId)
             this.dbEntry.sessionId = "";
-        return {
-            _id: (showPrivate ? this.dbEntry._id : new mongodb.ObjectID("000000000000000000000000")),
-            email: this.dbEntry.email,
-            lastLoggedIn: this.dbEntry.lastLoggedIn,
-            createdOn: this.dbEntry.createdOn,
-            password: showPrivate ? this.dbEntry.password : new Array(this.dbEntry.password.length).join("*"),
-            registerKey: showPrivate ? this.dbEntry.registerKey : new Array(this.dbEntry.registerKey.length).join("*"),
-            sessionId: showPrivate ? this.dbEntry.sessionId : new Array(this.dbEntry.sessionId.length).join("*"),
-            username: this.dbEntry.username,
-            privileges: this.dbEntry.privileges,
-            passwordTag: (showPrivate ? this.dbEntry.passwordTag : new Array(this.dbEntry.passwordTag.length).join("*")),
-            meta: this.dbEntry.meta
-        };
+        if (verbose)
+            return {
+                _id: this.dbEntry._id,
+                email: this.dbEntry.email,
+                lastLoggedIn: this.dbEntry.lastLoggedIn,
+                createdOn: this.dbEntry.createdOn,
+                password: this.dbEntry.password,
+                registerKey: this.dbEntry.registerKey,
+                sessionId: this.dbEntry.sessionId,
+                username: this.dbEntry.username,
+                privileges: this.dbEntry.privileges,
+                passwordTag: this.dbEntry.passwordTag,
+                meta: this.dbEntry.meta
+            };
+        else
+            return {
+                _id: this.dbEntry._id,
+                lastLoggedIn: this.dbEntry.lastLoggedIn,
+                createdOn: this.dbEntry.createdOn,
+                username: this.dbEntry.username,
+                privileges: this.dbEntry.privileges
+            };
     };
     /**
     * Generates the object to be stored in the database

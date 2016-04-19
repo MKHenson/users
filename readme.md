@@ -87,15 +87,11 @@ http://localhost:8000/api/authenticated
 	authenticated: true,
 	error: false,
 	user: {
-		_id: "000000000000000000000000",
+		_id: "7840fen39f38fj8384f73j",
 		email: "test@test.net",
 		lastLoggedIn: 1432114922204,
-		password: "***********************************************************",
-		registerKey: "",
-		sessionId: "**********",
 		username: "test",
-		privileges: 1,
-		passwordTag: ""
+		privileges: 1
 	}
 }
 ```
@@ -168,15 +164,11 @@ http://localhost:8000/api/users/test?verbose=true // Gets the user with the user
 	error: false,
 	message: "Found user test",
 	data: {
-		_id: "000000000000000000000000",
+		_id: "57gjdn85738fj57fj57f84j4",
 		email: "test@test.net",
 		lastLoggedIn: 1432114922204,
-		password: "***********************************************************",
-		registerKey: "",
-		sessionId: "**********",
 		username: "test",
-		privileges: 1,
-		passwordTag: ""
+		privileges: 1
 	}
 }
 ```
@@ -213,15 +205,11 @@ http://localhost:8000/api/users?verbose=true // If verbose, sensitive data will 
 	count: 5,
 	data: [
 		0: {
-			_id: "000000000000000000000000",
+			_id: "57gjdn85738fj57fj57f84j4",
 			email: "test@test.net",
 			lastLoggedIn: 1432114922204,
-			password: "***********************************************************",
-			registerKey: "",
-			sessionId: "**********",
 			username: "test",
-			privileges: 1,
-			passwordTag: ""
+			privileges: 1
 		}
 	]
 }
@@ -305,15 +293,11 @@ http://localhost:8000/api/create-user // Activates the account with the username
 	authenticated: true,
 	message: "User created"
 	data: {
-		_id: "000000000000000000000000",
+		_id: "57gjdn85738fj57fj57f84j4",
 		email: "test@test.net",
 		lastLoggedIn: 1432114922204,
-		password: "***********************************************************",
-		registerKey: "",
-		sessionId: "**********",
 		username: "test",
-		privileges: 1,
-		passwordTag: ""
+		privileges: 1
 	}
 }
 ```
