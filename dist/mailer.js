@@ -10,7 +10,8 @@ var Mailer = (function () {
     /**
      * Creates an instance of the mailer
      */
-    function Mailer() {
+    function Mailer(debugMode) {
+        this._debugMode = debugMode;
         this._scopes = [
             'https://mail.google.com/',
             'https://www.googleapis.com/auth/gmail.modify',
@@ -72,6 +73,8 @@ var Mailer = (function () {
         return new Promise(function (resolve, reject) {
             // Build the message string
             var message = that.buildMessage(to, from, subject, msg);
+            if (that._debugMode)
+                return resolve(true);
             // Send the message
             that.gmail.users.messages.send({
                 auth: that._authorizer,

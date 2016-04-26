@@ -186,7 +186,7 @@ export class UserManager
 
         if (that._config.google.bucket && that._config.google.keyFile)
         {
-            that._mailer = new Mailer();
+            that._mailer = new Mailer(that._config.debugMode);
             that._mailer.initialize(that._config.google.keyFile, that._config.google.mail.apiEmail);
         }
 

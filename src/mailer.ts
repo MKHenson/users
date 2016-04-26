@@ -15,13 +15,15 @@ export class Mailer
     private _apiEmail: string;
     private _authorizer: any;
     private _scopes : Array<string>;
+    private _debugMode : boolean;
 
     /**
      * Creates an instance of the mailer
      */
-    constructor()
+    constructor( debugMode : boolean )
     {
-         this._scopes = [
+        this._debugMode = debugMode;
+        this._scopes = [
             'https://mail.google.com/',
             'https://www.googleapis.com/auth/gmail.modify',
             'https://www.googleapis.com/auth/gmail.compose',
@@ -102,6 +104,9 @@ export class Mailer
 
             // Build the message string
             var message = that.buildMessage(to, from, subject, msg);
+
+            if ( that._debugMode )
+                return resolve(true);
 
             // Send the message
             that.gmail.users.messages.send({

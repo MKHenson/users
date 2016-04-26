@@ -43,6 +43,9 @@ try {
     // Parse the config
     console.log("Parsing file config...");
     var config = JSON.parse(jsonConfig);
+    // If the debug paramter is present then go into debug mode
+    if (args.debug)
+        config.debugMode = true;
 }
 catch (exp) {
     winston.error("There was an error parsing the config file '" + exp.toString() + "'", { process: process.pid }, function () {

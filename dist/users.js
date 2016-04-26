@@ -145,7 +145,7 @@ var UserManager = (function () {
         var that = this;
         var config = this._config;
         if (that._config.google.bucket && that._config.google.keyFile) {
-            that._mailer = new mailer_1.Mailer();
+            that._mailer = new mailer_1.Mailer(that._config.debugMode);
             that._mailer.initialize(that._config.google.keyFile, that._config.google.mail.apiEmail);
         }
         return new Promise(function (resolve, reject) {
