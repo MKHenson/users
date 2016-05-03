@@ -267,7 +267,7 @@ export class BucketController extends Controller
         manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file) : Promise<Error|users.IFileEntry>
         {
             if (!file)
-                return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
+                return Promise.reject<Error>(new Error(`Could not find the file '${req.params.file}'`));
 
             return manager.renameFile(file, req.body.name);
 
@@ -492,7 +492,7 @@ export class BucketController extends Controller
         manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function(bucket) : Promise<Error|number>
         {
             if (!bucket)
-                return Promise.reject(new Error(`Could not find the bucket '${req.params.bucket}'`));
+                return Promise.reject<Error>(new Error(`Could not find the bucket '${req.params.bucket}'`));
 
             bucketEntry = bucket;
             return manager.numFiles({ bucketId: bucket.identifier });
@@ -623,12 +623,12 @@ export class BucketController extends Controller
             if (user)
                 return manager.withinAPILimit(username);
             else
-                return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
+                return Promise.reject<Error>(new Error(`Could not find a user with the name '${username}'`));
 
         }).then(function( inLimits: boolean ) : Promise<Error|gcloud.IBucket>
         {
             if (!inLimits)
-                return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
+                return Promise.reject<Error>(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
 
             return manager.createBucket(bucketName, username);
 

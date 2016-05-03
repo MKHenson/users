@@ -607,7 +607,7 @@ export class BucketManager
     removeFilesByBucket(bucket: string): Promise<Array<string>|Error>
     {
         if (!bucket || bucket.trim() == "")
-            return Promise.reject( new Error("Please specify a valid bucket"));
+            return Promise.reject<Error>( new Error("Please specify a valid bucket"));
 
         // Create the search query for each of the files
         var searchQuery = { $or: <Array<users.IFileEntry>>[{ bucketId: bucket }, { bucketName: bucket }] };
@@ -738,7 +738,7 @@ export class BucketManager
             that.withinAPILimit(file.user).then(function (val) : Promise<Error|boolean> {
 
                 if (!val)
-                    return Promise.reject(new Error("You do not have enough API calls left to make this request"));
+                    return Promise.reject<Error>(new Error("You do not have enough API calls left to make this request"));
 
                 return that.incrementAPI(file.user);
 
@@ -778,7 +778,7 @@ export class BucketManager
             that.withinAPILimit(file.user).then(function (val) : Promise<Error | boolean>
             {
                 if (!val)
-                    return Promise.reject( new Error("You do not have enough API calls left to make this request"));
+                    return Promise.reject<Error>( new Error("You do not have enough API calls left to make this request"));
 
                 return that.incrementAPI(file.user);
 

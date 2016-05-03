@@ -4,6 +4,7 @@
     "accountRedirectURL": "http://host.com/admin/message",
     "passwordResetURL": "http://host.com/admin/password-reset-form",
     "userCollection": "users",
+    "debugMode": false,
     "sessionCollection": "sessions",
     "approvedDomains": [
         "webinate\\.net",

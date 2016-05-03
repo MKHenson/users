@@ -1,9 +1,4 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
 var ws = require("ws");
 var events = require("events");
 var https = require("https");
@@ -17,21 +12,20 @@ var socket_api_1 = require("../socket-api");
  * This wraps data around events sent via the web socket to the users server. Optionally
  * these events can respond to the client who initiated the event as well as to all listeners.
  */
-var ClientEvent = (function () {
-    function ClientEvent(event, client) {
+class ClientEvent {
+    constructor(event, client) {
         this.client = client;
         this.error = null;
         this.clientEvent = event;
         this.responseType = socket_event_types_1.EventResponseType.NoResponse;
     }
-    return ClientEvent;
-})();
+}
 exports.ClientEvent = ClientEvent;
 /**
  * A wrapper class for client connections made to the CommsController
  */
-var ClientConnection = (function () {
-    function ClientConnection(ws, domain, controller) {
+class ClientConnection {
+    constructor(ws, domain, controller) {
         var that = this;
         this.domain = domain;
         this._controller = controller;
@@ -48,47 +42,45 @@ var ClientConnection = (function () {
     * Called whenever we recieve a message from a client
     * @param {string|any} message
     */
-    ClientConnection.prototype.onMessage = function (message) {
-        winston.info("Received message from client: '" + message + "'", { process: process.pid });
+    onMessage(message) {
+        winston.info(`Received message from client: '${message}'`, { process: process.pid });
         try {
             var event = JSON.parse(message);
             this._controller.alertMessage(new ClientEvent(event, this));
         }
         catch (err) {
-            winston.error("Could not parse socket message: '" + err + "'", { process: process.pid });
+            winston.error(`Could not parse socket message: '${err}'`, { process: process.pid });
         }
-    };
+    }
     /**
     * Called whenever a client disconnnects
     */
-    ClientConnection.prototype.onClose = function () {
+    onClose() {
         this.ws.removeAllListeners("message");
         this.ws.removeAllListeners("close");
         this.ws.removeAllListeners("error");
         this.ws.clientConnection = null;
         this.ws = null;
         this._controller = null;
-    };
+    }
     /**
     * Called whenever an error has occurred
     * @param {Error} err
     */
-    ClientConnection.prototype.onError = function (err) {
-        winston.error("An error has occurred for web socket : '" + err.message + "'", { process: process.pid });
-    };
-    return ClientConnection;
-})();
+    onError(err) {
+        winston.error(`An error has occurred for web socket : '${err.message}'`, { process: process.pid });
+    }
+}
 /**
 * A controller that deals with any any IPC or web socket communications
 */
-var CommsController = (function (_super) {
-    __extends(CommsController, _super);
+class CommsController extends events.EventEmitter {
     /**
     * Creates an instance of the Communication server
     * @param {IConfig} cfg
     */
-    function CommsController(cfg) {
-        _super.call(this);
+    constructor(cfg) {
+        super();
         var that = this;
         CommsController.singleton = this;
         // dummy request processing - this is not actually called as its handed off to the socket api
@@ -102,7 +94,7 @@ var CommsController = (function (_super) {
             var caChain = [fs.readFileSync(cfg.sslIntermediate), fs.readFileSync(cfg.sslRoot)];
             var privkey = cfg.sslKey ? fs.readFileSync(cfg.sslKey) : null;
             var theCert = cfg.sslCert ? fs.readFileSync(cfg.sslCert) : null;
-            winston.info("Attempting to start Websocket server with SSL...", { process: process.pid });
+            winston.info(`Attempting to start Websocket server with SSL...`, { process: process.pid });
             httpsServer = https.createServer({ key: privkey, cert: theCert, passphrase: cfg.sslPassPhrase, ca: caChain }, processRequest);
             httpsServer.listen(cfg.websocket.port);
             this._server = new ws.Server({ server: httpsServer });
@@ -126,7 +118,7 @@ var CommsController = (function (_super) {
                 }
             }
             if (!clientApproved) {
-                winston.error("A connection was made by " + (headers.host || headers.origin) + " but it is not on the approved domain list");
+                winston.error(`A connection was made by ${headers.host || headers.origin} but it is not on the approved domain list`);
                 ws.terminate();
                 ws.close();
             }
@@ -138,38 +130,38 @@ var CommsController = (function (_super) {
     * Sends an event to all connected clients of this server listening for a specific event
     * @param {ClientEvent<def.SocketEvents.IEvent>} event The event to alert the server of
     */
-    CommsController.prototype.alertMessage = function (event) {
+    alertMessage(event) {
         if (!event.clientEvent)
-            return winston.error("Websocket alert error: No ClientEvent set", { process: process.pid });
+            return winston.error(`Websocket alert error: No ClientEvent set`, { process: process.pid });
         this.emit(socket_event_types_1.EventType[event.clientEvent.eventType], event);
         if (event.responseType != socket_event_types_1.EventResponseType.NoResponse && !event.responseEvent)
-            return winston.error("Websocket alert error: The response type is expecting a responseEvent but one is not created", { process: process.pid });
+            return winston.error(`Websocket alert error: The response type is expecting a responseEvent but one is not created`, { process: process.pid });
         if (event.responseType == socket_event_types_1.EventResponseType.RespondClient)
             this.broadcastEventToClient(event.responseEvent, event.client);
         else if (event.responseType == socket_event_types_1.EventResponseType.ReBroadcast)
             this.broadcastEventToAll(event.responseEvent);
-    };
+    }
     /**
     * Sends an event to the client specified
     * @param {IEvent} event The event to broadcast
     */
-    CommsController.prototype.broadcastEventToClient = function (event, client) {
+    broadcastEventToClient(event, client) {
         var that = this;
         return new Promise(function (resolve, reject) {
             client.ws.send(JSON.stringify(event), undefined, function (error) {
                 if (error) {
-                    winston.error("Websocket broadcase error: '" + error + "'", { process: process.pid });
+                    winston.error(`Websocket broadcase error: '${error}'`, { process: process.pid });
                     return reject();
                 }
                 return resolve();
             });
         });
-    };
+    }
     /**
     * Sends an event to all connected clients of this server listening for a specific event
     * @param {IEvent} event The event to broadcast
     */
-    CommsController.prototype.broadcastEventToAll = function (event) {
+    broadcastEventToAll(event) {
         var that = this;
         return new Promise(function (resolve, reject) {
             var numResponded = 0, errorOccurred = false, releventClients = [];
@@ -186,7 +178,7 @@ var CommsController = (function (_super) {
                     if (errorOccurred)
                         return;
                     if (error) {
-                        winston.error("Websocket broadcase error: '" + error + "'", { process: process.pid });
+                        winston.error(`Websocket broadcase error: '${error}'`, { process: process.pid });
                         errorOccurred = true;
                         return reject();
                     }
@@ -200,14 +192,13 @@ var CommsController = (function (_super) {
             if (clientLength == 0)
                 return resolve();
         });
-    };
+    }
     /**
     * Called to initialize this controller and its related database objects
     * @returns {Promise<Controller>}
     */
-    CommsController.prototype.initialize = function (db) {
+    initialize(db) {
         return Promise.resolve(null);
-    };
-    return CommsController;
-})(events.EventEmitter);
+    }
+}
 exports.CommsController = CommsController;

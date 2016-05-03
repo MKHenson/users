@@ -1,4 +1,17 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, Promise, generator) {
+    return new Promise(function (resolve, reject) {
+        generator = generator.call(thisArg, _arguments);
+        function cast(value) { return value instanceof Promise && value.constructor === Promise ? value : new Promise(function (resolve) { resolve(value); }); }
+        function onfulfill(value) { try { step("next", value); } catch (e) { reject(e); } }
+        function onreject(value) { try { step("throw", value); } catch (e) { reject(e); } }
+        function step(verb, value) {
+            var result = generator[verb](value);
+            result.done ? resolve(result.value) : cast(result.value).then(onfulfill, onreject);
+        }
+        step("next", void 0);
+    });
+};
 var google = require("googleapis");
 var googleAuth = require("google-auth-library");
 var fs = require("fs");
@@ -6,11 +19,12 @@ var winston = require("winston");
 /**
  * A simple class for sending mail using Google Mail's API
  */
-var Mailer = (function () {
+class Mailer {
     /**
      * Creates an instance of the mailer
      */
-    function Mailer() {
+    constructor(debugMode) {
+        this._debugMode = debugMode;
         this._scopes = [
             'https://mail.google.com/',
             'https://www.googleapis.com/auth/gmail.modify',
@@ -24,7 +38,7 @@ var Mailer = (function () {
      * @param {string} apiEmail The email address of the authorized email using the Gmail API
      * @returns {Promise<boolean>}
      */
-    Mailer.prototype.initialize = function (keyFilePath, apiEmail) {
+    initialize(keyFilePath, apiEmail) {
         var that = this;
         return new Promise(function (resolve, reject) {
             that.gmail = google.gmail('v1');
@@ -33,20 +47,20 @@ var Mailer = (function () {
             // Authorize a client with the loaded credentials
             that.authorize(that._keyFile)
                 .then(function (data) {
-                winston.info("Connected to Google Authentication", { process: process.pid });
+                winston.info(`Connected to Google Authentication`, { process: process.pid });
                 resolve(true);
             })
                 .catch(function (err) {
-                winston.error("Could not authorize Google API: " + err.message, { process: process.pid });
+                winston.error(`Could not authorize Google API: ${err.message}`, { process: process.pid });
                 resolve(false);
             });
         });
-    };
+    }
     /**
      * Attempts to authorize the google service account credentials
      * @returns {Promise<GoogleAuth.JWT>}
      */
-    Mailer.prototype.authorize = function (credentials) {
+    authorize(credentials) {
         var that = this;
         return new Promise(function (resolve, reject) {
             var auth = new googleAuth();
@@ -58,7 +72,7 @@ var Mailer = (function () {
                 resolve(jwt);
             });
         });
-    };
+    }
     /**
      * Sends an email using Google's Gmail API
      * @param {stirng} to The email address to send the message to
@@ -67,11 +81,13 @@ var Mailer = (function () {
      * @param {stirng} msg The message to be sent
      * @returns {Promise<boolean>}
      */
-    Mailer.prototype.sendMail = function (to, from, subject, msg) {
+    sendMail(to, from, subject, msg) {
         var that = this;
         return new Promise(function (resolve, reject) {
             // Build the message string
             var message = that.buildMessage(to, from, subject, msg);
+            if (that._debugMode)
+                return resolve(true);
             // Send the message
             that.gmail.users.messages.send({
                 auth: that._authorizer,
@@ -83,7 +99,7 @@ var Mailer = (function () {
                 resolve(true);
             });
         });
-    };
+    }
     /**
      * Builds a message string in base64 encoding
      * @param {stirng} to The email address to send the message to
@@ -92,7 +108,7 @@ var Mailer = (function () {
      * @param {stirng} message The message to be sent
      * @returns {string}
      */
-    Mailer.prototype.buildMessage = function (to, from, subject, message) {
+    buildMessage(to, from, subject, message) {
         var str = ["Content-Type: text/plain; charset=\"UTF-8\"\n",
             "MIME-Version: 1.0\n",
             "Content-Transfer-Encoding: 7bit\n",
@@ -104,7 +120,6 @@ var Mailer = (function () {
         // Encode the mail into base 64
         var encodedMail = new Buffer(str).toString("base64").replace(/\+/g, '-').replace(/\//g, '_');
         return encodedMail;
-    };
-    return Mailer;
-})();
+    }
+}
 exports.Mailer = Mailer;

@@ -4,8 +4,8 @@ var socket_event_types_1 = require("./socket-event-types");
 /**
 * Handles express errors
 */
-var SocketAPI = (function () {
-    function SocketAPI(comms) {
+class SocketAPI {
+    constructor(comms) {
         this._comms = comms;
         // Setup all socket API listeners
         comms.on(socket_event_types_1.EventType[socket_event_types_1.EventType.Echo], this.onEcho.bind(this));
@@ -15,7 +15,7 @@ var SocketAPI = (function () {
      * Responds to a meta request from a client
      * @param {SocketEvents.IMetaEvent} e
      */
-    SocketAPI.prototype.onMeta = function (e) {
+    onMeta(e) {
         var comms = this._comms;
         if (!users_1.UserManager.get)
             return;
@@ -39,11 +39,11 @@ var SocketAPI = (function () {
         }).catch(function (err) {
             comms.broadcastEventToClient({ error: err.toString(), eventType: e.clientEvent.eventType }, e.client);
         });
-    };
+    }
     /**
      * Responds to a echo request from a client
      */
-    SocketAPI.prototype.onEcho = function (e) {
+    onEcho(e) {
         e.responseEvent = {
             eventType: socket_event_types_1.EventType.Echo,
             message: e.clientEvent.message
@@ -52,7 +52,6 @@ var SocketAPI = (function () {
             e.responseType = socket_event_types_1.EventResponseType.ReBroadcast;
         else
             e.responseType = socket_event_types_1.EventResponseType.RespondClient;
-    };
-    return SocketAPI;
-})();
+    }
+}
 exports.SocketAPI = SocketAPI;

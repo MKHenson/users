@@ -59,6 +59,10 @@ try
     // Parse the config
     console.log(`Parsing file config...`);
     var config: IConfig = JSON.parse(jsonConfig);
+
+    // If the debug paramter is present then go into debug mode
+    if ( args.debug )
+        config.debugMode = true;
 }
 catch (exp)
 {

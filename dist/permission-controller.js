@@ -1,4 +1,17 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, Promise, generator) {
+    return new Promise(function (resolve, reject) {
+        generator = generator.call(thisArg, _arguments);
+        function cast(value) { return value instanceof Promise && value.constructor === Promise ? value : new Promise(function (resolve) { resolve(value); }); }
+        function onfulfill(value) { try { step("next", value); } catch (e) { reject(e); } }
+        function onreject(value) { try { step("throw", value); } catch (e) { reject(e); } }
+        function step(verb, value) {
+            var result = generator[verb](value);
+            result.done ? resolve(result.value) : cast(result.value).then(onfulfill, onreject);
+        }
+        step("next", void 0);
+    });
+};
 var users_1 = require("./users");
 /**
 * Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
@@ -83,19 +96,18 @@ exports.requireUser = requireUser;
 * @param {Function} next
 */
 function requestHasPermission(level, req, res, existingUser) {
-    return new Promise(function (resolve, reject) {
-        users_1.UserManager.get.loggedIn(req, res).then(function (user) {
-            if (!user)
-                return reject(new Error("You must be logged in to make this request"));
-            if (existingUser !== undefined) {
-                if ((user.dbEntry.email != existingUser && user.dbEntry.username != existingUser) && user.dbEntry.privileges > level)
-                    return reject(new Error("You don't have permission to make this request"));
-            }
-            else if (user.dbEntry.privileges > level)
-                return reject(new Error("You don't have permission to make this request"));
-            req._user = user;
-            resolve(true);
-        });
+    return __awaiter(this, void 0, Promise, function* () {
+        var user = yield users_1.UserManager.get.loggedIn(req, res);
+        if (!user)
+            throw new Error("You must be logged in to make this request");
+        if (existingUser !== undefined) {
+            if ((user.dbEntry.email != existingUser && user.dbEntry.username != existingUser) && user.dbEntry.privileges > level)
+                throw new Error("You don't have permission to make this request");
+        }
+        else if (user.dbEntry.privileges > level)
+            throw new Error("You don't have permission to make this request");
+        req._user = user;
+        return true;
     });
 }
 exports.requestHasPermission = requestHasPermission;

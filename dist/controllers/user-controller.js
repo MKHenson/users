@@ -1,8 +1,16 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, Promise, generator) {
+    return new Promise(function (resolve, reject) {
+        generator = generator.call(thisArg, _arguments);
+        function cast(value) { return value instanceof Promise && value.constructor === Promise ? value : new Promise(function (resolve) { resolve(value); }); }
+        function onfulfill(value) { try { step("next", value); } catch (e) { reject(e); } }
+        function onreject(value) { try { step("throw", value); } catch (e) { reject(e); } }
+        function step(verb, value) {
+            var result = generator[verb](value);
+            result.done ? resolve(result.value) : cast(result.value).then(onfulfill, onreject);
+        }
+        step("next", void 0);
+    });
 };
 var express = require("express");
 var bodyParser = require('body-parser');
@@ -14,16 +22,15 @@ var winston = require("winston");
 /**
 * Main class to use for managing users
 */
-var UserController = (function (_super) {
-    __extends(UserController, _super);
+class UserController extends controller_1.Controller {
     /**
     * Creates an instance of the user manager
     * @param {mongodb.Collection} userCollection The mongo collection that stores the users
     * @param {mongodb.Collection} sessionCollection The mongo collection that stores the session data
     * @param {def.IConfig} The config options of this manager
     */
-    function UserController(e, config) {
-        _super.call(this);
+    constructor(e, config) {
+        super();
         this._config = config;
         // Setup the rest calls
         var router = express.Router();
@@ -59,7 +66,7 @@ var UserController = (function (_super) {
     * Called to initialize this controller and its related database objects
     * @returns {Promise<Controller>}
     */
-    UserController.prototype.initialize = function (db) {
+    initialize(db) {
         var that = this;
         return new Promise(function (resolve, reject) {
             var userCollection;
@@ -86,7 +93,7 @@ var UserController = (function (_super) {
                 reject(error);
             });
         });
-    };
+    }
     /**
     * Gets a specific user by username or email - the "username" parameter must be set. Some of the user data will be obscured unless the verbose parameter
     * is specified. Specify the verbose=true parameter in order to get all user data.
@@ -94,7 +101,7 @@ var UserController = (function (_super) {
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.getUser = function (req, res, next) {
+    getUser(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -103,7 +110,7 @@ var UserController = (function (_super) {
                 return res.end(JSON.stringify({ message: "No user found", error: true }));
             var token = {
                 error: false,
-                message: "Found " + user.dbEntry.username,
+                message: `Found ${user.dbEntry.username}`,
                 data: user.generateCleanedData(Boolean(req.query.verbose))
             };
             return res.end(JSON.stringify(token));
@@ -111,7 +118,7 @@ var UserController = (function (_super) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
-    };
+    }
     /**
     * Gets a list of users. You can limit the haul by specifying the 'index' and 'limit' query parameters.
     * Also specify the verbose=true parameter in order to get all user data. You can also filter usernames with the
@@ -120,7 +127,7 @@ var UserController = (function (_super) {
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.getUsers = function (req, res, next) {
+    getUsers(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -141,7 +148,7 @@ var UserController = (function (_super) {
                 sanitizedData.push(users[i].generateCleanedData(verbose));
             var token = {
                 error: false,
-                message: "Found " + users.length + " users",
+                message: `Found ${users.length} users`,
                 data: sanitizedData,
                 count: totalNumUsers
             };
@@ -153,14 +160,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Gets a list of active sessions. You can limit the haul by specifying the 'index' and 'limit' query parameters.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.getSessions = function (req, res, next) {
+    getSessions(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -171,7 +178,7 @@ var UserController = (function (_super) {
         }).then(function (sessions) {
             var token = {
                 error: false,
-                message: "Found " + sessions.length + " active sessions",
+                message: `Found ${sessions.length} active sessions`,
                 data: sessions,
                 count: numSessions
             };
@@ -183,21 +190,21 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Resends the activation link to the user
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.deleteSession = function (req, res, next) {
+    deleteSession(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
         that._userManager.sessionManager.clearSession(req.params.id, req, res).then(function (result) {
             var token = {
                 error: false,
-                message: "Session " + req.params.id + " has been removed",
+                message: `Session ${req.params.id} has been removed`,
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
@@ -207,30 +214,30 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Activates the user's account
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.activateAccount = function (req, res, next) {
+    activateAccount(req, res, next) {
         var redirectURL = this._config.accountRedirectURL;
         // Check the user's activation and forward them onto the admin message page
         this._userManager.checkActivation(req.query.user, req.query.key).then(function (success) {
-            res.redirect(redirectURL + "?message=" + encodeURIComponent("Your account has been activated!") + "&status=success&origin=" + encodeURIComponent(req.query.origin));
+            res.redirect(`${redirectURL}?message=${encodeURIComponent("Your account has been activated!")}&status=success&origin=${encodeURIComponent(req.query.origin)}`);
         }).catch(function (error) {
             winston.error(error.toString(), { process: process.pid });
-            res.redirect(redirectURL + "?message=" + encodeURIComponent(error.message) + "&status=error&origin=" + encodeURIComponent(req.query.origin));
+            res.redirect(`${redirectURL}?message=${encodeURIComponent(error.message)}&status=error&origin=${encodeURIComponent(req.query.origin)}`);
         });
-    };
+    }
     /**
     * Resends the activation link to the user
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.resendActivation = function (req, res, next) {
+    resendActivation(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
@@ -246,14 +253,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Resends the activation link to the user
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.requestPasswordReset = function (req, res, next) {
+    requestPasswordReset(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
@@ -269,14 +276,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * resets the password if the user has a valid password token
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.passwordReset = function (req, res, next) {
+    passwordReset(req, res, next) {
         res.setHeader('Content-Type', 'application/json');
         if (!req.body)
             return res.end(JSON.stringify({ message: "Expecting body content and found none", error: true }));
@@ -299,14 +306,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Approves a user's activation code so they can login without email validation
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.approveActivation = function (req, res, next) {
+    approveActivation(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -322,14 +329,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Attempts to log the user in. Expects the username, password and rememberMe parameters be set.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.login = function (req, res, next) {
+    login(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var token = req.body;
@@ -348,14 +355,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Attempts to log the user out
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.logout = function (req, res, next) {
+    logout(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         this._userManager.logOut(req, res).then(function (result) {
@@ -370,14 +377,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Attempts to send the webmaster an email message
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.messageWebmaster = function (req, res, next) {
+    messageWebmaster(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var token = req.body;
@@ -389,14 +396,14 @@ var UserController = (function (_super) {
             winston.error(error.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: error.message, error: true }));
         });
-    };
+    }
     /**
     * Attempts to register a new user
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.register = function (req, res, next) {
+    register(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var token = req.body;
@@ -415,14 +422,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Sets a user's meta data
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.setData = function (req, res, next) {
+    setData(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -432,7 +439,7 @@ var UserController = (function (_super) {
             val = {};
         that._userManager.setMeta(user, val).then(function () {
             return res.end(JSON.stringify({
-                message: "User's data has been updated",
+                message: `User's data has been updated`,
                 error: false
             }));
         }).catch(function (error) {
@@ -442,14 +449,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Sets a user's meta value
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.setVal = function (req, res, next) {
+    setVal(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -457,7 +464,7 @@ var UserController = (function (_super) {
         var name = req.params.name;
         that._userManager.setMetaVal(user, name, req.body.value).then(function () {
             return res.end(JSON.stringify({
-                message: "Value '" + name + "' has been updated",
+                message: `Value '${name}' has been updated`,
                 error: false
             }));
         }).catch(function (error) {
@@ -467,14 +474,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Gets a user's meta value
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.getVal = function (req, res, next) {
+    getVal(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -489,14 +496,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Gets a user's meta data
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.getData = function (req, res, next) {
+    getData(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -511,14 +518,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Removes a user from the database
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.removeUser = function (req, res, next) {
+    removeUser(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -528,7 +535,7 @@ var UserController = (function (_super) {
         that._userManager.removeUser(toRemove).then(function () {
             var token = {
                 error: false,
-                message: "User " + toRemove + " has been removed"
+                message: `User ${toRemove} has been removed`
             };
             return res.end(JSON.stringify(token));
         }).catch(function (error) {
@@ -538,14 +545,14 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Allows an admin to create a new user without registration
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    UserController.prototype.createUser = function (req, res, next) {
+    createUser(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var that = this;
@@ -561,7 +568,7 @@ var UserController = (function (_super) {
         that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user) {
             var token = {
                 error: false,
-                message: "User " + user.dbEntry.username + " has been created",
+                message: `User ${user.dbEntry.username} has been created`,
                 data: user.dbEntry
             };
             return res.end(JSON.stringify(token));
@@ -572,7 +579,7 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Checks to see if the current session is logged in. If the user is, it will be returned redacted. You can specify the 'verbose' query parameter.
     * @param {express.Request} req
@@ -580,7 +587,7 @@ var UserController = (function (_super) {
     * @param {Function} next
     * @returns {IAuthenticationResponse}
     */
-    UserController.prototype.authenticated = function (req, res, next) {
+    authenticated(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         this._userManager.loggedIn(req, res).then(function (user) {
@@ -598,7 +605,6 @@ var UserController = (function (_super) {
                 error: true
             }));
         });
-    };
-    return UserController;
-})(controller_1.Controller);
+    }
+}
 exports.UserController = UserController;

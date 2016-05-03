@@ -107,27 +107,22 @@ export function requireUser(req: def.AuthRequest, res: express.Response, next: F
 * @param {string} existingUser [Optional] If specified this also checks if the authenticated user is the user making the request
 * @param {Function} next
 */
-export function requestHasPermission(level: UserPrivileges, req: def.AuthRequest, res: express.Response, existingUser?: string): Promise<boolean>
+export async function requestHasPermission(level: UserPrivileges, req: def.AuthRequest, res: express.Response, existingUser?: string): Promise<boolean>
 {
-    return new Promise(function (resolve, reject)
+    var user = await UserManager.get.loggedIn(<express.Request><Express.Request>req, res);
+
+    if (!user)
+        throw new Error("You must be logged in to make this request");
+
+    if (existingUser !== undefined)
     {
-        UserManager.get.loggedIn(<express.Request><Express.Request>req, res).then(function (user)
-        {
-            if (!user)
-                return reject(new Error("You must be logged in to make this request"));
+        if ((user.dbEntry.email != existingUser && user.dbEntry.username != existingUser) && user.dbEntry.privileges > level)
+            throw new Error("You don't have permission to make this request");
+    }
+    else if (user.dbEntry.privileges > level)
+        throw new Error("You don't have permission to make this request");
 
-            if (existingUser !== undefined)
-            {
-                if ((user.dbEntry.email != existingUser && user.dbEntry.username != existingUser) && user.dbEntry.privileges > level)
-                    return reject(new Error("You don't have permission to make this request"));
-            }
-            else if (user.dbEntry.privileges > level)
-                return reject(new Error("You don't have permission to make this request"));
+    req._user = user;
 
-            req._user = user;
-
-            resolve(true);
-
-        })
-    })
+    return true;
 }

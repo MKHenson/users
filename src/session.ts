@@ -76,19 +76,10 @@ export class SessionManager extends EventEmitter
 	* @param {number} startIndex
 	* @param {number} limit
 	*/
-    numActiveSessions(startIndex?: number, limit?: number): Promise<number>
+    async numActiveSessions(startIndex?: number, limit?: number): Promise<number>
     {
-        var that = this;
-        return new Promise<number>(function (resolve, reject)
-        {
-            that._dbCollection.count({}, function (error: Error, count: number)
-            {
-                if (error)
-                    return reject(error);
-
-               resolve(count);
-            })
-        });
+    	var result = await this._dbCollection.count({});
+		return result;
     }
 
 	/**
@@ -96,18 +87,10 @@ export class SessionManager extends EventEmitter
 	* @param {number} startIndex
 	* @param {number} limit
 	*/
-	getActiveSessions(startIndex?: number, limit: number = -1): Promise<Array<ISessionEntry>>
+	async getActiveSessions(startIndex?: number, limit: number = -1): Promise<Array<ISessionEntry>>
 	{
-		var that = this;
-
-        return new Promise<Array<ISessionEntry>>(function (resolve, reject)
-		{
-			that._dbCollection.find({}).skip(startIndex).limit(limit).toArray().then(function (results: Array<ISessionEntry>) {
-				resolve(results);
-			}).catch(function(error: Error){
-                return reject(error);
-            });
-		});
+		var results : Array<ISessionEntry> = await this._dbCollection.find({}).skip(startIndex).limit(limit).toArray();
+		return results;
 	}
 
 	/**
@@ -117,46 +100,33 @@ export class SessionManager extends EventEmitter
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>}
 	*/
-	clearSession(sessionId: string, request: http.ServerRequest, response: http.ServerResponse): Promise<boolean>
+	async clearSession(sessionId: string, request: http.ServerRequest, response: http.ServerResponse): Promise<boolean>
 	{
-		var that = this;
+		// Check if the request has a valid session ID
+		var sId: string = sessionId || this.getIDFromRequest(request);
 
-		return new Promise<boolean>((resolve, reject) =>
+		if (sId != "")
 		{
-			// Check if the request has a valid session ID
-			var sId: string = sessionId || that.getIDFromRequest(request);
+			// We have a session ID, lets try to find it in the DB
+			var sessionDB: ISessionEntry = await this._dbCollection.find({ sessionId: sId }).limit(1).next();
 
-			if (sId != "")
-			{
-				// We have a session ID, lets try to find it in the DB
-				that._dbCollection.find({ sessionId: sId }).limit(1).next().then(function(sessionDB: ISessionEntry) {
+			// Create a new session
+			var session = new Session(sId, this._options);
+			session.expiration = -1;
 
-                    // Create a new session
-                    var session = new Session(sId, that._options);
-                    session.expiration = -1;
+			// Adds / updates the DB with the new session
+			var result = await this._dbCollection.deleteOne({ sessionId: session.sessionId });
 
-                    // Adds / updates the DB with the new session
-                    that._dbCollection.deleteOne({ sessionId: session.sessionId }).then(function (result: any) {
+			this.emit("sessionRemoved", sId);
 
-                        that.emit("sessionRemoved", sId);
+			// Set the session cookie header
+			response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
 
-                        // Set the session cookie header
-                        response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
-
-                        // Resolve the request
-                        resolve(true);
-
-                    }).catch(function(err: Error){
-                        reject(err);
-                    });
-
-				}).catch(function(err: Error){
-                    reject(err);
-                });
-			}
-			else
-				resolve(true);
-		});
+			// Resolve the request
+			return true;
+		}
+		else
+			return true;
 	}
 
 	/**
@@ -165,53 +135,40 @@ export class SessionManager extends EventEmitter
 	* @param {http.ServerResponse} response
 	* @returns {Promise<Session>} Returns a session or null if none can be found
 	*/
-	getSession(request: http.ServerRequest, response: http.ServerResponse): Promise<Session>
+	async getSession(request: http.ServerRequest, response: http.ServerResponse): Promise<Session>
 	{
-		var that = this;
+		// Check if the request has a valid session ID
+		var sessionId: string = this.getIDFromRequest(request);
 
-		return new Promise<Session>( (resolve, reject) =>
+		if (sessionId != "")
 		{
-			// Check if the request has a valid session ID
-			var sessionId: string = that.getIDFromRequest(request);
+			// We have a session ID, lets try to find it in the DB
+			var sessionDB: ISessionEntry = await this._dbCollection.find({ sessionId: sessionId }).limit(1).next();
 
-			if (sessionId != "")
-			{
-				// We have a session ID, lets try to find it in the DB
-				that._dbCollection.find({ sessionId: sessionId }).limit(1).next().then(function(sessionDB: ISessionEntry) {
-					// Cant seem to find any session - so create a new one
-					if (!sessionDB)
-                        resolve(null);
-					else
-					{
-						// Create a new session
-						var session = new Session(sessionId, that._options, sessionDB);
+			// Cant seem to find any session - so create a new one
+			if (!sessionDB)
+				return null;
 
-						// Adds / updates the DB with the new session
-						that._dbCollection.updateOne({ sessionId: session.sessionId }, session.save()).then(function (result) {
+			// Create a new session
+			var session = new Session(sessionId, this._options, sessionDB);
 
-                            // make sure a timeout is pending for the expired session reaper
-                            if (!that._timeout)
-                                that._timeout = setTimeout(that._cleanupProxy, 60000);
+			// Adds / updates the DB with the new session
+			var result = await this._dbCollection.updateOne({ sessionId: session.sessionId }, session.save());
 
-                            // Set the session cookie header
-                            if (response)
-                                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
+			// make sure a timeout is pending for the expired session reaper
+			if (!this._timeout)
+				this._timeout = setTimeout(this._cleanupProxy, 60000);
 
-                            // Resolve the request
-                            resolve(session);
+			// Set the session cookie header
+			if (response)
+				response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
 
-						}).catch(function(err: Error){
-                            return reject(err);
-                        });
-					}
-				}).catch(function(err: Error){
-                    reject(err);
-                });
-			}
-			else
-				// Resolve with no session data
-				resolve(null);
-		});
+			// Resolve the request
+			return session;
+		}
+		else
+			// Resolve with no session data
+			return null;
 	}
 
 	/**
@@ -219,27 +176,18 @@ export class SessionManager extends EventEmitter
 	* @param {http.ServerRequest} request
 	* @returns {Promise<Session>}
 	*/
-	createSession(request: http.ServerRequest, response?: http.ServerResponse): Promise<Session>
+	async createSession(request: http.ServerRequest, response?: http.ServerResponse): Promise<Session>
 	{
-		var that = this;
+		var session = new Session(this.createID(), this._options, null);
 
-		return new Promise<Session>(function (resolve, reject)
-		{
-			var session = new Session(that.createID(), that._options, null);
+		// Adds / updates the DB with the new session
+		var insertResult = await this._dbCollection.insertOne(session.save());
 
-			// Adds / updates the DB with the new session
-			that._dbCollection.insertOne(session.save()).then(function(insertResult) {
+		// Set the session cookie header
+		response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
 
-                // Set the session cookie header
-                response.setHeader('Set-Cookie', session.getSetCookieHeaderValue());
-
-                // Resolve the request
-                resolve(session);
-
-			}).catch(function(err: Error){
-                reject(err);
-            });
-		});
+		// Resolve the request
+		return session;
 	}
 
 	/**
@@ -247,64 +195,54 @@ export class SessionManager extends EventEmitter
 	* Once the lifetime of a session is up its then removed from the DB and we check for any remaining sessions.
 	* @param {boolean} force If true, this will force a cleanup instead of waiting on the next timer
 	*/
-	cleanup(force: boolean = false)
+	async cleanup(force: boolean = false)
 	{
-		var that = this;
 		var now: number = +new Date;
 		var next: number = Infinity;
-
 		this._timeout = 0;
 
-		that._dbCollection.find(function(err: Error, result: mongodb.Cursor)
-		{
-			// If an error occurs, just try again in 2 minutes
-			if (err)
-				that._timeout = setTimeout(that._cleanupProxy, 120000);
+		try {
+
+			// TODO: We need to replace the findToken with one where mongo looks at the conditions
+			var findToken = {};
+
+			var sessions : Array<ISessionEntry> = await this._dbCollection.find(findToken).toArray();
+
+			// Remove query
+			var toRemoveQuery: { $or: Array<ISessionEntry> } = { $or: [] };
+
+			for (var i = 0, l = sessions.length; i < l; i++)
+			{
+				var expiration: number = parseFloat(sessions[i].expiration.toString());
+
+				// If the session's time is up
+				if (expiration < now || force)
+					toRemoveQuery.$or.push(<ISessionEntry>{ _id: sessions[i]._id, sessionId: sessions[i].sessionId });
+				else
+					// Session time is not up, but may be the next time target
+					next = next < expiration ? next : expiration;
+			}
+
+			// Check if we need to remove sessions - if we do, then remove them :)
+			if (toRemoveQuery.$or.length > 0)
+			{
+				var result = await this._dbCollection.deleteMany(toRemoveQuery);
+				for (var i = 0, l = toRemoveQuery.$or.length; i < l; i++)
+					this.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId );
+
+				if (next < Infinity)
+					this._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
+			}
 			else
 			{
-				result.toArray(function (err: Error, sessions: Array<ISessionEntry>)
-				{
-					// If an error occurs, just try again in 2 minutes
-					if (err)
-						that._timeout = setTimeout(that._cleanupProxy, 120000);
-					else
-					{
-                        // Remove query
-                        var toRemoveQuery: { $or: Array<ISessionEntry> } = { $or: [] };
-
-						for (var i = 0, l = sessions.length; i < l; i++)
-						{
-							var expiration: number = parseFloat(sessions[i].expiration.toString());
-
-							// If the session's time is up
-                            if (expiration < now || force)
-                                toRemoveQuery.$or.push(<ISessionEntry>{ _id: sessions[i]._id, sessionId: sessions[i].sessionId });
-							else
-								// Session time is not up, but may be the next time target
-								next = next < expiration ? next : expiration;
-						}
-
-						// Check if we need to remove sessions - if we do, then remove them :)
-						if (toRemoveQuery.$or.length > 0)
-						{
-							that._dbCollection.deleteMany(toRemoveQuery).then( function (result)
-                            {
-                                for (var i = 0, l = toRemoveQuery.$or.length; i < l; i++)
-                                    that.emit("sessionRemoved", toRemoveQuery.$or[i].sessionId );
-
-								if (next < Infinity)
-									that._timeout = setTimeout(that._cleanupProxy, next - (+new Date) + 1000);
-							});
-						}
-						else
-						{
-							if (next < Infinity)
-								that._timeout = setTimeout(that._cleanupProxy, next - (+new Date) + 1000);
-						}
-					}
-				});
+				if (next < Infinity)
+					this._timeout = setTimeout(this._cleanupProxy, next - (+new Date) + 1000);
 			}
-		});
+
+		} catch(err) {
+			// If an error occurs, just try again in 2 minutes
+			this._timeout = setTimeout(this._cleanupProxy, 120000);
+		}
 	}
 
 	/**
