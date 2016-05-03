@@ -118,7 +118,7 @@ class CommsController extends events.EventEmitter {
                 }
             }
             if (!clientApproved) {
-                winston.error(`A connection was made by ${headers.host || headers.origin} but it is not on the approved domain list`);
+                winston.error(`A connection was made by ${headers.host || headers.origin} but it is not on the approved domain list. Make sure the host is on the approvedSocketDomains parameter in the config file.`);
                 ws.terminate();
                 ws.close();
             }
