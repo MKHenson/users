@@ -1,4 +1,17 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, Promise, generator) {
+    return new Promise(function (resolve, reject) {
+        generator = generator.call(thisArg, _arguments);
+        function cast(value) { return value instanceof Promise && value.constructor === Promise ? value : new Promise(function (resolve) { resolve(value); }); }
+        function onfulfill(value) { try { step("next", value); } catch (e) { reject(e); } }
+        function onreject(value) { try { step("throw", value); } catch (e) { reject(e); } }
+        function step(verb, value) {
+            var result = generator[verb](value);
+            result.done ? resolve(result.value) : cast(result.value).then(onfulfill, onreject);
+        }
+        step("next", void 0);
+    });
+};
 var http = require("http");
 var https = require("https");
 var fs = require("fs");
@@ -34,27 +47,27 @@ if (!args.config || args.config.trim() == "") {
 }
 // Make sure the file exists
 if (!fs.existsSync(args.config)) {
-    winston.error("Could not locate the config file at '" + args.config + "'", { process: process.pid });
+    winston.error(`Could not locate the config file at '${args.config}'`, { process: process.pid });
     process.exit();
 }
 // Load the file
 var jsonConfig = fs.readFileSync(args.config, "utf8");
 try {
     // Parse the config
-    console.log("Parsing file config...");
+    console.log(`Parsing file config...`);
     var config = JSON.parse(jsonConfig);
     // If the debug paramter is present then go into debug mode
     if (args.debug)
         config.debugMode = true;
 }
 catch (exp) {
-    winston.error("There was an error parsing the config file '" + exp.toString() + "'", { process: process.pid }, function () {
+    winston.error(`There was an error parsing the config file '${exp.toString()}'`, { process: process.pid }, function () {
         process.exit();
     });
 }
-winston.info("Opening the database...", { process: process.pid });
+winston.info(`Opening the database...`, { process: process.pid });
 openDB(config).then(function (db) {
-    winston.info("Initializing controllers...", { process: process.pid });
+    winston.info(`Initializing controllers...`, { process: process.pid });
     return Promise.all([
         new comms_controller_1.CommsController(config).initialize(db),
         new cors_controller_1.CORSController(app, config).initialize(db),
@@ -69,38 +82,38 @@ openDB(config).then(function (db) {
     // Start node server.js
     var httpServer = http.createServer(app);
     httpServer.listen(config.portHTTP);
-    winston.info("Listening on HTTP port " + config.portHTTP, { process: process.pid });
+    winston.info(`Listening on HTTP port ${config.portHTTP}`, { process: process.pid });
     // If we use SSL then start listening for that as well
     if (config.ssl) {
         if (config.sslIntermediate != "" && !fs.existsSync(config.sslIntermediate)) {
-            winston.error("Could not find sslIntermediate: '" + config.sslIntermediate + "'", { process: process.pid });
+            winston.error(`Could not find sslIntermediate: '${config.sslIntermediate}'`, { process: process.pid });
             process.exit();
         }
         if (config.sslCert != "" && !fs.existsSync(config.sslCert)) {
-            winston.error("Could not find sslIntermediate: '" + config.sslCert + "'", { process: process.pid });
+            winston.error(`Could not find sslIntermediate: '${config.sslCert}'`, { process: process.pid });
             process.exit();
         }
         if (config.sslRoot != "" && !fs.existsSync(config.sslRoot)) {
-            winston.error("Could not find sslIntermediate: '" + config.sslRoot + "'", { process: process.pid });
+            winston.error(`Could not find sslIntermediate: '${config.sslRoot}'`, { process: process.pid });
             process.exit();
         }
         if (config.sslKey != "" && !fs.existsSync(config.sslKey)) {
-            winston.error("Could not find sslIntermediate: '" + config.sslKey + "'", { process: process.pid });
+            winston.error(`Could not find sslIntermediate: '${config.sslKey}'`, { process: process.pid });
             process.exit();
         }
         var caChain = [fs.readFileSync(config.sslIntermediate), fs.readFileSync(config.sslRoot)];
         var privkey = config.sslKey ? fs.readFileSync(config.sslKey) : null;
         var theCert = config.sslCert ? fs.readFileSync(config.sslCert) : null;
         var port = config.portHTTPS ? config.portHTTPS : 443;
-        winston.info("Attempting to start SSL server...", { process: process.pid });
+        winston.info(`Attempting to start SSL server...`, { process: process.pid });
         var httpsServer = https.createServer({ key: privkey, cert: theCert, passphrase: config.sslPassPhrase, ca: caChain }, app);
         httpsServer.listen(port);
-        winston.info("Listening on HTTPS port " + port, { process: process.pid });
+        winston.info(`Listening on HTTPS port ${port}`, { process: process.pid });
     }
     // Done!
     winston.info("Users is up and running!", { process: process.pid });
 }).catch(function (error) {
-    winston.error("An error has occurred and the application needs to shut down: '" + error.message + "'", { process: process.pid }, function () {
+    winston.error(`An error has occurred and the application needs to shut down: '${error.message}'`, { process: process.pid }, function () {
         process.exit();
     });
 });

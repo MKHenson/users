@@ -1,23 +1,30 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, Promise, generator) {
+    return new Promise(function (resolve, reject) {
+        generator = generator.call(thisArg, _arguments);
+        function cast(value) { return value instanceof Promise && value.constructor === Promise ? value : new Promise(function (resolve) { resolve(value); }); }
+        function onfulfill(value) { try { step("next", value); } catch (e) { reject(e); } }
+        function onreject(value) { try { step("throw", value); } catch (e) { reject(e); } }
+        function step(verb, value) {
+            var result = generator[verb](value);
+            result.done ? resolve(result.value) : cast(result.value).then(onfulfill, onreject);
+        }
+        step("next", void 0);
+    });
 };
 var controller_1 = require("./controller");
 /**
 * Checks all incomming requests to see if they are CORS approved
 */
-var CORSController = (function (_super) {
-    __extends(CORSController, _super);
+class CORSController extends controller_1.Controller {
     /**
     * Creates an instance of the user manager
     * @param {mongodb.Collection} userCollection The mongo collection that stores the users
     * @param {mongodb.Collection} sessionCollection The mongo collection that stores the session data
     * @param {def.IConfig} The config options of this manager
     */
-    function CORSController(e, config) {
-        _super.call(this);
+    constructor(e, config) {
+        super();
         var matches = [];
         for (var i = 0, l = config.approvedDomains.length; i < l; i++)
             matches.push(new RegExp(config.approvedDomains[i]));
@@ -35,7 +42,7 @@ var CORSController = (function (_super) {
                         break;
                     }
                 if (!matched)
-                    console.log(req.headers.origin + " Does not have permission. Add it to the allowed ");
+                    console.log(`${req.headers.origin} Does not have permission. Add it to the allowed `);
             }
             if (req.method === 'OPTIONS') {
                 res.status(200);
@@ -48,9 +55,8 @@ var CORSController = (function (_super) {
     /**
      * All controllers must successfully return a promise for its initialization phase.
      */
-    CORSController.prototype.initialize = function (db) {
+    initialize(db) {
         return Promise.resolve(null);
-    };
-    return CORSController;
-})(controller_1.Controller);
+    }
+}
 exports.CORSController = CORSController;

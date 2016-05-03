@@ -1,8 +1,16 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, Promise, generator) {
+    return new Promise(function (resolve, reject) {
+        generator = generator.call(thisArg, _arguments);
+        function cast(value) { return value instanceof Promise && value.constructor === Promise ? value : new Promise(function (resolve) { resolve(value); }); }
+        function onfulfill(value) { try { step("next", value); } catch (e) { reject(e); } }
+        function onreject(value) { try { step("throw", value); } catch (e) { reject(e); } }
+        function step(verb, value) {
+            var result = generator[verb](value);
+            result.done ? resolve(result.value) : cast(result.value).then(onfulfill, onreject);
+        }
+        step("next", void 0);
+    });
 };
 var express = require("express");
 var bodyParser = require('body-parser');
@@ -19,16 +27,15 @@ var socket_event_types_1 = require("../socket-event-types");
 /**
 * Main class to use for managing users
 */
-var BucketController = (function (_super) {
-    __extends(BucketController, _super);
+class BucketController extends controller_1.Controller {
     /**
     * Creates an instance of the user manager
     * @param {mongodb.Collection} userCollection The mongo collection that stores the users
     * @param {mongodb.Collection} sessionCollection The mongo collection that stores the session data
     * @param {def.IConfig} The config options of this manager
     */
-    function BucketController(e, config) {
-        _super.call(this);
+    constructor(e, config) {
+        super();
         this._config = config;
         this._allowedFileTypes = ["image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff", "text/plain", "text/json", "application/octet-stream"];
         // Setup the rest calls
@@ -54,7 +61,7 @@ var BucketController = (function (_super) {
         router.put("/files/:id/make-public", [permission_controller_1.requireUser, this.makePublic.bind(this)]);
         router.put("/files/:id/make-private", [permission_controller_1.requireUser, this.makePrivate.bind(this)]);
         // Register the path
-        e.use("" + config.apiPrefix, router);
+        e.use(`${config.apiPrefix}`, router);
     }
     /**
    * Makes sure the target user exists and the numeric value specified is valid
@@ -62,7 +69,7 @@ var BucketController = (function (_super) {
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.verifyTargetValue = function (req, res, next) {
+    verifyTargetValue(req, res, next) {
         // Set the content type
         var value = parseInt(req.params.value);
         if (!req.params.target || req.params.target.trim() == "") {
@@ -77,7 +84,7 @@ var BucketController = (function (_super) {
         users_1.UserManager.get.getUser(req.params.target).then(function (user) {
             if (!user) {
                 res.setHeader('Content-Type', 'application/json');
-                return res.end(JSON.stringify({ message: "Could not find the user '" + req.params.target + "'", error: true }));
+                return res.end(JSON.stringify({ message: `Could not find the user '${req.params.target}'`, error: true }));
             }
             else {
                 req._target = user;
@@ -87,86 +94,86 @@ var BucketController = (function (_super) {
             res.setHeader('Content-Type', 'application/json');
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
-    };
+    }
     /**
    * Updates the target user's api calls
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.updateCalls = function (req, res, next) {
+    updateCalls(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { apiCallsUsed: value }).then(function () {
-            return res.end(JSON.stringify({ message: "Updated the user API calls to [" + value + "]", error: false }));
+            return res.end(JSON.stringify({ message: `Updated the user API calls to [${value}]`, error: false }));
         }).catch(function (err) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
-    };
+    }
     /**
    * Updates the target user's memory usage
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.updateMemory = function (req, res, next) {
+    updateMemory(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { memoryUsed: value }).then(function () {
-            return res.end(JSON.stringify({ message: "Updated the user memory to [" + value + "] bytes", error: false }));
+            return res.end(JSON.stringify({ message: `Updated the user memory to [${value}] bytes`, error: false }));
         }).catch(function (err) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
-    };
+    }
     /**
    * Updates the target user's allocated api calls
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.updateAllocatedCalls = function (req, res, next) {
+    updateAllocatedCalls(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { apiCallsAllocated: value }).then(function () {
-            return res.end(JSON.stringify({ message: "Updated the user API calls to [" + value + "]", error: false }));
+            return res.end(JSON.stringify({ message: `Updated the user API calls to [${value}]`, error: false }));
         }).catch(function (err) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
-    };
+    }
     /**
    * Updates the target user's allocated memory
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.updateAllocatedMemory = function (req, res, next) {
+    updateAllocatedMemory(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = bucket_manager_1.BucketManager.get;
         manager.updateStorage(req._target.dbEntry.username, { memoryAllocated: value }).then(function () {
-            return res.end(JSON.stringify({ message: "Updated the user memory to [" + value + "] bytes", error: false }));
+            return res.end(JSON.stringify({ message: `Updated the user memory to [${value}] bytes`, error: false }));
         }).catch(function (err) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: err.toString(), error: true }));
         });
-    };
+    }
     /**
     * Removes files specified in the URL
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.removeFiles = function (req, res, next) {
+    removeFiles(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
@@ -176,7 +183,7 @@ var BucketController = (function (_super) {
         files = req.params.files.split(",");
         manager.removeFilesById(files, req._user.dbEntry.username).then(function (numRemoved) {
             return res.end(JSON.stringify({
-                message: "Removed [" + numRemoved.length + "] files",
+                message: `Removed [${numRemoved.length}] files`,
                 error: false,
                 data: numRemoved
             }));
@@ -187,14 +194,14 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
    * Renames a file
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.renameFile = function (req, res, next) {
+    renameFile(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
@@ -204,11 +211,11 @@ var BucketController = (function (_super) {
             return res.end(JSON.stringify({ message: "Please specify the new name of the file", error: true }));
         manager.getFile(req.params.file, req._user.dbEntry.username).then(function (file) {
             if (!file)
-                return Promise.reject(new Error("Could not find the file '" + req.params.file + "'"));
+                return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
             return manager.renameFile(file, req.body.name);
         }).then(function (file) {
             return res.end(JSON.stringify({
-                message: "Renamed file to '" + req.body.name + "'",
+                message: `Renamed file to '${req.body.name}'`,
                 error: false
             }));
         }).catch(function (err) {
@@ -218,14 +225,14 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Removes buckets specified in the URL
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.removeBuckets = function (req, res, next) {
+    removeBuckets(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
@@ -235,7 +242,7 @@ var BucketController = (function (_super) {
         buckets = req.params.buckets.split(",");
         manager.removeBucketsByName(buckets, req._user.dbEntry.username).then(function (numRemoved) {
             return res.end(JSON.stringify({
-                message: "Removed [" + numRemoved.length + "] buckets",
+                message: `Removed [${numRemoved.length}] buckets`,
                 error: false,
                 data: numRemoved
             }));
@@ -246,20 +253,20 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Fetches the statistic information for the specified user
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.getStats = function (req, res, next) {
+    getStats(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
         manager.getUserStats(req._user.dbEntry.username).then(function (stats) {
             return res.end(JSON.stringify({
-                message: "Successfully retrieved " + req._user.dbEntry.username + "'s stats",
+                message: `Successfully retrieved ${req._user.dbEntry.username}'s stats`,
                 error: false,
                 data: stats
             }));
@@ -270,20 +277,20 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
    * Attempts to download a file from the server
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.getFile = function (req, res, next) {
+    getFile(req, res, next) {
         var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
         var cache = this._config.google.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
+            return res.end(JSON.stringify({ message: `Please specify a file ID`, error: true }));
         manager.getFile(fileID).then(function (iFile) {
             file = iFile;
             res.setHeader('Content-Type', file.mimeType);
@@ -296,25 +303,25 @@ var BucketController = (function (_super) {
             winston.error(err.toString(), { process: process.pid });
             return res.status(404).send('File not found');
         });
-    };
+    }
     /**
    * Attempts to make a file public
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.makePublic = function (req, res, next) {
+    makePublic(req, res, next) {
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
         var cache = this._config.google.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
+            return res.end(JSON.stringify({ message: `Please specify a file ID`, error: true }));
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
             return manager.makeFilePublic(iFile);
         }).then(function (iFile) {
-            return res.end(JSON.stringify({ message: "File is now public", error: false, data: iFile }));
+            return res.end(JSON.stringify({ message: `File is now public`, error: false, data: iFile }));
         }).catch(function (err) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
@@ -322,25 +329,25 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
    * Attempts to make a file private
    * @param {express.Request} req
    * @param {express.Response} res
    * @param {Function} next
    */
-    BucketController.prototype.makePrivate = function (req, res, next) {
+    makePrivate(req, res, next) {
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
         var fileID = req.params.id;
         var file = null;
         var cache = this._config.google.bucket.cacheLifetime;
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify({ message: "Please specify a file ID", error: true }));
+            return res.end(JSON.stringify({ message: `Please specify a file ID`, error: true }));
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
             return manager.makeFilePrivate(iFile);
         }).then(function (iFile) {
-            return res.end(JSON.stringify({ message: "File is now private", error: false, data: iFile }));
+            return res.end(JSON.stringify({ message: `File is now private`, error: false, data: iFile }));
         }).catch(function (err) {
             winston.error(err.toString(), { process: process.pid });
             return res.end(JSON.stringify({
@@ -348,14 +355,14 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Fetches all file entries from the database. Optionally specifying the bucket to fetch from.
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.getFiles = function (req, res, next) {
+    getFiles(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
@@ -371,7 +378,7 @@ var BucketController = (function (_super) {
             searchTerm = new RegExp(req.query.search, "i");
         manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function (bucket) {
             if (!bucket)
-                return Promise.reject(new Error("Could not find the bucket '" + req.params.bucket + "'"));
+                return Promise.reject(new Error(`Could not find the bucket '${req.params.bucket}'`));
             bucketEntry = bucket;
             return manager.numFiles({ bucketId: bucket.identifier });
         }).then(function (count) {
@@ -379,7 +386,7 @@ var BucketController = (function (_super) {
             return manager.getFilesByBucket(bucketEntry, index, limit, searchTerm);
         }).then(function (files) {
             return res.end(JSON.stringify({
-                message: "Found [" + numFiles + "] files",
+                message: `Found [${numFiles}] files`,
                 error: false,
                 data: files,
                 count: numFiles
@@ -391,14 +398,14 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Fetches all bucket entries from the database
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.getBuckets = function (req, res, next) {
+    getBuckets(req, res, next) {
         var user = req.params.user;
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
@@ -410,7 +417,7 @@ var BucketController = (function (_super) {
             searchTerm = new RegExp(req.query.search, "i");
         manager.getBucketEntries(user, searchTerm).then(function (buckets) {
             return res.end(JSON.stringify({
-                message: "Found [" + buckets.length + "] buckets",
+                message: `Found [${buckets.length}] buckets`,
                 error: false,
                 data: buckets,
                 count: buckets.length
@@ -422,20 +429,20 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Creates a new user stat entry. This is usually done for you when creating a new user
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.createStats = function (req, res, next) {
+    createStats(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
         manager.createUserStats(req.params.target).then(function (stats) {
             return res.end(JSON.stringify({
-                message: "Stats for the user '" + req.params.target + "' have been created",
+                message: `Stats for the user '${req.params.target}' have been created`,
                 error: false
             }));
         }).catch(function (err) {
@@ -445,20 +452,20 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
-    BucketController.prototype.alphaNumericDashSpace = function (str) {
+    }
+    alphaNumericDashSpace(str) {
         if (!str.match(/^[0-9A-Z _\-]+$/i))
             return false;
         else
             return true;
-    };
+    }
     /**
     * Creates a new user bucket based on the target provided
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.createBucket = function (req, res, next) {
+    createBucket(req, res, next) {
         // Set the content type
         res.setHeader('Content-Type', 'application/json');
         var manager = bucket_manager_1.BucketManager.get;
@@ -474,14 +481,14 @@ var BucketController = (function (_super) {
             if (user)
                 return manager.withinAPILimit(username);
             else
-                return Promise.reject(new Error("Could not find a user with the name '" + username + "'"));
+                return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
         }).then(function (inLimits) {
             if (!inLimits)
-                return Promise.reject(new Error("You have run out of API calls, please contact one of our sales team or upgrade your account."));
+                return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
             return manager.createBucket(bucketName, username);
         }).then(function (bucket) {
             return res.end(JSON.stringify({
-                message: "Bucket '" + bucketName + "' created",
+                message: `Bucket '${bucketName}' created`,
                 error: false
             }));
         }).catch(function (err) {
@@ -491,12 +498,12 @@ var BucketController = (function (_super) {
                 error: true
             }));
         });
-    };
+    }
     /**
     * Checks if a part is allowed to be uploaded
     * @returns {boolean}
     */
-    BucketController.prototype.isPartAllowed = function (part) {
+    isPartAllowed(part) {
         if (!part.headers)
             return false;
         if (!part.headers["content-type"])
@@ -507,12 +514,12 @@ var BucketController = (function (_super) {
             return true;
         else
             return false;
-    };
+    }
     /**
     * Checks if a file part is allowed to be uploaded
     * @returns {boolean}
     */
-    BucketController.prototype.isFileTypeAllowed = function (part) {
+    isFileTypeAllowed(part) {
         if (!part.headers)
             return false;
         if (!part.headers["content-type"])
@@ -528,14 +535,14 @@ var BucketController = (function (_super) {
         if (!found)
             return false;
         return true;
-    };
+    }
     /**
     * Attempts to upload a file to the user's bucket
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.uploadUserFiles = function (req, res, next) {
+    uploadUserFiles(req, res, next) {
         var form = new multiparty.Form({ maxFields: 8, maxFieldsSize: 5 * 1024 * 1024, maxFilesSize: 10 * 1024 * 1024 });
         var successfulParts = 0;
         var numParts = 0;
@@ -551,11 +558,11 @@ var BucketController = (function (_super) {
         res.setHeader('Content-Type', 'application/json');
         var bucketName = req.params.bucket;
         if (!bucketName || bucketName.trim() == "")
-            return res.end(JSON.stringify({ message: "Please specify a bucket", error: true, tokens: [] }));
+            return res.end(JSON.stringify({ message: `Please specify a bucket`, error: true, tokens: [] }));
         manager.getIBucket(bucketName, username).then(function (bucketEntry) {
             if (!bucketEntry) {
-                winston.error("No bucket exists with the name '" + bucketName + "'", { process: process.pid });
-                return res.end(JSON.stringify({ message: "No bucket exists with the name '" + bucketName + "'", error: true, tokens: [] }));
+                winston.error(`No bucket exists with the name '${bucketName}'`, { process: process.pid });
+                return res.end(JSON.stringify({ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }));
             }
             var metaJson;
             // Parts are emitted when parsing the form
@@ -583,7 +590,7 @@ var BucketController = (function (_super) {
                     if (!that.isFileTypeAllowed(part)) {
                         numParts++;
                         uploadedTokens.push(newUpload);
-                        errFunc("Please only use approved file types '" + that._allowedFileTypes.join(", ") + "'");
+                        errFunc(`Please only use approved file types '${that._allowedFileTypes.join(", ")}'`);
                         return;
                     }
                     // Add the token to the upload array we are sending back to the user
@@ -675,7 +682,7 @@ var BucketController = (function (_super) {
                         return promise;
                     }).then(function (val) {
                         var error = false;
-                        var msg = "Upload complete. [" + successfulParts + "] Files have been saved.";
+                        var msg = `Upload complete. [${successfulParts}] Files have been saved.`;
                         for (var i = 0, l = uploadedTokens.length; i < l; i++)
                             if (uploadedTokens[i].error) {
                                 error = true;
@@ -705,14 +712,14 @@ var BucketController = (function (_super) {
             winston.error("Could not get bucket: " + err.toString(), { process: process.pid });
             return res.end(JSON.stringify({ message: "Could not get bucket: " + err.toString(), error: true, tokens: [] }));
         });
-    };
+    }
     /**
     * Attempts to upload a file to the user's bucket
     * @param {express.Request} req
     * @param {express.Response} res
     * @param {Function} next
     */
-    BucketController.prototype.uploadUserData = function (req, res, next) {
+    uploadUserData(req, res, next) {
         var form = new multiparty.Form();
         var count = 0;
         // Parts are emitted when parsing the form
@@ -752,12 +759,12 @@ var BucketController = (function (_super) {
         });
         // Parse req
         form.parse(req);
-    };
+    }
     /**
     * Called to initialize this controller and its related database objects
     * @returns {Promise<Controller>}
     */
-    BucketController.prototype.initialize = function (db) {
+    initialize(db) {
         var that = this;
         return new Promise(function (resolve, reject) {
             var bucketsCollection;
@@ -792,7 +799,6 @@ var BucketController = (function (_super) {
                 reject(error);
             });
         });
-    };
-    return BucketController;
-})(controller_1.Controller);
+    }
+}
 exports.BucketController = BucketController;
