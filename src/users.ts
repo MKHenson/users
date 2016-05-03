@@ -141,14 +141,13 @@ export class UserManager
         UserManager._singleton = this;
 
 		// Create the session manager
-		this.sessionManager = new SessionManager(sessionCollection,
-			{
-				domain: config.sessionDomain,
-				lifetime: config.sessionLifetime,
-				path: config.sessionPath,
-				persistent: config.sessionPersistent,
-				secure: config.ssl
-            });
+		this.sessionManager = new SessionManager(sessionCollection, {
+            domain: config.sessionDomain,
+            lifetime: config.sessionLifetime,
+            path: config.sessionPath,
+            persistent: config.sessionPersistent,
+            secure: config.ssl
+        });
 
         this.sessionManager.on("sessionRemoved", this.onSessionRemoved.bind(this));
     }
@@ -157,70 +156,84 @@ export class UserManager
 	* Called whenever a session is removed from the database
 	* @returns {Promise<void>}
 	*/
-    onSessionRemoved(sessionId: string)
+    async onSessionRemoved(sessionId: string)
     {
         if (!sessionId || sessionId == "")
             return;
 
-        this._userCollection.find({ sessionId: sessionId }).limit(1).next().then( function (useEntry: def.IUserEntry) {
-            if (useEntry)
-            {
-                // Send logged in event to socket
-                var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout, error : undefined };
-                CommsController.singleton.broadcastEventToAll(sEvent).then(function ()
-                {
-                    winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
-                });
-            }
-        });
+        var useEntry: def.IUserEntry = await this._userCollection.find({ sessionId: sessionId }).limit(1).next();
+        if (useEntry)
+        {
+            // Send logged in event to socket
+            var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout, error : undefined };
+            await CommsController.singleton.broadcastEventToAll(sEvent);
+            winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
+        }
+
+        return;
     }
 
 	/**
 	* Initializes the API
 	* @returns {Promise<void>}
 	*/
-	initialize(): Promise<void>
+	async initialize(): Promise<void>
 	{
 		var that = this;
 		var config = this._config;
 
-        if (that._config.google.bucket && that._config.google.keyFile)
+        if (config.google.bucket && config.google.keyFile)
         {
-            that._mailer = new Mailer(that._config.debugMode);
-            that._mailer.initialize(that._config.google.keyFile, that._config.google.mail.apiEmail);
+            this._mailer = new Mailer(config.debugMode);
+            this._mailer.initialize(config.google.keyFile, config.google.mail.apiEmail);
         }
 
 
-		return new Promise<void>(function( resolve, reject )
-        {
-            // Clear all existing indices and then re-add them
-            that._userCollection.dropIndexes().then(function(){
+        // Clear all existing indices and then re-add them
+        await this._userCollection.dropIndexes();
 
-               // Make sure the user collection has an index to search the username field
-               return that._userCollection.createIndex( <def.IUserEntry>{ username: "text", email: "text" } );
+        // Make sure the user collection has an index to search the username field
+        await this._userCollection.createIndex( <def.IUserEntry>{ username: "text", email: "text" } );
 
-            }).then(function()
-            {
-                // See if we have an admin user
-                return that.getUser(config.adminUser.username);
+        // See if we have an admin user
+        var user = await this.getUser(config.adminUser.username);
 
-            }).then(function (user)
-            {
-                // No admin user exists, so lets try to create one
-                if (!user)
-                    return that.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, UserPrivileges.SuperAdmin, {}, true)
-                else
-                    // Admin user already exists
-                    return user;
+        // If no admin user exists, so lets try to create one
+        if (!user)
+            user = await this.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, UserPrivileges.SuperAdmin, {}, true);
 
-            }).then(function(newUser){
-                resolve();
-
-            }).catch(function(error: Error){
-                return reject(error);
-            });
-		});
+        return;
 	}
+
+    /**
+	* Checks if a Google captcha sent from a user is valid
+	* @param {string} captchaChallenge The captcha challenge
+    * @param {string} captcha The captcha value the user guessed
+	* @param {http.ServerRequest} request
+	* @returns {Promise<boolean>}
+	*/
+    private checkCaptcha( captchaChallenge : string, captcha: string, request: express.Request ): Promise<boolean>
+    {
+        var that = this;
+        return new Promise<boolean>(function(resolve, reject) {
+
+            // Create the captcha checker
+            var remoteIP: string = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
+            var privatekey: string = that._config.captchaPrivateKey;
+            var captchaChecker = new recaptcha.reCaptcha();
+
+            captchaChecker.on("data", function (captchaResult)
+            {
+                if (!captchaResult.is_valid)
+                    return reject( new Error("Your captcha code seems to be wrong. Please try another."));
+
+                resolve(true);
+            });
+
+            // Check for valid captcha
+            captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
+        });
+    }
 
 	/**
 	* Attempts to register a new user
@@ -234,63 +247,29 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
-    register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", meta: any = {}, request?: express.Request, response?: express.Response): Promise<User>
+    async register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", meta: any = {}, request?: express.Request, response?: express.Response): Promise<User>
 	{
-        var that = this;
         var origin = encodeURIComponent( request.headers["origin"] || request.headers["referer"] );
 
-        return new Promise<User>(function (resolve, reject)
-        {
-            // First check if user exists, make sure the details supplied are ok, then create the new user
-            that.getUser(username, email).then(function (user: User)
-            {
-                // If we already a user then error out
-                if (user) throw new Error("That username or email is already in use; please choose another or login.");
+        // First check if user exists, make sure the details supplied are ok, then create the new user
+        var user: User = await this.getUser(username, email);
 
-                // Validate other data
-                if (!pass || pass == "") throw new Error("Password cannot be null or empty");
-                if (!email || email == "") throw new Error("Email cannot be null or empty");
-                if (!validator.isEmail(email)) throw new Error("Please use a valid email address");
-                if (request && (!captcha || captcha == "")) throw new Error("Captcha cannot be null or empty");
-                if (request && (!captchaChallenge || captchaChallenge == "")) throw new Error("Captcha challenge cannot be null or empty");
+        // If we already a user then error out
+        if (user)
+            throw new Error("That username or email is already in use; please choose another or login.");
 
-                // Check captcha details
-                return new Promise<User>(function (resolve, reject)
-                {
-                    // Create the captcha checker
-                    var remoteIP: string = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
-                    var privatekey: string = that._config.captchaPrivateKey;
-                    var captchaChecker = new recaptcha.reCaptcha();
-                    var newUser: User = null;
-                    captchaChecker.on("data", function (captchaResult)
-                    {
-                        if (!captchaResult.is_valid)
-                            return reject( new Error("Your captcha code seems to be wrong. Please try another."));
+        // Validate other data
+        if (!pass || pass == "") throw new Error("Password cannot be null or empty");
+        if (!email || email == "") throw new Error("Email cannot be null or empty");
+        if (!validator.isEmail(email)) throw new Error("Please use a valid email address");
+        if (request && (!captcha || captcha == "")) throw new Error("Captcha cannot be null or empty");
+        if (request && (!captchaChallenge || captchaChallenge == "")) throw new Error("Captcha challenge cannot be null or empty");
 
-                        that.createUser(username, email, pass, origin, UserPrivileges.Regular, meta).then(function (user)
-                        {
-                            newUser = user;
-                            return resolve(newUser);
+        // Check the captcha
+        await this.checkCaptcha( captchaChallenge, captcha, request);
 
-                        }).catch(function (err: Error)
-                        {
-                            return reject(err);
-                        });
-                    });
-
-                    // Check for valid captcha
-                    captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
-                });
-
-            }).then(function (user)
-            {
-                return resolve(user);
-
-            }).catch(function (error: Error)
-            {
-                return reject(error);
-            });
-        });
+        user = await this.createUser(username, email, pass, origin, UserPrivileges.Regular, meta);
+        return user;
 	}
 
 	/**
@@ -320,35 +299,23 @@ export class UserManager
 	* @param {string} username The username or email of the user
 	* @returns {Promise<void>}
 	*/
-	approveActivation(username: string): Promise<void>
+	async approveActivation(username: string): Promise<void>
 	{
-		var that = this;
-
 		// Get the user
-		return that.getUser(username).then(function (user: User)
-		{
-			if (!user)
-				return Promise.reject(new Error("No user exists with the specified details"));
+		var user: User = await this.getUser(username);
 
-			return new Promise<void>(function (resolve, reject)
-			{
-				// Clear the user's activation
-				that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }).then(function (result) {
+        if (!user)
+            throw new Error("No user exists with the specified details");
 
-                    // Send activated event
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
-                    return CommsController.singleton.broadcastEventToAll(sEvent);
+        // Clear the user's activation
+        var result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
 
-                }).then(function () {
+        // Send activated event
+        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(sEvent);
 
-                    winston.info(`User '${username}' has been activated`, { process: process.pid });
-                    return resolve();
-
-				}).catch(function(error: Error) {
-                    return reject(error);
-                });
-			});
-		});
+        winston.info(`User '${username}' has been activated`, { process: process.pid });
+        return;
     }
 
     /**
@@ -358,25 +325,19 @@ export class UserManager
     * @param {string} from The email of the sender
 	* @returns {Promise<boolean>}
 	*/
-    sendAdminEmail(message: string, name? : string, from? : string): Promise<any>
+    async sendAdminEmail(message: string, name? : string, from? : string): Promise<any>
     {
-        var that = this;
-        return new Promise<boolean>(function (resolve, reject)
-        {
-            if (!that._mailer)
-                reject(new Error(`No email account has been setup`));
+        if (!this._mailer)
+            throw new Error(`No email account has been setup`);
 
-            that._mailer.sendMail(
-               that._config.adminUser.email,
-               that._config.google.mail.from,
-               `Message from ${( name ? name : "a user" )}`,
-               message + "<br /><br />Email: " + (from ? from : "")
-            ).then(function(){
-                return resolve(true);
-            }).catch(function(err){
-                return reject(new Error(`Could not send email to user: ${err.message}`));
-            });
-        });
+        try {
+            await this._mailer.sendMail( this._config.adminUser.email, this._config.google.mail.from, `Message from ${( name ? name : "a user" )}`,
+                message + "<br /><br />Email: " + (from ? from : "") );
+        } catch (err) {
+            new Error(`Could not send email to user: ${err.message}`)
+        }
+
+        return true;
     }
 
 	/**
@@ -385,61 +346,41 @@ export class UserManager
     * @param {string} origin The origin of where the request came from (this is emailed to the user)
 	* @returns {Promise<boolean>}
 	*/
-    resendActivation(username: string, origin : string): Promise<boolean>
+    async resendActivation(username: string, origin : string): Promise<boolean>
 	{
-        var that = this;
+        // Get the user
+        var user : User = await this.getUser(username);
 
-        return new Promise<boolean>(function (resolve, reject)
-        {
-            // Get the user
-            that.getUser(username).then(function (user: User)
-            {
-                if (!user)
-                   throw new Error("No user exists with the specified details");
+        if (!user)
+            throw new Error("No user exists with the specified details");
 
-                if (user.dbEntry.registerKey == "")
-                    throw new Error("Account has already been activated");
+        if (user.dbEntry.registerKey == "")
+            throw new Error("Account has already been activated");
 
-                var newKey = user.generateKey();
-                user.dbEntry.registerKey = newKey;
+        var newKey = user.generateKey();
+        user.dbEntry.registerKey = newKey;
 
-                // Update the collection with a new key
-                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } }).then(function (result) {
+        // Update the collection with a new key
+        var result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } });
 
-                    // Send a message to the user to say they are registered but need to activate their account
-                    var message: string = `Thank you for registering with Webinate!
-					To activate your account please click the link below:
+        // Send a message to the user to say they are registered but need to activate their account
+        var message: string = "Thank you for registering with Webinate!\nTo activate your account please click the link below:" +
+            this.createActivationLink(user, origin) +
+            "Thanks\n\n" +
+            "The Webinate Team";
 
-					${that.createActivationLink(user, origin) }
+        // If no mailer is setup
+        if (!this._mailer)
+            throw new Error(`No email account has been setup`);
 
-					Thanks
-					The Webinate Team`;
+        try {
+            // Send mail using the mailer
+            await this._mailer.sendMail( user.dbEntry.email, this._config.google.mail.from, "Activate your account", message );
+        } catch (err) {
+            new Error(`Could not send email to user: ${err.message}`)
+        }
 
-                    // If no mailer is setup
-                    if (!that._mailer)
-                        reject(new Error(`No email account has been setup`));
-
-                    // Send mail using the mailer
-                    that._mailer.sendMail(
-                        user.dbEntry.email,
-                        that._config.google.mail.from,
-                        "Activate your account",
-                        message
-                    ).then(function(){
-                        return resolve(true);
-                    }).catch(function(err){
-                        reject(new Error(`Could not send email to user: ${err.message}`));
-                    });
-
-                }).catch(function(error: Error){
-                    return reject(error);
-                });
-
-            }).catch(function (error: Error) {
-
-                reject(error);
-            });
-        });
+        return true;
     }
 
     /**
@@ -448,60 +389,41 @@ export class UserManager
     * @param {string} origin The site where the request came from
 	* @returns {Promise<boolean>}
 	*/
-    requestPasswordReset(username: string, origin: string ): Promise<boolean>
+    async requestPasswordReset(username: string, origin: string ): Promise<boolean>
     {
-        var that = this;
+        // Get the user
+        var user: User = await this.getUser(username);
 
-        return new Promise<boolean>(function (resolve, reject)
-        {
-            // Get the user
-            that.getUser(username).then(function (user: User)
-            {
-                if (!user)
-                    throw new Error("No user exists with the specified details");
+        if (!user)
+            throw new Error("No user exists with the specified details");
 
-                var newKey = user.generateKey();
+        var newKey = user.generateKey();
 
-                // Password token
-                user.dbEntry.passwordTag = newKey;
+        // Password token
+        user.dbEntry.passwordTag = newKey;
 
-                // Update the collection with a new key
-                that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } }).then(function (result) {
+        // Update the collection with a new key
+        var result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } });
 
-                    // Send a message to the user to say they are registered but need to activate their account
-                    var message: string = `A request has been made to reset your password.
-					To change your password please click the link below:
+        // Send a message to the user to say they are registered but need to activate their account
+        var message: string = "A request has been made to reset your password. To change your password please click the link below:\n\n" +
+            this.createResetLink(user, origin) +
+            "Thanks\n\n" +
+            "The Webinate Team";
 
-					${that.createResetLink(user, origin)}
+        // If no mailer is setup
+        if (!this._mailer)
+            throw new Error(`No email account has been setup`);
 
-					Thanks
-					The Webinate Team`;
+        // Send mail using the mailer
+        try {
+            await this._mailer.sendMail( user.dbEntry.email, this._config.google.mail.from, "Reset Password", message );
+        }
+        catch(err) {
+            throw new Error(`Could not send email to user: ${err.message}`)
+        }
 
-                    // If no mailer is setup
-                    if (!that._mailer)
-                        reject(new Error(`No email account has been setup`));
-
-                    // Send mail using the mailer
-                    that._mailer.sendMail(
-                        user.dbEntry.email,
-                        that._config.google.mail.from,
-                        "Reset Password",
-                        message
-                    ).then(function(){
-                        return resolve(true);
-                    }).catch(function(err){
-                        reject(new Error(`Could not send email to user: ${err.message}`));
-                    });
-
-                }).catch(function(error: Error){
-                    return reject(error);
-                });
-
-            }).catch(function (error: Error)
-            {
-                reject(error);
-            });
-        });
+        return true;
     }
 
     /**
@@ -550,47 +472,30 @@ export class UserManager
     * @param {string} newPassword The new password
 	* @returns {Promise<boolean>}
 	*/
-    resetPassword(username: string, code: string, newPassword: string): Promise<boolean>
+    async resetPassword(username: string, code: string, newPassword: string): Promise<boolean>
     {
-        var that = this;
-        return new Promise<boolean>(function (resolve, reject)
-        {
-            var user: User;
+        // Get the user
+        var user: User = await this.getUser(username);
 
-            // Get the user
-            that.getUser(username).then(function(selectedUser) : Promise<Error|string>
-            {
-                user = selectedUser;
+        // No user - so invalid
+        if (!user)
+            throw new Error("No user exists with those credentials");
 
-                // No user - so invalid
-                if (!user)
-                    return Promise.reject(new Error("No user exists with those credentials"));
+        // If key is the same
+        if (user.dbEntry.passwordTag != code)
+            throw new Error("Password codes do not match. Please try resetting your password again");
 
-                // If key is the same
-                if (user.dbEntry.passwordTag != code)
-                    return Promise.reject(new Error("Password codes do not match. Please try resetting your password again"));
+        // Make sure password is valid
+        if (newPassword === undefined || newPassword == "" || validator.blacklist(newPassword, "@\'\"{}") != newPassword)
+            throw new Error("Please enter a valid password");
 
-                // Make sure password is valid
-                if (newPassword === undefined || newPassword == "" || validator.blacklist(newPassword, "@\'\"{}") != newPassword)
-                    return Promise.reject(new Error("Please enter a valid password"));
+        var hashed = await this.hashPassword(newPassword);
 
-                return that.hashPassword(newPassword);
+        // Update the key to be blank
+        var result = await this._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: hashed } });
 
-            }).then( function(hashed: string)
-            {
-                // Update the key to be blank
-                return that._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: hashed } });
-
-            }).then(function (result) {
-
-                // All done :)
-                resolve(true);
-
-            }).catch(function (error: Error)
-            {
-                reject(error);
-            });
-        });
+        // All done :)
+        return true;
     }
 
 	/**
@@ -598,47 +503,32 @@ export class UserManager
 	* @param {string} username The username of the user
 	* @returns {Promise<boolean>}
 	*/
-	checkActivation( username : string, code : string ): Promise<boolean>
+	async checkActivation( username : string, code : string ): Promise<boolean>
 	{
-		var that = this;
-		return new Promise<boolean>(function( resolve, reject )
-		{
-			// Get the user
-			that.getUser(username).then(function(user)
-			{
-				// No user - so invalid
-				if (!user)
-					return reject(new Error("No user exists with those credentials"));
+        // Get the user
+        var user = await this.getUser(username);
 
-				// If key is already blank - then its good to go
-				if (user.dbEntry.registerKey == "")
-					return resolve(true);
+        // No user - so invalid
+        if (!user)
+            throw new Error("No user exists with those credentials");
 
-				// Check key
-				if (user.dbEntry.registerKey != code)
-					return reject(new Error("Activation key is not valid. Please try send another."));
+        // If key is already blank - then its good to go
+        if (user.dbEntry.registerKey == "")
+            return true;
 
-				// Update the key to be blank
-				that._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } }).then(function (result) {
+        // Check key
+        if (user.dbEntry.registerKey != code)
+            throw new Error("Activation key is not valid. Please try send another.");
 
-                    // Send activated event
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
-                    return CommsController.singleton.broadcastEventToAll(sEvent);
+        // Update the key to be blank
+        await this._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
 
-                }).then(function () {
+        // Send activated event
+        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(sEvent);
 
-                    winston.info(`User '${username}' has been activated`, { process: process.pid });
-                    return resolve(true);
-
-				}).catch(function(err){
-                    return reject(err);
-                });
-
-			}).catch(function (error: Error)
-			{
-				reject(error);
-			});
-		});
+        winston.info(`User '${username}' has been activated`, { process: process.pid });
+        return true;
 	}
 
 	/**
@@ -657,31 +547,18 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @param {Promise<User>} Gets the user or null if the user is not logged in
 	*/
-	loggedIn(request: http.ServerRequest, response: http.ServerResponse): Promise<User>
+	async loggedIn(request: http.ServerRequest, response: http.ServerResponse): Promise<User>
 	{
-		var that = this;
+        // If no request or response, then assume its an admin user
+        var session = await this.sessionManager.getSession(request, response);
+        if (!session)
+            return null;
 
-		return new Promise<User>(function (resolve, reject)
-		{
-			// If no request or response, then assume its an admin user
-			that.sessionManager.getSession(request, response).then(function (session)
-			{
-				if (!session) return resolve(null);
-
-				return that._userCollection.find({ sessionId: session.sessionId }).limit(1).next();
-
-            }).then(function (useEntry: def.IUserEntry) {
-
-                if (!useEntry)
-                    return resolve(null);
-                else
-                    return resolve(new User(useEntry));
-
-			}).catch(function (error: Error)
-			{
-				return reject(error);
-			});
-		});
+        var useEntry = await this._userCollection.find({ sessionId: session.sessionId }).limit(1).next();
+        if (!useEntry)
+            return null;
+        else
+            return new User(useEntry);
 	}
 
 	/**
@@ -690,20 +567,10 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>}
 	*/
-	logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+	async logOut(request: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
 	{
-		var that = this;
-		return new Promise<boolean>(function (resolve, reject)
-		{
-			that.sessionManager.clearSession(null, request, response).then(function (cleared)
-			{
-				resolve(cleared);
-
-			}).catch(function (error: Error)
-			{
-				reject(error);
-			});
-		});
+        var sessionCleaered = await this.sessionManager.clearSession(null, request, response);
+        return sessionCleaered;
 	}
 
 	/**
@@ -717,92 +584,72 @@ export class UserManager
     * @param {boolean} allowAdmin Should this be allowed to create a super user
 	* @returns {Promise<User>}
 	*/
-    createUser(user: string, email: string, password: string, origin: string, privilege: UserPrivileges = UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
+    async createUser(user: string, email: string, password: string, origin: string, privilege: UserPrivileges = UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User>
 	{
-		var that = this;
+        // Basic checks
+        if (!user || validator.trim(user) == "")
+            throw new Error("Username cannot be empty");
+        if (!validator.isAlphanumeric(user))
+            throw new Error("Username must be alphanumeric");
+        if (!email || validator.trim(email) == "")
+            throw new Error("Email cannot be empty");
+        if (!validator.isEmail(email))
+            throw new Error("Email must be valid");
+        if (!password || validator.trim(password) == "")
+            throw new Error("Password cannot be empty");
+        if (privilege > 3)
+            throw new Error("Privilege type is unrecognised");
+        if (privilege == UserPrivileges.SuperAdmin && allowAdmin == false )
+            throw new Error("You cannot create a super user");
 
-		return new Promise<User>(function (resolve, reject)
-		{
-			// Basic checks
-			if (!user || validator.trim(user) == "") return reject(new Error("Username cannot be empty"));
-			if (!validator.isAlphanumeric(user)) return reject(new Error("Username must be alphanumeric"));
-			if (!email || validator.trim(email) == "") return reject(new Error("Email cannot be empty"));
-			if (!validator.isEmail(email)) return reject(new Error("Email must be valid"));
-			if (!password || validator.trim(password) == "") return reject(new Error("Password cannot be empty"));
-			if (privilege > 3) return reject(new Error("Privilege type is unrecognised"));
-            if (privilege == UserPrivileges.SuperAdmin && allowAdmin == false ) return reject(new Error("You cannot create a super user"));
-            var hashedPsw : string;
-            var newUser: User;
+        // Check if the user already exists
+        var hashedPsw: string = await this.hashPassword(password);
+        var existingUser = await this.getUser(user, email);
 
-			// Check if the user already exists
-            that.hashPassword(password).then(function (hashedPassword: string)
-            {
-                hashedPsw = hashedPassword;
-                return that.getUser(user, email);
+        if (existingUser)
+            throw new Error(`A user with that name or email already exists`);
 
-            }).then(function(existingUser): Promise<mongodb.InsertOneWriteOpResult|Error>
-            {
-                if (existingUser)
-                    return Promise.reject(new Error(`A user with that name or email already exists`));
+        // Create the user
+        var newUser : User = new User({
+            username: user,
+            password: hashedPsw,
+            email: email,
+            privileges: privilege,
+            passwordTag: "",
+            meta: meta
+        });
 
-                // Create the user
-                newUser = new User({
-                    username: user,
-                    password: hashedPsw,
-                    email: email,
-                    privileges: privilege,
-                    passwordTag: "",
-                    meta: meta
-                });
+        // Update the database
+        var insertResult = await this._userCollection.insertOne(newUser.generateDbEntry());
 
-                // Update the database
-                return that._userCollection.insertOne(newUser.generateDbEntry());
+        // Assing the ID and pass the user on
+        newUser.dbEntry = insertResult.ops[0];
 
-            }).then(function (insertResult: mongodb.InsertOneWriteOpResult) : Promise<boolean|Error> {
+        // Send a message to the user to say they are registered but need to activate their account
+        var message: string = "Thank you for registering with Webinate! To activate your account please click the link below: \n\n" +
+            this.createActivationLink(newUser, origin) + "\n\n" +
+            "Thanks\n" +
+            "The Webinate Team";
 
-                // Assing the ID and pass the user on
-                newUser.dbEntry = insertResult.ops[0];
+        // If no mailer is setup
+        if (!this._mailer)
+            throw new Error(`No email account has been setup`);
 
-                // Send a message to the user to say they are registered but need to activate their account
-                var message: string = `Thank you for registering with Webinate!
-                To activate your account please click the link below:
+        // Send mail using the mailer
+        await this._mailer.sendMail(
+            newUser.dbEntry.email,
+            this._config.google.mail.from,
+            "Activate your account",
+            message
+        );
 
-                ${that.createActivationLink(newUser, origin) }
+        // All users have default stats created for them
+        await BucketManager.get.createUserStats(newUser.dbEntry.username);
 
-                Thanks
-                The Webinate Team`;
+        // All users have a bucket created for them
+        await BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
 
-                // If no mailer is setup
-                if (!that._mailer)
-                    return Promise.reject(new Error(`No email account has been setup`));
-
-                // Send mail using the mailer
-                return that._mailer.sendMail(
-                    newUser.dbEntry.email,
-                    that._config.google.mail.from,
-                    "Activate your account",
-                    message
-                );
-
-            }).then(function(){
-
-                // All users have default stats created for them
-                return BucketManager.get.createUserStats(newUser.dbEntry.username);
-
-            }).then(function(){
-
-                // All users have a bucket created for them
-                return BucketManager.get.createBucket(newUser.dbEntry.username + "-bucket", newUser.dbEntry.username);
-
-            }).then(function(){
-
-                return resolve(newUser);
-
-            }).catch(function (error: Error)
-			{
-                return reject(error);
-			});
-		});
+        return newUser;
 	}
 
 	/**
@@ -810,52 +657,32 @@ export class UserManager
 	* @param {string} user The unique username or email of the user to remove
 	* @returns {Promise<void>}
 	*/
-	removeUser(user: string): Promise<void>
+	async removeUser(user: string): Promise<void>
 	{
-		var that = this;
         var username: string = "";
+		var userInstance = await this.getUser(user);
 
-		return new Promise<void>(function (resolve, reject)
-        {
-            var existingUser: User;
+        if (!user)
+            throw new Error("Could not find any users with those credentials");
 
-			that.getUser(user).then(function (user)
-            {
-                existingUser = user;
+        if (userInstance.dbEntry.privileges == UserPrivileges.SuperAdmin)
+            throw new Error("You cannot remove a super user");
 
-                if (!user)
-                    return Promise.reject(new Error("Could not find any users with those credentials"));
+        username = userInstance.dbEntry.username;
 
-                if (user.dbEntry.privileges == UserPrivileges.SuperAdmin)
-                    return Promise.reject(new Error("You cannot remove a super user"));
+        var numDeleted = await BucketManager.get.removeUser(username);
+        var result = await this._userCollection.deleteOne(<def.IUserEntry>{ _id: userInstance.dbEntry._id });
 
-                username = user.dbEntry.username;
+        if (result.deletedCount == 0)
+            throw new Error("Could not remove the user from the database");
 
-                return BucketManager.get.removeUser(user.dbEntry.username);
+        // Send event to sockets
+        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed, error : undefined };
+        CommsController.singleton.broadcastEventToAll(sEvent).then(function() {
+            winston.info(`User '${username}' has been removed`, { process: process.pid });
+        });
 
-            }).then(function (numDeleted)
-            {
-                return that._userCollection.deleteOne(<def.IUserEntry>{ _id: existingUser.dbEntry._id });
-
-            }).then(function (result) {
-
-                if (result.result.n == 0)
-                    return reject(new Error("Could not remove the user from the database"));
-
-                // Send event to sockets
-                var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed, error : undefined };
-                CommsController.singleton.broadcastEventToAll(sEvent).then(function ()
-                {
-                    winston.info(`User '${username}' has been removed`, { process: process.pid });
-                });
-
-                return resolve();
-
-            }).catch(function (error: Error)
-			{
-				reject(error);
-			});
-		});
+        return;
 	}
 
 	/**
@@ -864,37 +691,27 @@ export class UserManager
 	* @param {string} email [Optional] Do a check if the email exists as well
 	* @returns {Promise<User>} Resolves with either a valid user or null if none exists
 	*/
-	getUser(user: string, email?: string): Promise<User>
+	async getUser(user: string, email?: string): Promise<User>
 	{
-		var that = this;
-
 		email = email != undefined ? email : user;
 
-		return new Promise<User>(function( resolve, reject )
-		{
-			// Validate user string
-			user = validator.trim(user);
+        // Validate user string
+        user = validator.trim(user);
 
-			if (!user || user == "")
-                return reject(new Error("Please enter a valid username"));
+        if (!user || user == "")
+            throw new Error("Please enter a valid username");
 
-			if (!validator.isAlphanumeric(user) && !validator.isEmail(user))
-                return reject(new Error("Please only use alpha numeric characters for your username"));
+        if (!validator.isAlphanumeric(user) && !validator.isEmail(user))
+            throw new Error("Please only use alpha numeric characters for your username");
 
-			var target = [{ email: email }, { username: user }];
+        var target = [{ email: email }, { username: user }];
 
-			// Search the collection for the user
-			that._userCollection.find({ $or: target }).limit(1).next().then(function (userEntry: def.IUserEntry) {
-
-				if (!userEntry)
-                    return resolve(null);
-				else
-                    return resolve(new User(userEntry));
-
-			}).catch(function(error: Error){
-                return reject(error);
-            });
-		});
+        // Search the collection for the user
+        var userEntry: def.IUserEntry = await this._userCollection.find({ $or: target }).limit(1).next();
+        if (!userEntry)
+            return null;
+        else
+            return new User(userEntry);
 	}
 
 	/**
@@ -906,83 +723,50 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
-	logIn(username: string = "", pass: string = "", rememberMe: boolean = true, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
+	async logIn(username: string = "", pass: string = "", rememberMe: boolean = true, request?: http.ServerRequest, response?: http.ServerResponse): Promise<User>
 	{
-		var that = this;
+        var loggedOut = await this.logOut(request, response);
+        var user: User = await this.getUser(username);
 
-        return new Promise<User>(function (resolve, reject)
-        {
-            var user: User;
+        // If no user - then reject
+        if (!user)
+            throw new Error("The username or password is incorrect.");
 
-            that.logOut(request, response).then(function (success: boolean)
-            {
-                return that.getUser(username);
+        // Validate password
+        pass = validator.trim(pass);
+        if (!pass || pass == "")
+            throw new Error("Please enter a valid password");
 
-            }).then(function (selectedUser) : Promise<Error|boolean>
-            {
-                user = selectedUser;
+        // Check if the registration key has been removed yet
+        if (user.dbEntry.registerKey != "")
+            throw new Error("Please authorise your account by clicking on the link that was sent to your email");
 
-                // If no user - then reject
-                if (!user)
-                    return Promise.reject(new Error("The username or password is incorrect."));
+        var passworldValid : boolean = await this.comparePassword(pass, user.dbEntry.password);
+        if (!passworldValid)
+            throw new Error("The username or password is incorrect.");
 
-                // Validate password
-                pass = validator.trim(pass);
-                if (!pass || pass == "")
-                    return Promise.reject(new Error("Please enter a valid password"));
+        // Set the user last login time
+        user.dbEntry.lastLoggedIn = Date.now();
 
-                // Check if the registration key has been removed yet
-                if (user.dbEntry.registerKey != "")
-                    return Promise.reject(new Error("Please authorise your account by clicking on the link that was sent to your email"));
+        // Update the collection
+        var result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } });
 
-                return that.comparePassword(pass, user.dbEntry.password);
+        if (result.matchedCount === 0)
+            throw new Error("Could not find the user in the database, please make sure its setup correctly");
 
-             }).then(function(same: boolean) : Promise<Error|mongodb.UpdateWriteOpResult> {
-				// Check the password
-                if (!same)
-					return Promise.reject(new Error("The username or password is incorrect."));
+        if (!rememberMe)
+            return user;
 
-				// Set the user last login time
-				user.dbEntry.lastLoggedIn = Date.now();
+        var session: Session = await this.sessionManager.createSession(request, response);
+        result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } });
 
-				// Update the collection
-				return that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } });
+        if (result.matchedCount === 0)
+            throw new Error("Could not find the user in the database, please make sure its setup correctly");
 
-             }).then( function (result : mongodb.UpdateWriteOpResult) {
-
-                if (result.matchedCount === 0)
-                    return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
-
-                if (!rememberMe)
-                    return resolve(user);
-
-                that.sessionManager.createSession(request, response).then(function (session: Session | User) {
-
-                    // Search the collection for the user
-                    if (session instanceof Session)
-                        return that._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } });
-
-                }).then( function(result : mongodb.UpdateWriteOpResult) {
-
-                    if (result.matchedCount === 0)
-                        return Promise.reject(new Error("Could not find the user in the database, please make sure its setup correctly"));
-
-                    // Send logged in event to socket
-                    var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login, error : undefined };
-                    return CommsController.singleton.broadcastEventToAll(sEvent);
-
-                }).then(function () {
-
-                    return resolve(user);
-
-                }).catch(function (err) {
-                    return reject(err);
-                });
-
-             }).catch(function (err) {
-                return reject(err);
-            });
-		});
+        // Send logged in event to socket
+        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(sEvent);
+        return user;
 	}
 
 	/**
@@ -992,30 +776,20 @@ export class UserManager
 	* @param {http.ServerResponse} response
 	* @returns {Promise<boolean>} True if the user was in the DB or false if they were not
 	*/
-	remove(username: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+	async remove(username: string = "", request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
 	{
-		var that = this;
+        var user = await this.getUser(username);
 
-		return that.getUser(username).then(function(user)
-		{
-			return new Promise<boolean>(function (resolve, reject)
-			{
-				// There was no user
-				if (!user) return resolve(false);
+		// There was no user
+        if (!user)
+            return false;
 
-				// Remove the user from the DB
-				that._userCollection.deleteOne({ _id: user.dbEntry._id }).then(function (result) {
-
-					if (result.result.n === 0)
-                        return resolve(false);
-					else
-                        return resolve(true);
-
-				}).catch(function(error: Error){
-                    return reject(error);
-                });
-			});
-		});
+        // Remove the user from the DB
+        var result = await this._userCollection.deleteOne({ _id: user.dbEntry._id });
+        if (result.deletedCount === 0)
+            return false;
+        else
+            return true;
     }
 
     /**
@@ -1024,25 +798,19 @@ export class UserManager
     * @param {any} data The meta data object to set
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
-	* @returns {Promise<boolean>} Returns the data set
+	* @returns {Promise<boolean|any>} Returns the data set
 	*/
-    setMeta(user: def.IUserEntry, data?: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean>
+    async setMeta(user: def.IUserEntry, data?: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean|any>
     {
         var that = this;
 
-        return new Promise<boolean>(function (resolve, reject)
-        {
-            // There was no user
-            if (!user)
-                return reject(false);
+        // There was no user
+        if (!user)
+            return false;
 
-            // Remove the user from the DB
-            that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } }).then(function (result) {
-                return resolve(data);
-            }).catch(function(error: Error){
-                return reject(error);
-            });
-        });
+        // Remove the user from the DB
+        var result = await that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } });
+        return data;
     }
 
     /**
@@ -1052,30 +820,23 @@ export class UserManager
     * @param {any} data The value of the meta to set
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
-	* @returns {Promise<any>} Returns the value of the set
+	* @returns {Promise<boolean|any>} Returns the value of the set
 	*/
-    setMetaVal(user: def.IUserEntry, name : string, val: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<any>
+    async setMetaVal(user: def.IUserEntry, name : string, val: any, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean|any>
     {
         var that = this;
 
-        return new Promise<boolean>(function (resolve, reject)
-        {
-            // There was no user
-            if (!user)
-                return resolve(false);
+        // There was no user
+        if (!user)
+            return false;
 
-            var datum = "meta." + name;
+        var datum = "meta." + name;
+        var updateToken = { $set: {} };
+        updateToken.$set[datum] = val;
 
-            var updateToken = { $set: {} };
-            updateToken.$set[datum] = val;
-
-            // Remove the user from the DB
-            that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, updateToken).then(function (result) {
-                return resolve(val);
-            }).catch(function(error: Error){
-                return reject(error);
-            });
-        });
+        // Remove the user from the DB
+        var result = await that._userCollection.updateOne(<def.IUserEntry>{ _id: user._id }, updateToken);
+        return val;
     }
 
     /**
@@ -1084,26 +845,19 @@ export class UserManager
     * @param {any} name The name of the meta to get
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
-	* @returns {Promise<any>} The value to get
+	* @returns {Promise<boolean|any>} The value to get
 	*/
-    getMetaVal(user: def.IUserEntry, name: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<any>
+    async getMetaVal(user: def.IUserEntry, name: string, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean|any>
     {
         var that = this;
 
-        return new Promise<any>(function (resolve, reject)
-        {
-            // There was no user
-            if (!user)
-                return resolve(false);
+        // There was no user
+        if (!user)
+            return false;
 
-            // Remove the user from the DB
-            that._userCollection.find( <def.IUserEntry>{ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next().then(function (result: def.IUserEntry)
-            {
-                return resolve(result.meta[name]);
-            }).catch(function(error: Error){
-                return reject(error);
-            });
-        });
+        // Remove the user from the DB
+        var result: def.IUserEntry = await that._userCollection.find( <def.IUserEntry>{ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next();
+        return result.meta[name];
     }
 
     /**
@@ -1111,25 +865,19 @@ export class UserManager
 	* @param {IUserEntry} user The user
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
-	* @returns {Promise<any>} The value to get
+	* @returns {Promise<boolean|any>} The value to get
 	*/
-    getMetaData(user: def.IUserEntry, request?: http.ServerRequest, response?: http.ServerResponse): Promise<any>
+    async getMetaData(user: def.IUserEntry, request?: http.ServerRequest, response?: http.ServerResponse): Promise<boolean|any>
     {
         var that = this;
 
-        return new Promise<any>(function (resolve, reject)
-        {
-            // There was no user
-            if (!user)
-                return resolve(false);
+        // There was no user
+        if (!user)
+            return false;
 
-            // Remove the user from the DB
-            that._userCollection.find(<def.IUserEntry>{ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next().then(function (result: def.IUserEntry) {
-                return resolve(result.meta);
-            }).catch(function(error: Error){
-                return reject(error);
-            });
-        });
+        // Remove the user from the DB
+        var result: def.IUserEntry = await that._userCollection.find(<def.IUserEntry>{ _id: user._id }).project({ _id: 0, meta: 1 }).limit(1).next();
+        return result.meta;
     }
 
     /**
@@ -1137,21 +885,12 @@ export class UserManager
     * @param {RegExp} searchPhrases Search phrases
 	* @returns {Promise<number>}
 	*/
-    numUsers(searchPhrases?: RegExp): Promise<number>
+    async numUsers(searchPhrases?: RegExp): Promise<number>
     {
         var that = this;
-        return new Promise<number>(function (resolve, reject)
-        {
-            var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
-
-            that._userCollection.count(findToken, function (error: Error, result: number)
-            {
-                if (error)
-                    return reject(error);
-
-                resolve(result);
-            });
-        });
+        var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+        var result: number = await that._userCollection.count(findToken);
+        return  result;
     }
 
 	/**
@@ -1161,23 +900,15 @@ export class UserManager
     * @param {RegExp} searchPhrases Search phrases
 	* @returns {Promise<Array<User>>}
 	*/
-    getUsers(startIndex: number = 0, limit: number = 0, searchPhrases?: RegExp): Promise<Array<User>>
+    async getUsers(startIndex: number = 0, limit: number = 0, searchPhrases?: RegExp): Promise<Array<User>>
 	{
-		var that = this;
-        return new Promise<Array<User>>(function (resolve, reject)
-        {
-            var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+        var findToken = { $or: [<def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+        var results : Array<def.IUserEntry> = await this._userCollection.find(findToken).skip(startIndex).limit(limit).toArray();
+        var users: Array<User> = [];
+        for (var i = 0, l = results.length; i < l; i++)
+            users.push(new User(results[i]));
 
-            that._userCollection.find(findToken).skip(startIndex).limit(limit).toArray().then(function(results: Array<def.IUserEntry>){
-                var users: Array<User> = [];
-					for (var i = 0, l = results.length; i < l; i++)
-						users.push(new User(results[i]));
-
-					resolve(users);
-            }).catch(function(error: Error){
-                return reject(error);
-            });
-		});
+        return users;
     }
 
     /**
