@@ -6,7 +6,7 @@
     "declaration": false,
     "sourceMap": false,
     "preserveConstEnums": true,
-    "target": "es5",
+    "target": "es6",
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "outDir": "dist"
