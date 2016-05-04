@@ -299,10 +299,6 @@ export class BucketManager
                 toRemove.push(bucket.identifier);
             }
 
-            // Send events to sockets
-            var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket, error : undefined };
-            await CommsController.singleton.broadcastEventToAll(fEvent);
-
             // Return an array of all the bucket ids that were removed
             return toRemove;
 
@@ -381,6 +377,11 @@ export class BucketManager
         // Remove the bucket entry
         var deleteResult = await bucketCollection.deleteOne(<users.IBucketEntry>{ _id: bucketEntry._id });
         var result = await stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } });
+
+        // Send events to sockets
+        var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucketEntry, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(fEvent);
+
         return bucketEntry;
     }
 

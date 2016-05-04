@@ -255,9 +255,6 @@ class BucketManager {
                     var bucket = yield this.deleteBucket(buckets[i]);
                     toRemove.push(bucket.identifier);
                 }
-                // Send events to sockets
-                var fEvent = { eventType: socket_event_types_1.EventType.BucketRemoved, bucket: bucket, error: undefined };
-                yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                 // Return an array of all the bucket ids that were removed
                 return toRemove;
             }
@@ -324,6 +321,9 @@ class BucketManager {
             // Remove the bucket entry
             var deleteResult = yield bucketCollection.deleteOne({ _id: bucketEntry._id });
             var result = yield stats.updateOne({ user: bucketEntry.user }, { $inc: { apiCallsUsed: 1 } });
+            // Send events to sockets
+            var fEvent = { eventType: socket_event_types_1.EventType.BucketRemoved, bucket: bucketEntry, error: undefined };
+            yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
             return bucketEntry;
         });
     }

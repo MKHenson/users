@@ -2008,7 +2008,7 @@ describe('Test WS API events are valid', function() {
         test.number(numWSCalls.login).is(6)
         test.number(numWSCalls.logout).is(3)
         test.number(numWSCalls.activated).is(2)
-        test.number(numWSCalls.bucketRemoved).is(5)
+        test.number(numWSCalls.bucketRemoved).is(4)
         test.number(numWSCalls.bucketUploaded).is(4)
         test.number(numWSCalls.filesRemoved).is(6)
         test.number(numWSCalls.filesUploaded).is(3)
