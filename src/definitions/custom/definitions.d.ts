@@ -277,7 +277,7 @@
     export interface IAuthenticationResponse extends IResponse
     {
         authenticated: boolean;
-        user: IUserEntry;
+        user?: IUserEntry;
     }
 
     /*

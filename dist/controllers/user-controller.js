@@ -17,6 +17,7 @@ var bodyParser = require('body-parser');
 var users_1 = require("../users");
 var permission_controller_1 = require("../permission-controller");
 var controller_1 = require("./controller");
+var serializers_1 = require("../serializers");
 var compression = require("compression");
 var winston = require("winston");
 /**
@@ -102,21 +103,17 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getUser(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         users_1.UserManager.get.getUser(req.params.username).then(function (user) {
             if (!user)
-                return res.end(JSON.stringify({ message: "No user found", error: true }));
-            var token = {
+                return serializers_1.okJson({ error: true, message: "No user found" }, res);
+            serializers_1.okJson({
                 error: false,
                 message: `Found ${user.dbEntry.username}`,
                 data: user.generateCleanedData(Boolean(req.query.verbose))
-            };
-            return res.end(JSON.stringify(token));
+            }, res);
         }).catch(function (err) {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify({ message: err.toString(), error: true }));
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -128,8 +125,6 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getUsers(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var totalNumUsers = 0;
         var verbose = Boolean(req.query.verbose);
@@ -146,19 +141,14 @@ class UserController extends controller_1.Controller {
             var sanitizedData = [];
             for (var i = 0, l = users.length; i < l; i++)
                 sanitizedData.push(users[i].generateCleanedData(verbose));
-            var token = {
+            serializers_1.okJson({
                 error: false,
                 message: `Found ${users.length} users`,
                 data: sanitizedData,
                 count: totalNumUsers
-            };
-            return res.end(JSON.stringify(token));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -168,27 +158,20 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getSessions(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var numSessions = 1;
         that._userManager.sessionManager.numActiveSessions().then(function (count) {
             numSessions = count;
             return that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit));
         }).then(function (sessions) {
-            var token = {
+            serializers_1.okJson({
                 error: false,
                 message: `Found ${sessions.length} active sessions`,
                 data: sessions,
                 count: numSessions
-            };
-            return res.end(JSON.stringify(token));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -198,21 +181,11 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     deleteSession(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         that._userManager.sessionManager.clearSession(req.params.id, req, res).then(function (result) {
-            var token = {
-                error: false,
-                message: `Session ${req.params.id} has been removed`,
-            };
-            return res.end(JSON.stringify(token));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            serializers_1.okJson({ error: false, message: `Session ${req.params.id} has been removed` }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -238,20 +211,11 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     resendActivation(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
         this._userManager.resendActivation(req.params.user, origin).then(function (success) {
-            return res.end(JSON.stringify({
-                message: "An activation link has been sent, please check your email for further instructions",
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            serializers_1.okJson({ error: false, message: "An activation link has been sent, please check your email for further instructions" }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -261,20 +225,11 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     requestPasswordReset(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
         this._userManager.requestPasswordReset(req.params.user, origin).then(function (success) {
-            return res.end(JSON.stringify({
-                message: "Instructions have been sent to your email on how to change your password",
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            serializers_1.okJson({ error: false, message: "Instructions have been sent to your email on how to change your password" }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -284,27 +239,19 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     passwordReset(req, res, next) {
-        res.setHeader('Content-Type', 'application/json');
         if (!req.body)
-            return res.end(JSON.stringify({ message: "Expecting body content and found none", error: true }));
+            return serializers_1.errJson(new Error("Expecting body content and found none"), res);
         if (!req.body.user)
-            return res.end(JSON.stringify({ message: "Please specify a user", error: true }));
+            return serializers_1.errJson(new Error("Please specify a user"), res);
         if (!req.body.key)
-            return res.end(JSON.stringify({ message: "Please specify a key", error: true }));
+            return serializers_1.errJson(new Error("Please specify a key"), res);
         if (!req.body.password)
-            return res.end(JSON.stringify({ message: "Please specify a password", error: true }));
+            return serializers_1.errJson(new Error("Please specify a password"), res);
         // Check the user's activation and forward them onto the admin message page
         this._userManager.resetPassword(req.body.user, req.body.key, req.body.password).then(function (success) {
-            return res.end(JSON.stringify({
-                message: "Your password has been reset",
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            serializers_1.okJson({ error: false, message: "Your password has been reset" }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -314,20 +261,11 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     approveActivation(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         that._userManager.approveActivation(req.params.user).then(function () {
-            return res.end(JSON.stringify({
-                message: "Activation code has been approved",
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            serializers_1.okJson({ error: false, message: "Activation code has been approved" }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -337,23 +275,25 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     login(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
-        var token = req.body;
-        this._userManager.logIn(token.username, token.password, token.rememberMe, req, res).then(function (user) {
-            return res.end(JSON.stringify({
-                message: (user ? "User is authenticated" : "User is not authenticated"),
-                authenticated: (user ? true : false),
-                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                authenticated: false,
-                error: true
-            }));
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var token = req.body;
+                var user = yield this._userManager.logIn(token.username, token.password, token.rememberMe, req, res);
+                serializers_1.okJson({
+                    message: (user ? "User is authenticated" : "User is not authenticated"),
+                    authenticated: (user ? true : false),
+                    user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
+                    error: false
+                }, res);
+            }
+            catch (err) {
+                serializers_1.okJson({
+                    message: err.message,
+                    authenticated: false,
+                    error: true
+                }, res);
+            }
+            ;
         });
     }
     /**
@@ -363,19 +303,10 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     logout(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         this._userManager.logOut(req, res).then(function (result) {
-            return res.end(JSON.stringify({
-                message: "Successfully logged out",
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            serializers_1.okJson({ error: false, message: "Successfully logged out" }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -385,16 +316,13 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     messageWebmaster(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var token = req.body;
         if (!token.message)
-            return res.end(JSON.stringify({ message: "Please specify a message to send", error: true }));
+            return serializers_1.okJson({ error: true, message: "Please specify a message to send" }, res);
         this._userManager.sendAdminEmail(token.message, token.name, token.from).then(function () {
-            return res.end(JSON.stringify({ message: "Your message has been sent to the support team", error: false }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({ message: error.message, error: true }));
+            return serializers_1.okJson({ error: false, message: "Your message has been sent to the support team" }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -404,23 +332,16 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     register(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var token = req.body;
         this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res).then(function (user) {
-            return res.end(JSON.stringify({
+            return serializers_1.okJson({
                 message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
                 authenticated: (user ? true : false),
                 user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
                 error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                authenticated: false,
-                error: true
-            }));
+            }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -430,24 +351,15 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     setData(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var user = req._user.dbEntry;
         var val = req.body && req.body.value;
         if (!val)
             val = {};
         that._userManager.setMeta(user, val).then(function () {
-            return res.end(JSON.stringify({
-                message: `User's data has been updated`,
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            return serializers_1.okJson({ message: `User's data has been updated`, error: false }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -457,22 +369,13 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     setVal(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var user = req._user.dbEntry;
         var name = req.params.name;
         that._userManager.setMetaVal(user, name, req.body.value).then(function () {
-            return res.end(JSON.stringify({
-                message: `Value '${name}' has been updated`,
-                error: false
-            }));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            return serializers_1.okJson({ message: `Value '${name}' has been updated`, error: false }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -482,19 +385,13 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getVal(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var user = req._user.dbEntry;
         var name = req.params.name;
         that._userManager.getMetaVal(user, name).then(function (val) {
-            return res.end(JSON.stringify(val));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            return serializers_1.okJson(val, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -504,19 +401,13 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getData(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var user = req._user.dbEntry;
         var name = req.params.name;
         that._userManager.getMetaData(user).then(function (val) {
-            return res.end(JSON.stringify(val));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            return serializers_1.okJson(val, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -526,24 +417,14 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     removeUser(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var toRemove = req.params.user;
         if (!toRemove)
-            return res.end(JSON.stringify({ message: "No user found", error: true }));
+            return serializers_1.okJson({ message: "No user found", error: true }, res);
         that._userManager.removeUser(toRemove).then(function () {
-            var token = {
-                error: false,
-                message: `User ${toRemove} has been removed`
-            };
-            return res.end(JSON.stringify(token));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            return serializers_1.okJson({ message: `User ${toRemove} has been removed`, error: false }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -553,31 +434,21 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     createUser(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var token = req.body;
         // Set default privileges
         token.privileges = token.privileges ? token.privileges : users_1.UserPrivileges.Regular;
         // Not allowed to create super users
         if (token.privileges == users_1.UserPrivileges.SuperAdmin)
-            return res.end(JSON.stringify({
-                message: "You cannot create a user with super admin permissions",
-                error: true
-            }));
+            return serializers_1.okJson({ error: true, message: "You cannot create a user with super admin permissions" }, res);
         that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user) {
-            var token = {
+            return serializers_1.okJson({
                 error: false,
                 message: `User ${user.dbEntry.username} has been created`,
                 data: user.dbEntry
-            };
-            return res.end(JSON.stringify(token));
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: error.message,
-                error: true
-            }));
+            }, res);
+        }).catch(function (err) {
+            return serializers_1.errJson(err, res);
         });
     }
     /**
@@ -588,22 +459,19 @@ class UserController extends controller_1.Controller {
     * @returns {IAuthenticationResponse}
     */
     authenticated(req, res, next) {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         this._userManager.loggedIn(req, res).then(function (user) {
-            return res.end(JSON.stringify({
+            return serializers_1.okJson({
                 message: (user ? "User is authenticated" : "User is not authenticated"),
                 authenticated: (user ? true : false),
                 error: false,
                 user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {})
-            }));
+            }, res);
         }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
+            return serializers_1.okJson({
                 message: error.message,
                 authenticated: false,
                 error: true
-            }));
+            }, res);
         });
     }
 }

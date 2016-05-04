@@ -13,6 +13,7 @@ import {UserManager, User, UserPrivileges} from "../users";
 import {ownerRights, adminRights, identifyUser} from "../permission-controller";
 import {Controller} from "./controller"
 import {BucketManager} from "../bucket-manager";
+import {okJson, errJson} from "../serializers";
 import * as compression from "compression";
 import * as winston from "winston";
 
@@ -124,27 +125,22 @@ export class UserController extends Controller
 	*/
     private getUser(req: def.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
 
         UserManager.get.getUser(req.params.username).then(function (user)
         {
             if (!user)
-                return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
+                return okJson<def.IResponse>( { error: true, message: "No user found" }, res);
 
-            var token: def.IGetUser = {
+            okJson<def.IGetUser>( {
                 error: false,
                 message: `Found ${user.dbEntry.username}`,
                 data: user.generateCleanedData(Boolean(req.query.verbose))
-            };
-
-            return res.end(JSON.stringify(token));
+            }, res);
 
         }).catch(function(err)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{ message: err.toString(), error: true }));
+            return errJson( err, res);
         });
     }
 
@@ -158,8 +154,6 @@ export class UserController extends Controller
 	*/
     private getUsers(req: def.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
         var totalNumUsers: number = 0;
 
@@ -183,22 +177,16 @@ export class UserController extends Controller
             for (var i = 0, l = users.length; i < l; i++)
                 sanitizedData.push(users[i].generateCleanedData(verbose));
 
-            var token: def.IGetUsers = {
+            okJson<def.IGetUsers>( {
                 error: false,
                 message: `Found ${users.length} users`,
                 data: sanitizedData,
                 count: totalNumUsers
-            };
+            }, res);
 
-            return res.end(JSON.stringify(token));
-
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+            return errJson( err, res);
         });
     }
 
@@ -210,8 +198,6 @@ export class UserController extends Controller
 	*/
 	private getSessions(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
 		var that = this;
         var numSessions = 1;
 
@@ -222,22 +208,16 @@ export class UserController extends Controller
 
         }).then(function (sessions)
         {
-            var token: def.IGetSessions = {
+			okJson<def.IGetSessions>( {
 				error: false,
 				message: `Found ${sessions.length} active sessions`,
                 data: sessions,
                 count: numSessions
-			};
+			}, res);
 
-			return res.end(JSON.stringify(token));
-
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
 	}
 
@@ -249,26 +229,15 @@ export class UserController extends Controller
 	*/
 	private deleteSession(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
         that._userManager.sessionManager.clearSession(req.params.id, req, res ).then(function (result)
 		{
-            var token: def.IResponse = {
-				error: false,
-				message: `Session ${req.params.id} has been removed`,
-			};
+            okJson<def.IResponse>( { error: false, message: `Session ${req.params.id} has been removed` }, res);
 
-			return res.end(JSON.stringify(token));
-
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
 	}
 
@@ -302,24 +271,15 @@ export class UserController extends Controller
 	*/
 	private resendActivation(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
 
         this._userManager.resendActivation(req.params.user, origin).then(function (success)
 		{
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: "An activation link has been sent, please check your email for further instructions",
-				error: false
-			}));
+            okJson<def.IResponse>( { error: false, message: "An activation link has been sent, please check your email for further instructions" }, res);
 
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
     }
 
@@ -331,25 +291,15 @@ export class UserController extends Controller
 	*/
     private requestPasswordReset(req: express.Request, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
-
         var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
 
         this._userManager.requestPasswordReset(req.params.user, origin).then(function (success)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: "Instructions have been sent to your email on how to change your password",
-                error: false
-            }));
+            okJson<def.IResponse>( { error: false, message: "Instructions have been sent to your email on how to change your password" }, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+            return errJson( err, res);
         });
     }
 
@@ -361,32 +311,23 @@ export class UserController extends Controller
 	*/
     private passwordReset(req: express.Request, res: express.Response, next: Function): any
     {
-        res.setHeader('Content-Type', 'application/json');
-
         if (!req.body)
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Expecting body content and found none", error: true }));
+            return errJson( new Error("Expecting body content and found none"), res);
         if (!req.body.user)
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a user", error: true }));
+            return errJson( new Error("Please specify a user"), res);
         if (!req.body.key)
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a key", error: true }));
+            return errJson( new Error("Please specify a key"), res);
         if (!req.body.password)
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a password", error: true }));
+            return errJson( new Error("Please specify a password"), res);
 
         // Check the user's activation and forward them onto the admin message page
         this._userManager.resetPassword(req.body.user, req.body.key, req.body.password).then(function (success: boolean)
         {
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: "Your password has been reset",
-                error: false
-            }));
+            okJson<def.IResponse>( { error: false, message: "Your password has been reset" }, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+            return errJson( err, res);
         });
     }
 
@@ -398,24 +339,15 @@ export class UserController extends Controller
 	*/
 	private approveActivation(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
         that._userManager.approveActivation(req.params.user).then(function()
 		{
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: "Activation code has been approved",
-				error: false
-			}));
+            okJson<def.IResponse>( { error: false, message: "Activation code has been approved" }, res);
 
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
 	}
 
@@ -425,31 +357,28 @@ export class UserController extends Controller
 	* @param {express.Response} res
 	* @param {Function} next
 	*/
-	private login(req: express.Request, res: express.Response, next: Function): any
+	private async login(req: express.Request, res: express.Response, next: Function)
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
+        try
+        {
+            var token: def.ILoginToken = req.body;
+		    var user = await this._userManager.logIn(token.username, token.password, token.rememberMe, req, res);
 
-        var token: def.ILoginToken = req.body;
-
-		this._userManager.logIn(token.username, token.password, token.rememberMe, req, res).then(function (user)
-		{
-            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
+            okJson<def.IAuthenticationResponse>( {
 				message: (user ? "User is authenticated" : "User is not authenticated"),
                 authenticated: (user ? true : false),
                 user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
 				error: false
-			}));
+			}, res);
 
-		}).catch(function (error: Error)
-        {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
-				message: error.message,
-				authenticated: false,
+		} catch( err ) {
+
+            okJson<def.IAuthenticationResponse>( {
+				message: err.message,
+                authenticated: false,
 				error: true
-			}));
-		});
+			}, res);
+		};
 	}
 
 	/**
@@ -460,23 +389,13 @@ export class UserController extends Controller
 	*/
 	private logout(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
-
 		this._userManager.logOut(req, res).then(function( result )
 		{
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: "Successfully logged out",
-				error: false
-			}));
+            okJson<def.IResponse>( { error: false, message: "Successfully logged out" }, res);
 
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
     }
 
@@ -488,22 +407,18 @@ export class UserController extends Controller
 	*/
     messageWebmaster(req: express.Request, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
-
         var token: any = req.body;
 
         if (!token.message)
-            return res.end(JSON.stringify(<def.IResponse>{ message: "Please specify a message to send", error: true }));
+            return okJson<def.IResponse>( { error: true, message: "Please specify a message to send" }, res);
 
         this._userManager.sendAdminEmail(token.message, token.name, token.from).then(function()
         {
-            return res.end(JSON.stringify(<def.IAuthenticationResponse>{ message: "Your message has been sent to the support team", error: false }));
+             return okJson<def.IResponse>( { error: false, message: "Your message has been sent to the support team" }, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{ message: error.message,  error: true }));
+            return errJson( err, res);
         });
     }
 
@@ -515,28 +430,20 @@ export class UserController extends Controller
 	*/
 	private register(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
-
         var token: def.IRegisterToken = req.body;
 
         this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res).then(function (user)
 		{
-            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
+            return okJson<def.IAuthenticationResponse>({
 				message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
                 authenticated: (user ? true : false),
                 user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
 				error: false
-			}));
+			}, res);
 
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IAuthenticationResponse>{
-				message: error.message,
-				authenticated: false,
-				error: true
-			}));
+            return errJson( err, res);
 		});
     }
 
@@ -548,8 +455,6 @@ export class UserController extends Controller
 	*/
     private setData(req: def.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
 
         var user = req._user.dbEntry;
@@ -559,18 +464,11 @@ export class UserController extends Controller
 
         that._userManager.setMeta(user, val).then(function ()
         {
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: `User's data has been updated`,
-                error: false
-            }));
+            return okJson<def.IResponse>({ message: `User's data has been updated`, error: false }, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+            return errJson( err, res);
         });
     }
 
@@ -582,8 +480,6 @@ export class UserController extends Controller
 	*/
     private setVal(req: def.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
 
         var user = req._user.dbEntry;
@@ -591,18 +487,11 @@ export class UserController extends Controller
 
         that._userManager.setMetaVal(user, name, req.body.value ).then(function()
         {
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: `Value '${name}' has been updated`,
-                error: false
-            }));
+            return okJson<def.IResponse>({ message: `Value '${name}' has been updated`, error: false }, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+            return errJson( err, res);
         });
     }
 
@@ -614,8 +503,6 @@ export class UserController extends Controller
 	*/
     private getVal(req: def.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
 
         var user = req._user.dbEntry;
@@ -623,15 +510,11 @@ export class UserController extends Controller
 
         that._userManager.getMetaVal(user, name).then(function (val)
         {
-            return res.end(JSON.stringify(val));
+            return okJson<any>(val, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+           return errJson( err, res);
         });
     }
 
@@ -643,8 +526,6 @@ export class UserController extends Controller
 	*/
     private getData(req: def.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var that = this;
 
         var user = req._user.dbEntry;
@@ -652,15 +533,11 @@ export class UserController extends Controller
 
         that._userManager.getMetaData(user).then(function (val)
         {
-            return res.end(JSON.stringify(val));
+            return okJson<any>(val, res);
 
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<def.IResponse>{
-                message: error.message,
-                error: true
-            }));
+            return errJson( err, res);
         });
     }
 
@@ -672,30 +549,19 @@ export class UserController extends Controller
 	*/
     private removeUser(req: def.AuthRequest, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
 		var that = this;
 
         var toRemove = req.params.user;
         if (!toRemove)
-            return res.end(JSON.stringify(<def.IResponse>{ message: "No user found", error: true }));
+            return okJson<def.IResponse>({ message: "No user found", error: true }, res);
 
         that._userManager.removeUser(toRemove).then(function ()
 		{
-			var token: def.IResponse = {
-				error: false,
-                message: `User ${toRemove} has been removed`
-			};
+            return okJson<def.IResponse>({ message: `User ${toRemove} has been removed`, error: false }, res);
 
-			return res.end(JSON.stringify(token));
-
-		}).catch(function (error: Error)
+		}).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-			return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
     }
 
@@ -707,8 +573,6 @@ export class UserController extends Controller
 	*/
 	private createUser(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
 		var that = this;
         var token: def.IRegisterToken = req.body;
 
@@ -717,29 +581,19 @@ export class UserController extends Controller
 
 		// Not allowed to create super users
 		if (token.privileges == UserPrivileges.SuperAdmin)
-			return res.end(JSON.stringify(<def.IResponse>{
-				message: "You cannot create a user with super admin permissions",
-				error: true
-			}));
-
+            return okJson<def.IResponse>({ error: true, message: "You cannot create a user with super admin permissions" }, res);
 
         that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user)
         {
-            var token: def.IGetUser = {
+            return okJson<def.IGetUser>({
                 error: false,
                 message: `User ${user.dbEntry.username} has been created`,
                 data: user.dbEntry
-            };
+            }, res);
 
-            return res.end(JSON.stringify(token));
-
-        }).catch(function (error: Error)
+        }).catch(function (err: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-			return res.end(JSON.stringify(<def.IResponse>{
-				message: error.message,
-				error: true
-			}));
+            return errJson( err, res);
 		});
     }
 
@@ -752,26 +606,22 @@ export class UserController extends Controller
 	*/
 	private authenticated(req: express.Request, res: express.Response, next: Function): any
 	{
-		// Set the content type
-		res.setHeader('Content-Type', 'application/json');
-
 		this._userManager.loggedIn(req, res).then(function (user)
 		{
-			return res.end(JSON.stringify(<def.IAuthenticationResponse>{
+            return okJson<def.IAuthenticationResponse>({
 				message: (user ? "User is authenticated" : "User is not authenticated"),
 				authenticated: (user ? true : false),
                 error: false,
                 user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {})
-			}));
+			}, res);
 
 		}).catch(function (error: Error)
         {
-            winston.error(error.toString(), { process: process.pid });
-			return res.end(JSON.stringify(<def.IAuthenticationResponse>{
+             return okJson<def.IAuthenticationResponse>({
 				message: error.message,
 				authenticated: false,
-				error: true
-			}));
+                error: true
+			}, res);
 		});
 	}
 }

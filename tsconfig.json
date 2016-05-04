@@ -26,6 +26,7 @@
       "src/socket-api.ts",
       "src/socket-event-types.ts",
       "src/startup.ts",
+      "src/serializers.ts",
       "src/users.ts",
       "src/main.ts",
       "src/startup.ts"
