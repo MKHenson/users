@@ -68,31 +68,22 @@ class UserController extends controller_1.Controller {
     * @returns {Promise<Controller>}
     */
     initialize(db) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            var userCollection;
-            var sessionCollection;
-            Promise.all([
-                that.createCollection(that._config.userCollection, db),
-                that.createCollection(that._config.sessionCollection, db)
-            ]).then(function (collections) {
-                userCollection = collections[0];
-                sessionCollection = collections[1];
-                return Promise.all([
-                    that.ensureIndex(userCollection, "username"),
-                    that.ensureIndex(userCollection, "createdOn"),
-                    that.ensureIndex(userCollection, "lastLoggedIn"),
-                ]);
-            }).then(function () {
-                // Create the user manager
-                that._userManager = users_1.UserManager.create(userCollection, sessionCollection, that._config);
-                return that._userManager.initialize();
-            }).then(function () {
-                // Initialization is finished
-                resolve();
-            }).catch(function (error) {
-                reject(error);
-            });
+        return __awaiter(this, void 0, Promise, function* () {
+            var collections = yield Promise.all([
+                this.createCollection(this._config.userCollection, db),
+                this.createCollection(this._config.sessionCollection, db)
+            ]);
+            var userCollection = collections[0];
+            var sessionCollection = collections[1];
+            yield Promise.all([
+                this.ensureIndex(userCollection, "username"),
+                this.ensureIndex(userCollection, "createdOn"),
+                this.ensureIndex(userCollection, "lastLoggedIn"),
+            ]);
+            // Create the user manager
+            this._userManager = users_1.UserManager.create(userCollection, sessionCollection, this._config);
+            yield this._userManager.initialize();
+            return;
         });
     }
     /**
@@ -103,17 +94,21 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getUser(req, res, next) {
-        var that = this;
-        users_1.UserManager.get.getUser(req.params.username).then(function (user) {
-            if (!user)
-                return serializers_1.okJson({ error: true, message: "No user found" }, res);
-            serializers_1.okJson({
-                error: false,
-                message: `Found ${user.dbEntry.username}`,
-                data: user.generateCleanedData(Boolean(req.query.verbose))
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var user = yield users_1.UserManager.get.getUser(req.params.username);
+                if (!user)
+                    throw new Error("No user found");
+                serializers_1.okJson({
+                    error: false,
+                    message: `Found ${user.dbEntry.username}`,
+                    data: user.generateCleanedData(Boolean(req.query.verbose))
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -125,30 +120,30 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getUsers(req, res, next) {
-        var that = this;
-        var totalNumUsers = 0;
-        var verbose = Boolean(req.query.verbose);
-        // Only admins are allowed to see sensitive data
-        if (req._user && req._user.dbEntry.privileges == users_1.UserPrivileges.SuperAdmin && verbose)
-            verbose = true;
-        else
-            verbose = false;
-        that._userManager.numUsers(new RegExp(req.query.search)).then(function (numUsers) {
-            totalNumUsers = numUsers;
-            return that._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit), new RegExp(req.query.search));
-        })
-            .then(function (users) {
-            var sanitizedData = [];
-            for (var i = 0, l = users.length; i < l; i++)
-                sanitizedData.push(users[i].generateCleanedData(verbose));
-            serializers_1.okJson({
-                error: false,
-                message: `Found ${users.length} users`,
-                data: sanitizedData,
-                count: totalNumUsers
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var verbose = Boolean(req.query.verbose);
+            // Only admins are allowed to see sensitive data
+            if (req._user && req._user.dbEntry.privileges == users_1.UserPrivileges.SuperAdmin && verbose)
+                verbose = true;
+            else
+                verbose = false;
+            try {
+                var totalNumUsers = yield this._userManager.numUsers(new RegExp(req.query.search));
+                var users = yield this._userManager.getUsers(parseInt(req.query.index), parseInt(req.query.limit), new RegExp(req.query.search));
+                var sanitizedData = [];
+                for (var i = 0, l = users.length; i < l; i++)
+                    sanitizedData.push(users[i].generateCleanedData(verbose));
+                serializers_1.okJson({
+                    error: false,
+                    message: `Found ${users.length} users`,
+                    data: sanitizedData,
+                    count: totalNumUsers
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -158,20 +153,21 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getSessions(req, res, next) {
-        var that = this;
-        var numSessions = 1;
-        that._userManager.sessionManager.numActiveSessions().then(function (count) {
-            numSessions = count;
-            return that._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit));
-        }).then(function (sessions) {
-            serializers_1.okJson({
-                error: false,
-                message: `Found ${sessions.length} active sessions`,
-                data: sessions,
-                count: numSessions
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var numSessions = yield this._userManager.sessionManager.numActiveSessions();
+                var sessions = yield this._userManager.sessionManager.getActiveSessions(parseInt(req.query.index), parseInt(req.query.limit));
+                serializers_1.okJson({
+                    error: false,
+                    message: `Found ${sessions.length} active sessions`,
+                    data: sessions,
+                    count: numSessions
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -181,11 +177,15 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     deleteSession(req, res, next) {
-        var that = this;
-        that._userManager.sessionManager.clearSession(req.params.id, req, res).then(function (result) {
-            serializers_1.okJson({ error: false, message: `Session ${req.params.id} has been removed` }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var result = yield this._userManager.sessionManager.clearSession(req.params.id, req, res);
+                serializers_1.okJson({ error: false, message: `Session ${req.params.id} has been removed` }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -195,13 +195,18 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     activateAccount(req, res, next) {
-        var redirectURL = this._config.accountRedirectURL;
-        // Check the user's activation and forward them onto the admin message page
-        this._userManager.checkActivation(req.query.user, req.query.key).then(function (success) {
-            res.redirect(`${redirectURL}?message=${encodeURIComponent("Your account has been activated!")}&status=success&origin=${encodeURIComponent(req.query.origin)}`);
-        }).catch(function (error) {
-            winston.error(error.toString(), { process: process.pid });
-            res.redirect(`${redirectURL}?message=${encodeURIComponent(error.message)}&status=error&origin=${encodeURIComponent(req.query.origin)}`);
+        return __awaiter(this, void 0, Promise, function* () {
+            var redirectURL = this._config.accountRedirectURL;
+            try {
+                // Check the user's activation and forward them onto the admin message page
+                yield this._userManager.checkActivation(req.query.user, req.query.key);
+                res.redirect(`${redirectURL}?message=${encodeURIComponent("Your account has been activated!")}&status=success&origin=${encodeURIComponent(req.query.origin)}`);
+            }
+            catch (error) {
+                winston.error(error.toString(), { process: process.pid });
+                res.redirect(`${redirectURL}?message=${encodeURIComponent(error.message)}&status=error&origin=${encodeURIComponent(req.query.origin)}`);
+            }
+            ;
         });
     }
     /**
@@ -211,11 +216,16 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     resendActivation(req, res, next) {
-        var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
-        this._userManager.resendActivation(req.params.user, origin).then(function (success) {
-            serializers_1.okJson({ error: false, message: "An activation link has been sent, please check your email for further instructions" }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
+                yield this._userManager.resendActivation(req.params.user, origin);
+                serializers_1.okJson({ error: false, message: "An activation link has been sent, please check your email for further instructions" }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -225,11 +235,16 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     requestPasswordReset(req, res, next) {
-        var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
-        this._userManager.requestPasswordReset(req.params.user, origin).then(function (success) {
-            serializers_1.okJson({ error: false, message: "Instructions have been sent to your email on how to change your password" }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var origin = encodeURIComponent(req.headers["origin"] || req.headers["referer"]);
+                yield this._userManager.requestPasswordReset(req.params.user, origin);
+                serializers_1.okJson({ error: false, message: "Instructions have been sent to your email on how to change your password" }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -239,19 +254,24 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     passwordReset(req, res, next) {
-        if (!req.body)
-            return serializers_1.errJson(new Error("Expecting body content and found none"), res);
-        if (!req.body.user)
-            return serializers_1.errJson(new Error("Please specify a user"), res);
-        if (!req.body.key)
-            return serializers_1.errJson(new Error("Please specify a key"), res);
-        if (!req.body.password)
-            return serializers_1.errJson(new Error("Please specify a password"), res);
-        // Check the user's activation and forward them onto the admin message page
-        this._userManager.resetPassword(req.body.user, req.body.key, req.body.password).then(function (success) {
-            serializers_1.okJson({ error: false, message: "Your password has been reset" }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                if (!req.body)
+                    throw new Error("Expecting body content and found none");
+                if (!req.body.user)
+                    throw new Error("Please specify a user");
+                if (!req.body.key)
+                    throw new Error("Please specify a key");
+                if (!req.body.password)
+                    throw new Error("Please specify a password");
+                // Check the user's activation and forward them onto the admin message page
+                yield this._userManager.resetPassword(req.body.user, req.body.key, req.body.password);
+                serializers_1.okJson({ error: false, message: "Your password has been reset" }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -261,11 +281,15 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     approveActivation(req, res, next) {
-        var that = this;
-        that._userManager.approveActivation(req.params.user).then(function () {
-            serializers_1.okJson({ error: false, message: "Activation code has been approved" }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                yield this._userManager.approveActivation(req.params.user);
+                serializers_1.okJson({ error: false, message: "Activation code has been approved" }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -303,10 +327,15 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     logout(req, res, next) {
-        this._userManager.logOut(req, res).then(function (result) {
-            serializers_1.okJson({ error: false, message: "Successfully logged out" }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                yield this._userManager.logOut(req, res);
+                serializers_1.okJson({ error: false, message: "Successfully logged out" }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -316,13 +345,18 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     messageWebmaster(req, res, next) {
-        var token = req.body;
-        if (!token.message)
-            return serializers_1.okJson({ error: true, message: "Please specify a message to send" }, res);
-        this._userManager.sendAdminEmail(token.message, token.name, token.from).then(function () {
-            return serializers_1.okJson({ error: false, message: "Your message has been sent to the support team" }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var token = req.body;
+                if (!token.message)
+                    throw new Error("Please specify a message to send");
+                yield this._userManager.sendAdminEmail(token.message, token.name, token.from);
+                serializers_1.okJson({ error: false, message: "Your message has been sent to the support team" }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -332,16 +366,21 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     register(req, res, next) {
-        var token = req.body;
-        this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res).then(function (user) {
-            return serializers_1.okJson({
-                message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
-                authenticated: (user ? true : false),
-                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
-                error: false
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var token = req.body;
+                var user = yield this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res);
+                return serializers_1.okJson({
+                    message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),
+                    authenticated: (user ? true : false),
+                    user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {}),
+                    error: false
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -351,15 +390,19 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     setData(req, res, next) {
-        var that = this;
-        var user = req._user.dbEntry;
-        var val = req.body && req.body.value;
-        if (!val)
-            val = {};
-        that._userManager.setMeta(user, val).then(function () {
-            return serializers_1.okJson({ message: `User's data has been updated`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var user = req._user.dbEntry;
+            var val = req.body && req.body.value;
+            if (!val)
+                val = {};
+            try {
+                yield this._userManager.setMeta(user, val);
+                serializers_1.okJson({ message: `User's data has been updated`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -369,13 +412,17 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     setVal(req, res, next) {
-        var that = this;
-        var user = req._user.dbEntry;
-        var name = req.params.name;
-        that._userManager.setMetaVal(user, name, req.body.value).then(function () {
-            return serializers_1.okJson({ message: `Value '${name}' has been updated`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var user = req._user.dbEntry;
+            var name = req.params.name;
+            try {
+                yield this._userManager.setMetaVal(user, name, req.body.value);
+                serializers_1.okJson({ message: `Value '${name}' has been updated`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -385,13 +432,17 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getVal(req, res, next) {
-        var that = this;
-        var user = req._user.dbEntry;
-        var name = req.params.name;
-        that._userManager.getMetaVal(user, name).then(function (val) {
-            return serializers_1.okJson(val, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var user = req._user.dbEntry;
+            var name = req.params.name;
+            try {
+                var val = yield this._userManager.getMetaVal(user, name);
+                serializers_1.okJson(val, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -401,13 +452,17 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     getData(req, res, next) {
-        var that = this;
-        var user = req._user.dbEntry;
-        var name = req.params.name;
-        that._userManager.getMetaData(user).then(function (val) {
-            return serializers_1.okJson(val, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var user = req._user.dbEntry;
+            var name = req.params.name;
+            try {
+                var val = yield this._userManager.getMetaData(user);
+                serializers_1.okJson(val, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -417,14 +472,18 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     removeUser(req, res, next) {
-        var that = this;
-        var toRemove = req.params.user;
-        if (!toRemove)
-            return serializers_1.okJson({ message: "No user found", error: true }, res);
-        that._userManager.removeUser(toRemove).then(function () {
-            return serializers_1.okJson({ message: `User ${toRemove} has been removed`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var toRemove = req.params.user;
+                if (!toRemove)
+                    throw new Error("No user found");
+                yield this._userManager.removeUser(toRemove);
+                return serializers_1.okJson({ message: `User ${toRemove} has been removed`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -434,21 +493,25 @@ class UserController extends controller_1.Controller {
     * @param {Function} next
     */
     createUser(req, res, next) {
-        var that = this;
-        var token = req.body;
-        // Set default privileges
-        token.privileges = token.privileges ? token.privileges : users_1.UserPrivileges.Regular;
-        // Not allowed to create super users
-        if (token.privileges == users_1.UserPrivileges.SuperAdmin)
-            return serializers_1.okJson({ error: true, message: "You cannot create a user with super admin permissions" }, res);
-        that._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta).then(function (user) {
-            return serializers_1.okJson({
-                error: false,
-                message: `User ${user.dbEntry.username} has been created`,
-                data: user.dbEntry
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var token = req.body;
+                // Set default privileges
+                token.privileges = token.privileges ? token.privileges : users_1.UserPrivileges.Regular;
+                // Not allowed to create super users
+                if (token.privileges == users_1.UserPrivileges.SuperAdmin)
+                    throw new Error("You cannot create a user with super admin permissions");
+                var user = yield this._userManager.createUser(token.username, token.email, token.password, (this._config.ssl ? "https://" : "http://") + this._config.host, token.privileges, token.meta);
+                serializers_1.okJson({
+                    error: false,
+                    message: `User ${user.dbEntry.username} has been created`,
+                    data: user.dbEntry
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -459,19 +522,24 @@ class UserController extends controller_1.Controller {
     * @returns {IAuthenticationResponse}
     */
     authenticated(req, res, next) {
-        this._userManager.loggedIn(req, res).then(function (user) {
-            return serializers_1.okJson({
-                message: (user ? "User is authenticated" : "User is not authenticated"),
-                authenticated: (user ? true : false),
-                error: false,
-                user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {})
-            }, res);
-        }).catch(function (error) {
-            return serializers_1.okJson({
-                message: error.message,
-                authenticated: false,
-                error: true
-            }, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var user = yield this._userManager.loggedIn(req, res);
+                return serializers_1.okJson({
+                    message: (user ? "User is authenticated" : "User is not authenticated"),
+                    authenticated: (user ? true : false),
+                    error: false,
+                    user: (user ? user.generateCleanedData(Boolean(req.query.verbose)) : {})
+                }, res);
+            }
+            catch (error) {
+                return serializers_1.okJson({
+                    message: error.message,
+                    authenticated: false,
+                    error: true
+                }, res);
+            }
+            ;
         });
     }
 }
