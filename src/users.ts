@@ -161,10 +161,10 @@ export class UserManager
         if (!sessionId || sessionId == "")
             return;
 
-        var useEntry: def.IUserEntry = await this._userCollection.find({ sessionId: sessionId }).limit(1).next();
+        var useEntry: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ sessionId: sessionId }).limit(1).next();
         if (useEntry)
         {
-            // Send logged in event to socket
+            // Send logged out event to socket
             var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout, error : undefined };
             await CommsController.singleton.broadcastEventToAll(sEvent);
             winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
