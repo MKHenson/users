@@ -108,14 +108,14 @@ export class SessionManager extends EventEmitter
 		if (sId != "")
 		{
 			// We have a session ID, lets try to find it in the DB
-			var sessionDB: ISessionEntry = await this._dbCollection.find({ sessionId: sId }).limit(1).next();
+			var sessionDB: ISessionEntry = await this._dbCollection.find( <ISessionEntry>{ sessionId: sId }).limit(1).next();
 
 			// Create a new session
 			var session = new Session(sId, this._options);
 			session.expiration = -1;
 
 			// Adds / updates the DB with the new session
-			var result = await this._dbCollection.deleteOne({ sessionId: session.sessionId });
+			var result = await this._dbCollection.deleteOne( <ISessionEntry>{ sessionId: session.sessionId });
 
 			this.emit("sessionRemoved", sId);
 
