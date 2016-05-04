@@ -60,15 +60,29 @@ class BucketController extends controller_1.Controller {
         router.put("/files/:file/rename-file", [permission_controller_1.requireUser, this.renameFile.bind(this)]);
         router.put("/files/:id/make-public", [permission_controller_1.requireUser, this.makePublic.bind(this)]);
         router.put("/files/:id/make-private", [permission_controller_1.requireUser, this.makePrivate.bind(this)]);
+        router.use(this.handleError);
         // Register the path
         e.use(`${config.apiPrefix}`, router);
     }
     /**
-   * Makes sure the target user exists and the numeric value specified is valid
-   * @param {express.Request} req
-   * @param {express.Response} res
-   * @param {Function} next
-   */
+     * Catches any and all requests that fell through
+     * @param {any} err
+     * @param {express.Request} req
+     * @param {express.Response} res
+     * @param {Function} next
+     */
+    handleError(err, req, res, next) {
+        winston.error("ERROR CAUGHT!: " + err.toString(), { process: process.pid });
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ message: err.toString(), error: true }));
+    }
+    ;
+    /**
+     * Makes sure the target user exists and the numeric value specified is valid
+     * @param {express.Request} req
+     * @param {express.Response} res
+     * @param {Function} next
+     */
     verifyTargetValue(req, res, next) {
         // Set the content type
         var value = parseInt(req.params.value);
@@ -271,11 +285,12 @@ class BucketController extends controller_1.Controller {
                 data: stats
             }));
         }).catch(function (err) {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify({
-                message: err.toString(),
-                error: true
-            }));
+            throw err;
+            // winston.error(err.toString(), { process: process.pid });
+            // return res.end(JSON.stringify(<users.IResponse>{
+            //     message: err.toString(),
+            //     error: true
+            // }));
         });
     }
     /**
