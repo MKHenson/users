@@ -50,47 +50,32 @@ export class BucketManager
     * @param {RegExp} searchTerm [Optional] Specify a search term
     * @returns {Promise<Array<def.IBucketEntry>>}
     */
-    getBucketEntries(user?: string, searchTerm?: RegExp): Promise<Array<users.IBucketEntry>>
+    async getBucketEntries(user?: string, searchTerm?: RegExp): Promise<Array<users.IBucketEntry>>
     {
-        var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
+        var search: users.IBucketEntry = {};
+        if (user)
+            search.user = user;
 
-        return new Promise(function (resolve, reject)
-        {
-            var search: users.IBucketEntry = {};
-            if (user)
-                search.user = user;
+        if (searchTerm)
+            (<any>search).name = searchTerm;
 
-            if (searchTerm)
-                (<any>search).name = searchTerm;
-
-            // Save the new entry into the database
-            bucketCollection.find(search).toArray(function(error, buckets: Array<users.IBucketEntry>) {
-                return resolve(buckets);
-            });
-        });
+        // Save the new entry into the database
+        var buckets: Array<users.IBucketEntry> = await bucketCollection.find(search).toArray();
+        return buckets;
     }
 
     /**
     * Fetches the file count based on the given query
     * @param {IFileEntry} searchQuery The search query to idenfify files
-    * @returns {Promise<Array<def.IFileEntry>>}
+    * @returns {Promise<number>}
     */
-    numFiles(searchQuery: users.IFileEntry): Promise<number>
+    async numFiles(searchQuery: users.IFileEntry): Promise<number>
     {
-        var files = this._files;
-        return new Promise(function (resolve, reject)
-        {
-            // Save the new entry into the database
-            files.count(searchQuery, function (err, count)
-            {
-                if (err)
-                    return reject(err);
-
-                return resolve(count);
-            });
-        });
+        var filesCollection = this._files;
+        var count = await filesCollection.count(searchQuery);
+        return count;
     }
 
     /**
@@ -98,39 +83,29 @@ export class BucketManager
     * @param {any} searchQuery The search query to idenfify files
     * @returns {Promise<Array<def.IFileEntry>>}
     */
-    getFiles(searchQuery: any, startIndex?: number, limit: number = -1): Promise<Array<users.IFileEntry>>
+    async getFiles(searchQuery: any, startIndex?: number, limit: number = -1): Promise<Array<users.IFileEntry>>
     {
-        var that = this;
         var gcs = this._gcs;
-        var files = this._files;
+        var filesCollection = this._files;
 
-        return new Promise(function (resolve, reject)
-        {
-            // Save the new entry into the database
-            files.find(searchQuery).skip(startIndex).limit(limit).toArray(function(err, files: Array<users.IFileEntry>){
-                return resolve(files);
-            });
-        });
+        // Save the new entry into the database
+        var files: Array<users.IFileEntry> = await filesCollection.find(searchQuery).skip(startIndex).limit(limit).toArray();
+        return files;
     }
 
-   /**
-   * Updates all file entries for a given search criteria with custom meta data
-   * @param {any} searchQuery The search query to idenfify files
-   * @param {any} meta Optional meta data to associate with the files
-   * @returns {Promise<boolean>}
-   */
-    setMeta(searchQuery: any, meta: any): Promise<boolean>
+    /**
+     * Updates all file entries for a given search criteria with custom meta data
+     * @param {any} searchQuery The search query to idenfify files
+     * @param {any} meta Optional meta data to associate with the files
+     * @returns {Promise<boolean>}
+     */
+    async setMeta(searchQuery: any, meta: any): Promise<boolean>
     {
-        var files = this._files;
-        return new Promise <boolean>(function (resolve, reject)
-        {
-            // Save the new entry into the database
-            files.updateMany(searchQuery, { $set: <users.IFileEntry>{ meta : meta } }).then(function(updateResult) {
-                return resolve(true);
-            }).catch(function(err: Error) {
-                return reject(err);
-            });
-        });
+        var filesCollection = this._files;
+
+        // Save the new entry into the database
+        var updateResult = await filesCollection.updateMany(searchQuery, { $set: <users.IFileEntry>{ meta : meta } });
+        return true;
     }
 
     /**
@@ -156,23 +131,18 @@ export class BucketManager
     * @param {string} user The user whos data we are fetching
     * @returns {Promise<def.IStorageStats>}
     */
-    getUserStats(user?: string): Promise<users.IStorageStats>
+    async getUserStats(user?: string): Promise<users.IStorageStats>
     {
-        var that = this;
         var gcs = this._gcs;
         var stats = this._stats;
 
-        return new Promise(function (resolve, reject)
-        {
-            // Save the new entry into the database
-            stats.find(<users.IStorageStats>{ user: user }).limit(1).next().then(function(result)
-            {
-                if (!result)
-                    return reject(new Error(`Could not find storage data for the user '${user}'`));
-                else
-                    return resolve(result);
-            });
-        });
+        // Save the new entry into the database
+        var result : users.IStorageStats = await stats.find(<users.IStorageStats>{ user: user }).limit(1).next();
+
+        if (!result)
+            throw new Error(`Could not find storage data for the user '${user}'`);
+
+        return result;
     }
 
     /**
@@ -180,27 +150,20 @@ export class BucketManager
     * @param {string} user The user associated with this bucket
     * @returns {Promise<IStorageStats>}
     */
-    createUserStats(user: string): Promise<users.IStorageStats>
+    async createUserStats(user: string): Promise<users.IStorageStats>
     {
-        var that = this;
         var stats = this._stats;
 
-        return new Promise(function (resolve, reject)
-        {
-            var storage: users.IStorageStats = {
-                user: user,
-                apiCallsAllocated: BucketManager.API_CALLS_ALLOCATED,
-                memoryAllocated: BucketManager.MEMORY_ALLOCATED,
-                apiCallsUsed: 0,
-                memoryUsed: 0
-            }
+        var storage: users.IStorageStats = {
+            user: user,
+            apiCallsAllocated: BucketManager.API_CALLS_ALLOCATED,
+            memoryAllocated: BucketManager.MEMORY_ALLOCATED,
+            apiCallsUsed: 0,
+            memoryUsed: 0
+        }
 
-            stats.insertOne(storage).then(function(insertResult) {
-                return resolve(insertResult.ops[0]);
-            }).catch(function(err){
-                return reject(err);
-            });
-        });
+        var insertResult = await stats.insertOne(storage);
+        return <users.IStorageStats>insertResult.ops[0];
     }
 
     /**
@@ -208,44 +171,62 @@ export class BucketManager
     * @param {string} user The user associated with this bucket
     * @returns {Promise<number>} A promise of the number of stats removed
     */
-    removeUserStats(user: string): Promise<number>
+    async removeUserStats(user: string): Promise<number>
     {
-        var that = this;
         var stats = this._stats;
 
-        return new Promise(function (resolve, reject)
-        {
-            stats.deleteOne(<users.IStorageStats>{ user: user }).then(function(deleteResult){
-                return resolve(deleteResult.deletedCount);
-            }).catch(function(err){
-                return reject(err);
-            });
-        });
+        var deleteResult = await stats.deleteOne(<users.IStorageStats>{ user: user });
+        return deleteResult.deletedCount;
     }
 
     /**
     * Attempts to remove all data associated with a user
     * @param {string} user The user we are removing
-    * @returns {Promise<any>}
+    * @returns {Promise<void>}
     */
-    removeUser(user: string): Promise<any>
+    async removeUser(user: string): Promise<void>
     {
-        var that = this;
         var stats = this._stats;
+        var result = await this.removeBucketsByUser(user);
+        var data = await this.removeUserStats(user);
+        return;
+    }
 
-        return new Promise(function (resolve, reject)
-        {
-            that.removeBucketsByUser(user).then(function(result)
-            {
-                return that.removeUserStats(user);
+    /**
+    * Attempts to create a new google storage bucket
+    * @param {string} bucketID The id of the bucket entry
+    * @returns {Promise<gcloud.IBucket>}
+    */
+    private createGBucket(bucketID : string): Promise<gcloud.IBucket>
+    {
+        var gcs = this._gcs;
+        var cors = {
+            location: "EU",
+            cors: [
+                {
+                    "origin": [
+                        //"webinate.net", "webinate-test.net"
+                        "*"
+                    ],
+                    "method": [
+                        "GET", "OPTIONS"
+                    ],
+                    "responseHeader": [
+                        "content-type", "authorization", "content-length", "x-requested-with","x-mime-type", "x-file-name", "cache-control"
+                    ],
+                    "maxAgeSeconds": 1
+                }
+            ]
+        };
 
-            }).then(function(data)
+        return new Promise<gcloud.IBucket>(function(resolve, reject) {
+            // Attempt to create a new Google bucket
+            gcs.createBucket(bucketID, cors, function (err: Error, bucket: gcloud.IBucket)
             {
-                return resolve();
+                if (err)
+                    return reject(new Error(`Could not create a new bucket: '${err.message}'`));
 
-            }).catch(function (err)
-            {
-                return reject(err);
+                resolve(bucket);
             });
         });
     }
@@ -256,82 +237,42 @@ export class BucketManager
     * @param {string} user The user associated with this bucket
     * @returns {Promise<gcloud.IBucket>}
     */
-    createBucket(name: string, user: string): Promise<gcloud.IBucket>
+    async createBucket(name: string, user: string): Promise<gcloud.IBucket>
     {
-        var that = this;
-        var gcs = this._gcs;
-        var bucketID = `webinate-bucket-${that.generateRandString(8).toLowerCase()}`;
+        var bucketID = `webinate-bucket-${this.generateRandString(8).toLowerCase()}`;
         var bucketCollection = this._buckets;
         var stats = this._stats;
 
-        return new Promise(function (resolve, reject)
-        {
-            that.getIBucket(name, user).then(function (bucket)
-            {
-                if (bucket)
-                    return reject(new Error(`A Bucket with the name '${name}' has already been registered`));
+        // Get the entry
+        var bucketEntry = await this.getIBucket(name, user);
 
-                var cors = {
-                    location: "EU",
-                    cors: [
-                        {
-                            "origin": [
-                                //"webinate.net", "webinate-test.net"
-                                "*"
-                            ],
-                            "method": [
-                                "GET", "OPTIONS"
-                            ],
-                            "responseHeader": [
-                                "content-type", "authorization", "content-length", "x-requested-with","x-mime-type", "x-file-name", "cache-control"
-                            ],
-                            "maxAgeSeconds": 1
-                        }
-                    ]
-                }
+        // Make sure no bucket already exists with that name
+        if (bucketEntry)
+            throw new Error(`A Bucket with the name '${name}' has already been registered`);
 
-                // Attempt to create a new Google bucket
-                gcs.createBucket(bucketID, cors, function (err: Error, bucket: gcloud.IBucket)
-                {
-                    if (err)
-                        return reject(new Error(`Could not create a new bucket: '${err.message}'`));
-                    else
-                    {
-                        var newBucket = null;
-                        var newEntry: users.IBucketEntry = {
-                            name: name,
-                            identifier: bucketID,
-                            created: Date.now(),
-                            user: user,
-                            memoryUsed: 0
-                        }
+        // Attempt to create a new Google bucket
+        var gBucket = await this.createGBucket(bucketID);
 
-                        // Save the new entry into the database
-                        bucketCollection.insertOne(newEntry).then(function(insertResult) {
-                            newBucket = insertResult.ops[0];
+        // Create the new bucket
+        bucketEntry = {
+            name: name,
+            identifier: bucketID,
+            created: Date.now(),
+            user: user,
+            memoryUsed: 0
+        }
 
-                            // Increments the API calls
-                            return stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } });
+        // Save the new entry into the database
+        var insertResult = await bucketCollection.insertOne(bucketEntry);
+        bucketEntry = insertResult.ops[0];
 
-                        }).then( function (updateResult) {
+        // Increments the API calls
+        var updateResult = await stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } });
 
-                            // Send bucket added events to sockets
-                            var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: newBucket, username: user, error : undefined };
-                            return CommsController.singleton.broadcastEventToAll(fEvent);
-
-                        }).then(function() {
-                           return resolve(bucket);
-                        }).catch(function(err){
-                            return reject(err);
-                        });
-                    }
-                });
-
-            }).catch(function (err)
-            {
-                return reject(err);
-            });
-        });
+        // Send bucket added events to sockets
+        var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: bucketEntry, username: user, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(fEvent);
+        return gBucket;
     }
 
    /**
@@ -339,59 +280,36 @@ export class BucketManager
    * @param {any} searchQuery A valid mongodb search query
    * @returns {Promise<string>} An array of ID's of the buckets removed
    */
-    private removeBuckets(searchQuery): Promise<Array<string>>
+    private async removeBuckets(searchQuery): Promise<Array<string>>
     {
-        var that = this;
-        var gcs = this._gcs;
         var bucketCollection = this._buckets;
         var files = this._files;
         var stats = this._stats;
+        var toRemove: Array<string> = [];
 
-        return new Promise(function (resolve, reject)
+        // Get all the buckets
+        var buckets: Array<users.IBucketEntry> = await bucketCollection.find(searchQuery).toArray();
+
+        // Now delete each one
+        try
         {
-            bucketCollection.find(searchQuery).toArray().then( function(buckets: Array<users.IBucketEntry>) {
+            for (var i = 0, l = buckets.length; i < l; i++)
+            {
+                var bucket = await this.deleteBucket(buckets[i]);
+                toRemove.push(bucket.identifier);
+            }
 
-                var toRemove = [];
+            // Send events to sockets
+            var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket, error : undefined };
+            await CommsController.singleton.broadcastEventToAll(fEvent);
 
-                var attempts = 0;
-                var error: Error = null;
+            // Return an array of all the bucket ids that were removed
+            return toRemove;
 
-                for (var i = 0, l = buckets.length; i < l; i++)
-                {
-                    that.deleteBucket(buckets[i]).then(function (bucket)
-                    {
-                        attempts++;
-                        toRemove.push(bucket.identifier);
-                        if (attempts == l)
-                        {
-                            // Send events to sockets
-                            var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucket, error : undefined };
-                            CommsController.singleton.broadcastEventToAll(fEvent).then(function ()
-                            {
-                                resolve(toRemove);
-                            });
-                        }
-
-                    }).catch(function (err : Error)
-                    {
-                        if (err)
-                            error = err;
-
-                        attempts++;
-                        if (attempts == l)
-                            reject(new Error(`Could not delete bucket: ${error.message}`));
-                    });
-                }
-
-                // If no buckets
-                if (buckets.length == 0)
-                    resolve(toRemove);
-
-            }).catch(function(err) {
-
-                return reject(err);
-            })
-        });
+        } catch(err) {
+            // If there is an error throw with a bit more info
+            throw new Error(`Could not delete bucket: ${err.message}`);
+        };
     }
 
     /**
@@ -423,158 +341,126 @@ export class BucketManager
         return this.removeBuckets(<users.IBucketEntry>{ user: user });
     }
 
+    private deleteGBucket(bucketId : string) : Promise<void>
+    {
+        var gcs = this._gcs;
+
+        // Now remove the bucket itself
+        var bucket: gcloud.IBucket = gcs.bucket(bucketId);
+
+        return new Promise<void>( function( resolve, reject ) {
+            bucket.delete(function (err: Error, apiResponse: any)
+            {
+                // If there is an error then return - but not if the file is not found. More than likely
+                // it was removed by an admin
+                if (err && (<any>err).code != 404)
+                    return reject(new Error(`Could not remove bucket from storage system: '${err.message}'`));
+                else
+                return resolve();
+            });
+        });
+    }
+
     /**
     * Deletes the bucket from storage and updates the databases
     */
-    private deleteBucket(bucketEntry: users.IBucketEntry): Promise<users.IBucketEntry>
+    private async deleteBucket(bucketEntry: users.IBucketEntry): Promise<users.IBucketEntry>
     {
-        var that = this;
-        var gcs = this._gcs;
         var bucketCollection = this._buckets;
-        var files = this._files;
         var stats = this._stats;
 
-        return new Promise<users.IBucketEntry>(function (resolve, reject)
-        {
+        try {
             // First remove all bucket files
-            that.removeFilesByBucket(bucketEntry.identifier).then(function (files)
-            {
-                // Now remove the bucket itself
-                var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.identifier);
-                bucket.delete(function (err: Error, apiResponse: any)
-                {
-                    // If there is an error then return - but not if the file is not found. More than likely
-                    // it was removed by an admin
-                    if (err && (<any>err).code != 404)
-                        return reject(new Error(`Could not remove bucket from storage system: '${err.message}'`));
-                    else
-                    {
-                        // Remove the bucket entry
-                        bucketCollection.deleteOne(<users.IBucketEntry>{ _id: bucketEntry._id }).then(function(deleteResult) {
-                            return stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } });
-                        }).then(function (result) {
-                            return resolve(bucketEntry);
-                        }).catch(function(err){
-                            return reject(err);
-                        });
-                    }
-                });
+            var files = await this.removeFilesByBucket(bucketEntry.identifier);
+         } catch(err) {
+            throw new Error(`Could not remove the bucket: '${err.toString()}'`);
+        }
 
-            }).catch(function (err)
+        await this.deleteGBucket(bucketEntry.identifier);
+
+        // Remove the bucket entry
+        var deleteResult = await bucketCollection.deleteOne(<users.IBucketEntry>{ _id: bucketEntry._id });
+        var result = await stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } });
+        return bucketEntry;
+    }
+
+    /**
+    * Deletes a file from google storage
+    * @param {string} bucketId
+    * @param {string} fileId
+    */
+    private deleteGFile( bucketId: string, fileId : string) : Promise<void>
+    {
+        var gcs = this._gcs;
+        var bucket: gcloud.IBucket = gcs.bucket(bucketId);
+
+        return new Promise<void>(function(resolve, reject){
+
+            // Get the bucket and delete the file
+            bucket.file(fileId).delete(function (err, apiResponse)
             {
-                return reject(`Could not remove the bucket: '${err.toString()}'`);
-            })
+                // If there is an error then return - but not if the file is not found. More than likely
+                // it was removed by an admin
+                if (err && (<any>err).code != 404)
+                    return reject(new Error(`Could not remove file '${fileId}' from storage system: '${err.toString() }'`));
+
+               resolve();
+            });
         });
     }
 
     /**
     * Deletes the file from storage and updates the databases
+    * @param {users.IFileEntry} fileEntry
     */
-    private deleteFile(fileEntry: users.IFileEntry): Promise<users.IFileEntry>
+    private async deleteFile(fileEntry: users.IFileEntry): Promise<users.IFileEntry>
     {
-        var that = this;
-        var gcs = this._gcs;
         var bucketCollection = this._buckets;
         var files = this._files;
         var stats = this._stats;
 
-        return new Promise(function (resolve, reject)
-        {
-            that.getIBucket(fileEntry.bucketId).then(function (bucketEntry)
-            {
-                if (!bucketEntry)
-                    return reject(new Error(`Could not find the bucket '${fileEntry.bucketName}'`));
+        var bucketEntry = await this.getIBucket(fileEntry.bucketId);
+        if (!bucketEntry)
+            throw new Error(`Could not find the bucket '${fileEntry.bucketName}'`);
 
-                var bucket: gcloud.IBucket = gcs.bucket(bucketEntry.identifier);
+        // Get the bucket and delete the file
+        await this.deleteGFile(bucketEntry.identifier, fileEntry.identifier);
 
-                // Get the bucket and delete the file
-                bucket.file(fileEntry.identifier).delete(function (err, apiResponse)
-                {
-                    // If there is an error then return - but not if the file is not found. More than likely
-                    // it was removed by an admin
-                    if (err && (<any>err).code != 404)
-                        return reject(new Error(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`));
+        // Update the bucket data usage
+        await bucketCollection.updateOne(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } });
+        await files.deleteOne(<users.IFileEntry>{ _id: fileEntry._id });
+        await stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } });
 
-                    // Update the bucket data usage
-                    bucketCollection.updateOne(<users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } }).then(function(result) {
-                        return files.deleteOne(<users.IFileEntry>{ _id: fileEntry._id });
-                    }).then(function (result) {
-                        return stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } });
-                    }).then( function(result) {
-                        return resolve(fileEntry);
-                    }).catch(function(err){
-                        return reject(`Could not remove file '${fileEntry.identifier}' from storage system: '${err.toString() }'`);
-                    });
-                });
-
-            }).catch(function (err)
-            {
-                if (err)
-                    return reject(err);
-            })
-        });
+        return fileEntry;
     }
 
-   /**
-   * Attempts to remove files from the cloud and database by a query
-   * @param {any} searchQuery The query we use to select the files
-   * @returns {Promise<string>} Returns the file IDs of the files removed
-   */
-    removeFiles(searchQuery: any ): Promise<Array<string>>
+    /**
+     * Attempts to remove files from the cloud and database by a query
+     * @param {any} searchQuery The query we use to select the files
+     * @returns {Promise<string>} Returns the file IDs of the files removed
+     */
+    async removeFiles(searchQuery: any ): Promise<Array<string>>
     {
-        var that = this;
         var gcs = this._gcs;
         var bucketCollection = this._buckets;
         var files = this._files;
         var stats = this._stats;
-        var attempts: number = 0;
-        var filesRemoved: Array<users.IFileEntry> = [];
+        var filesRemoved: Array<string> = [];
 
-        return new Promise(function (resolve, reject)
+        // Get the files
+        var fileEntries: Array<users.IFileEntry> = await files.find(searchQuery).toArray();
+        var error: Error = null;
+
+        for (var i = 0, l = fileEntries.length; i < l; i++)
         {
-            // Get the files
-            files.find(searchQuery).toArray().then(function(fileEntries: Array<users.IFileEntry>){
+            var fileEntry = await this.deleteFile(fileEntries[i]);
+            filesRemoved.push(fileEntry._id);
+        }
 
-                var error: Error = null;
-
-                for (var i = 0, l = fileEntries.length; i < l; i++)
-                {
-                    that.deleteFile(fileEntries[i]).then(function(fileEntry)
-                    {
-                        attempts++;
-                        filesRemoved.push(fileEntry);
-
-                        if (attempts == l)
-                        {
-                            // Update any listeners on the sockets
-                            var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved, error : undefined };
-                            CommsController.singleton.broadcastEventToAll(fEvent).then(function ()
-                            {
-                                resolve(filesRemoved);
-                            });
-                        }
-
-                    }).catch(function (err) {
-
-                        if (err)
-                            error = err;
-
-                        attempts++;
-
-                        if (attempts == l)
-                            reject(error);
-                    });
-                }
-
-                if (fileEntries.length == 0)
-                    return resolve([]);
-
-            }).catch( function(err) {
-
-                if (err)
-                    return reject(err);
-            });
-        });
+        // Update any listeners on the sockets
+        var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(fEvent);
+        return filesRemoved;
     }
 
     /**
@@ -620,9 +506,8 @@ export class BucketManager
     * @param {string} user The username associated with the bucket (Only applicable if bucket is a name and not an ID)
     * @returns {IBucketEntry}
     */
-    getIBucket(bucket: string, user?: string): Promise<users.IBucketEntry>
+    async getIBucket(bucket: string, user?: string): Promise<users.IBucketEntry>
     {
-        var that = this;
         var bucketCollection = this._buckets;
         var searchQuery: users.IBucketEntry = {};
 
@@ -634,17 +519,12 @@ export class BucketManager
         else
             searchQuery.identifier = bucket;
 
-        return new Promise<users.IBucketEntry>(function (resolve, reject)
-        {
-            bucketCollection.find(searchQuery).limit(1).next().then( function( result: users.IBucketEntry) {
-                if (!result)
-                    return resolve(null);
-                else
-                    return resolve(result);
-            }).catch(function (err){
-                return reject(err);
-            });
-        });
+        var result: users.IBucketEntry = await bucketCollection.find(searchQuery).limit(1).next();
+
+        if (!result)
+            return null;
+        else
+            return result;
     }
 
     /**
@@ -653,56 +533,41 @@ export class BucketManager
     * @param {Part} part
     * @returns {Promise<def.IStorageStats>}
     */
-    private canUpload(user: string, part: multiparty.Part): Promise<users.IStorageStats>
+    private async canUpload(user: string, part: multiparty.Part): Promise<users.IStorageStats>
     {
-        var that = this;
         var bucketCollection = this._buckets;
         var stats = this._stats;
 
-        return new Promise<users.IStorageStats>(function (resolve, reject)
+        var result: users.IStorageStats = await stats.find(<users.IStorageStats>{ user: user }).limit(1).next();
+
+        if (result.memoryUsed + part.byteCount < result.memoryAllocated)
         {
-            stats.find(<users.IStorageStats>{ user: user }).limit(1).next().then( function(result: users.IStorageStats ) {
-
-                if (result.memoryUsed + part.byteCount < result.memoryAllocated)
-                {
-                    if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
-                        resolve(result);
-                    else
-                        return reject(new Error("You have reached your API call limit. Please upgrade your plan for more API calls"));
-                }
-                else
-                    return reject(new Error("You do not have enough memory allocated. Please upgrade your account for more memory"));
-
-            }).catch(function(err){
-                 return reject(err);
-            });
-        })
+            if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
+                return result;
+            else
+                throw new Error("You have reached your API call limit. Please upgrade your plan for more API calls");
+        }
+        else
+            throw new Error("You do not have enough memory allocated. Please upgrade your account for more memory");
     }
 
     /**
-   * Checks to see the user's api limit and make sure they can make calls
-   * @param {string} user The username
-   * @returns {Promise<boolean>}
-   */
-    withinAPILimit(user: string): Promise<boolean>
+     * Checks to see the user's api limit and make sure they can make calls
+     * @param {string} user The username
+     * @returns {Promise<boolean>}
+     */
+    async withinAPILimit(user: string): Promise<boolean>
     {
-        var that = this;
         var stats = this._stats;
+        var result: users.IStorageStats = await stats.find(<users.IStorageStats>{ user: user }).limit(1).next();
 
-        return new Promise<users.IStorageStats>(function (resolve, reject)
-        {
-            stats.find(<users.IStorageStats>{ user: user }).limit(1).next().then( function (result: users.IStorageStats) {
-                if (!result)
-                    return reject(new Error(`Could not find the user ${user}`));
-                else if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
-                    resolve(true);
-                else
-                    return resolve(false);
+        if (!result)
+            throw new Error(`Could not find the user ${user}`);
 
-            }).catch(function(err){
-                return reject(err);
-            });
-        })
+        else if (result.apiCallsUsed + 1 < result.apiCallsAllocated)
+            return true;
+        else
+            return false;
     }
 
     /**
@@ -710,19 +575,47 @@ export class BucketManager
     * @param {string} user The username
     * @returns {Promise<boolean>}
     */
-    incrementAPI(user: string): Promise<boolean>
+    async incrementAPI(user: string): Promise<boolean>
     {
-        var that = this;
         var stats = this._stats;
+        await stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } });
+        return true;
+    }
 
-        return new Promise<users.IStorageStats>(function (resolve, reject)
-        {
-            stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } }).then( function (updateResult) {
-                resolve(true);
-            }).catch(function(err){
-                return reject(err);
-            });
-        })
+    /**
+    * Makes a google file publicly or private
+    * @param {string} bucketId
+    * @param {string} fileId
+    * @param {boolean}
+    * @returns {Promise<void>}
+    */
+    private makeGFilePublic( bucketId : string, fileId: string, val : boolean ): Promise<void>
+    {
+        var bucket = this._gcs.bucket(bucketId);
+        var rawFile = bucket.file(fileId);
+
+        return  new Promise<void>(function(resolve, reject){
+            if (val)
+            {
+                rawFile.makePublic(function (err, api)
+                {
+                    if (err)
+                        return reject(err);
+
+                    resolve();
+                });
+            }
+            else
+            {
+                rawFile.makePrivate(function (err, api)
+                {
+                    if (err)
+                        return reject(err);
+
+                    resolve();
+                });
+            }
+        });
     }
 
     /**
@@ -730,39 +623,18 @@ export class BucketManager
     * @param {IFileEntry} file
     * @returns {Promise<IFileEntry>}
     */
-    makeFilePublic(file: users.IFileEntry): Promise<users.IFileEntry>
+    async makeFilePublic(file: users.IFileEntry): Promise<users.IFileEntry>
     {
-        var that = this;
-        return new Promise<users.IFileEntry>(function (resolve, reject)
-        {
-            that.withinAPILimit(file.user).then(function (val) : Promise<Error|boolean> {
+        var val = await this.withinAPILimit(file.user);
 
-                if (!val)
-                    return Promise.reject<Error>(new Error("You do not have enough API calls left to make this request"));
+        if (!val)
+            throw new Error("You do not have enough API calls left to make this request");
 
-                return that.incrementAPI(file.user);
+        await this.incrementAPI(file.user);
+        await this.makeGFilePublic(file.bucketId, file.identifier, true);
+        await this._files.updateOne(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: true } });
+        return file;
 
-            }).then(function() {
-
-                var bucket = that._gcs.bucket(file.bucketId);
-                var rawFile = bucket.file(file.identifier);
-                rawFile.makePublic(function (err, api)
-                {
-                    if (err)
-                        return reject(err);
-
-                    that._files.updateOne(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: true } }).then( function(updateResult) {
-                        resolve(file);
-                    }).catch(function(err){
-                        return reject(err);
-                    });
-                });
-
-            }).catch(function (err) {
-                return reject(new err);
-            });
-
-        });
     }
 
     /**
@@ -770,40 +642,17 @@ export class BucketManager
     * @param {IFileEntry} file
     * @returns {Promise<IFileEntry>}
     */
-    makeFilePrivate(file: users.IFileEntry): Promise<users.IFileEntry>
+    async makeFilePrivate(file: users.IFileEntry): Promise<users.IFileEntry>
     {
-        var that = this;
-        return new Promise<users.IFileEntry>(function (resolve, reject)
-        {
-            that.withinAPILimit(file.user).then(function (val) : Promise<Error | boolean>
-            {
-                if (!val)
-                    return Promise.reject<Error>( new Error("You do not have enough API calls left to make this request"));
+        var val = await this.withinAPILimit(file.user);
 
-                return that.incrementAPI(file.user);
+        if (!val)
+            throw new Error("You do not have enough API calls left to make this request");
 
-            }).then(function ()
-            {
-                var bucket = that._gcs.bucket(file.bucketId);
-                var rawFile = bucket.file(file.identifier);
-                rawFile.makePrivate({ strict: true }, function (err)
-                {
-                    if (err)
-                        return reject(err);
-
-                    that._files.updateOne(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: false } }).then( function(result) {
-                        return resolve(file);
-                    }).catch(function(err){
-                        return reject(err);
-                    });
-                });
-
-            }).catch(function (err)
-            {
-                return reject(new err);
-            });
-
-        });
+        await this.incrementAPI(file.user);
+        await this.makeGFilePublic(file.bucketId, file.identifier, false);
+        await this._files.updateOne(<users.IFileEntry>{ bucketId: file.bucketId, identifier: file.identifier }, { $set: <users.IFileEntry>{ isPublic: true } });
+        return file;
     }
 
     /**
@@ -818,8 +667,6 @@ export class BucketManager
     */
     private registerFile(fileID: string, bucket: users.IBucketEntry, part: multiparty.Part, user: string, isPublic: boolean, parentFile: string): Promise<users.IFileEntry>
     {
-        var that = this;
-        var gcs = this._gcs;
         var files = this._files;
 
         return new Promise<users.IFileEntry>(function (resolve, reject)
@@ -950,32 +797,24 @@ export class BucketManager
     * @param {RegExp} searchTerm Specify a search term
     * @returns {Promise<IFileEntry>}
     */
-    getFile(fileID: string, user?: string, searchTerm?: RegExp ): Promise<users.IFileEntry>
+    async getFile(fileID: string, user?: string, searchTerm?: RegExp ): Promise<users.IFileEntry>
     {
         var that = this;
         var gcs = this._gcs;
         var files = this._files;
+        var searchQuery: users.IFileEntry = { identifier: fileID };
+        if (user)
+            searchQuery.user = user;
 
-        return new Promise<users.IFileEntry>(function (resolve, reject)
-        {
-            var searchQuery: users.IFileEntry = { identifier: fileID };
-            if (user)
-                searchQuery.user = user;
+        if (searchTerm)
+            (<any>searchQuery).name = searchTerm;
 
-            if (searchTerm)
-                (<any>searchQuery).name = searchTerm;
+        var result: users.IFileEntry = await files.find(searchQuery).limit(1).next();
 
-            files.find(searchQuery).limit(1).next().then( function (result: users.IFileEntry)
-            {
-                if (!result)
-                    return reject(`File '${fileID}' does not exist`);
-                else
-                    return resolve(result);
-
-            }).catch(function(err){
-                return reject(err);
-            });
-        });
+        if (!result)
+            throw new Error(`File '${fileID}' does not exist`);
+        else
+            return result;
     }
 
     /**
@@ -984,23 +823,13 @@ export class BucketManager
     * @param {string} name The new name of the file
     * @returns {Promise<IFileEntry>}
     */
-    renameFile(file: users.IFileEntry, name: string): Promise<users.IFileEntry>
+    async renameFile(file: users.IFileEntry, name: string): Promise<users.IFileEntry>
     {
-        var that = this;
-        var gcs = this._gcs;
         var files = this._files;
+        await this.incrementAPI(file.user);
 
-        return new Promise<users.IFileEntry>(function (resolve, reject)
-        {
-            that.incrementAPI(file.user).then(function()
-            {
-                files.updateOne(<users.IFileEntry>{ _id: file._id }, { $set: <users.IFileEntry>{ name : name } }).then( function(result) {
-                    resolve(file);
-                }).catch(function(err){
-                    reject(err);
-                });
-            })
-        });
+        var result = await files.updateOne(<users.IFileEntry>{ _id: file._id }, { $set: <users.IFileEntry>{ name : name } });
+        return file;
     }
 
     /**
@@ -1074,24 +903,14 @@ export class BucketManager
     * @param {string} fileID The file ID of the file on the bucket
     * @returns {Promise<number>} Returns the number of results affected
     */
-    updateStorage(user: string, value: users.IStorageStats): Promise<number>
+    async updateStorage(user: string, value: users.IStorageStats): Promise<number>
     {
-        var that = this;
         var stats = this._stats;
-
-        return new Promise<number>(function (resolve, reject)
-        {
-            stats.updateOne(<users.IStorageStats>{ user: user }, { $set: value }).then(function(updateResult) {
-
-                if (updateResult.matchedCount === 0)
-                    return reject(`Could not find user '${user}'`);
-                else
-                    return resolve(updateResult.modifiedCount);
-
-            }).catch(function(err){
-                return reject(err);
-            });
-        });
+        var updateResult = await stats.updateOne(<users.IStorageStats>{ user: user }, { $set: value });
+        if (updateResult.matchedCount === 0)
+            throw new Error(`Could not find user '${user}'`);
+        else
+            return updateResult.modifiedCount;
     }
 
     /**

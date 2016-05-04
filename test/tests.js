@@ -1595,7 +1595,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("File '123' does not exist")
+					test.string(res.body.message).is("Error: File '123' does not exist")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -1608,7 +1608,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("File '123' does not exist")
+					test.string(res.body.message).is("Error: File '123' does not exist")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -1777,7 +1777,7 @@ describe('Checking media API', function(){
 					if (err) return done(err);
 
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("File '123' does not exist")
+					test.string(res.body.message).is("Error: File '123' does not exist")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -2008,9 +2008,9 @@ describe('Test WS API events are valid', function() {
         test.number(numWSCalls.login).is(6)
         test.number(numWSCalls.logout).is(3)
         test.number(numWSCalls.activated).is(2)
-        test.number(numWSCalls.bucketRemoved).is(3)
+        test.number(numWSCalls.bucketRemoved).is(5)
         test.number(numWSCalls.bucketUploaded).is(4)
-        test.number(numWSCalls.filesRemoved).is(3)
+        test.number(numWSCalls.filesRemoved).is(6)
         test.number(numWSCalls.filesUploaded).is(3)
         test.number(numWSCalls.metaRequest).is(5)
         test.number(numWSCalls.removed).is(2)

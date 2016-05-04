@@ -62,7 +62,10 @@ try
 
     // If the debug paramter is present then go into debug mode
     if ( args.debug )
+    {
         config.debugMode = true;
+        winston.warn(`####### Running in debug mode #######`, { process: process.pid });
+    }
 }
 catch (exp)
 {

@@ -6,7 +6,6 @@
 // Documentation : http://mongodb.github.io/node-mongodb-native/2.1/api/
 
 /// <reference path='./node.d.ts' />
-/// <reference path='./es6-promise.d.ts' />
 
 declare module "mongodb" {
   import {EventEmitter} from 'events';
