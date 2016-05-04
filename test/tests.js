@@ -922,6 +922,7 @@ describe('Testing user API functions', function(){
 		it('admin did logout', function(done){
 			agent
 				.get('/logout').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', adminCookie)
 				.end(function(err, res){
 					if (err) return done(err);
 					done();
@@ -1016,6 +1017,7 @@ describe('Testing user API functions', function(){
 									// Logout again
 									agent
 										.get('/logout').set('Accept', 'application/json')
+										.set('Cookie', adminCookie)
 										.end(function(err, res){
 											if (err) return done(err);
 
@@ -1923,6 +1925,18 @@ describe('Checking media API', function(){
 
 describe('Cleaning up', function(){
 
+	it('We did log in as admin', function(done){
+		// Login as admin
+		agent
+			.post('/users/login').set('Accept', 'application/json')
+			.send({username: config.adminUser.username, password: config.adminUser.password })
+			.end(function(err, res){
+				if (err) return done(err);
+				adminCookie = res.headers["set-cookie"][0].split(";")[0];
+				done();
+			})
+	})
+
     it('did remove any users called george', function(done){
         agent
             .delete('/users/george').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
@@ -1991,8 +2005,8 @@ describe('Test WS API events are valid', function() {
     });
 
     it('has the correct number of events registered', function(done) {
-        test.number(numWSCalls.login).is(5)
-        test.number(numWSCalls.logout).is(1)
+        test.number(numWSCalls.login).is(6)
+        test.number(numWSCalls.logout).is(3)
         test.number(numWSCalls.activated).is(2)
         test.number(numWSCalls.bucketRemoved).is(3)
         test.number(numWSCalls.bucketUploaded).is(4)
