@@ -13,6 +13,20 @@
   },
   "files": [
       "src/references.d.ts",
+      "src/controllers/controller.ts",
+      "src/controllers/comms-controller.ts",
+      "src/controllers/bucket-controller.ts",
+      "src/controllers/cors-controller.ts",
+      "src/controllers/error-controller.ts",
+      "src/controllers/user-controller.ts",
+      "src/bucket-manager.ts",
+      "src/mailer.ts",
+      "src/permission-controller.ts",
+      "src/session.ts",
+      "src/socket-api.ts",
+      "src/socket-event-types.ts",
+      "src/startup.ts",
+      "src/users.ts",
       "src/main.ts",
       "src/startup.ts"
   ]
