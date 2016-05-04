@@ -16,7 +16,6 @@ import * as validator from "validator";
 import * as compression from "compression";
 import * as winston from "winston";
 import * as gcloud from "gcloud";
-
 import {CommsController} from "./comms-controller";
 import {EventType} from "../socket-event-types";
 import * as def from "webinate-users";
@@ -68,25 +67,9 @@ export class BucketController extends Controller
         router.put("/files/:id/make-public", <any>[requireUser, this.makePublic.bind(this)]);
         router.put("/files/:id/make-private", <any>[requireUser, this.makePrivate.bind(this)]);
 
-        router.use(this.handleError);
-
         // Register the path
         e.use(`${config.apiPrefix}`, router);
     }
-
-    /**
-     * Catches any and all requests that fell through
-     * @param {any} err
-     * @param {express.Request} req
-     * @param {express.Response} res
-     * @param {Function} next
-     */
-    handleError(err: any, req: express.Request, res: express.Response, next: Function): any
-    {
-        winston.error( err.toString(), { process: process.pid });
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
-    };
 
     /**
      * Makes sure the target user exists and the numeric value specified is valid
