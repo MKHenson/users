@@ -140,7 +140,7 @@ class UserManager {
                 return;
             var useEntry = yield this._userCollection.find({ sessionId: sessionId }).limit(1).next();
             if (useEntry) {
-                // Send logged in event to socket
+                // Send logged out event to socket
                 var sEvent = { username: useEntry.username, eventType: socket_event_types_1.EventType.Logout, error: undefined };
                 yield comms_controller_1.CommsController.singleton.broadcastEventToAll(sEvent);
                 winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
