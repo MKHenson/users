@@ -31,15 +31,15 @@ export enum EventType
 
     /**
      * Event sent to clients whenever a user uploads a new file.
-     * Event type: IFilesAddedEvent
+     * Event type: IFileAddedEvent
      */
-    FilesUploaded = 5,
+    FileUploaded = 5,
 
     /**
      * Event sent to clients whenever a user file is removed.
-     * Event type: IFilesRemovedEvent
+     * Event type: IFileRemovedEvent
      */
-    FilesRemoved = 6,
+    FileRemoved = 6,
 
     /**
      * Event sent to clients whenever a user creates a new bucket

@@ -25,14 +25,14 @@
     EventType[EventType["Removed"] = 4] = "Removed";
     /**
      * Event sent to clients whenever a user uploads a new file.
-     * Event type: IFilesAddedEvent
+     * Event type: IFileAddedEvent
      */
-    EventType[EventType["FilesUploaded"] = 5] = "FilesUploaded";
+    EventType[EventType["FileUploaded"] = 5] = "FileUploaded";
     /**
      * Event sent to clients whenever a user file is removed.
-     * Event type: IFilesRemovedEvent
+     * Event type: IFileRemovedEvent
      */
-    EventType[EventType["FilesRemoved"] = 6] = "FilesRemoved";
+    EventType[EventType["FileRemoved"] = 6] = "FileRemoved";
     /**
      * Event sent to clients whenever a user creates a new bucket
      * Event type: IBucketAddedEvent

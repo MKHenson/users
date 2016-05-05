@@ -665,9 +665,9 @@ class BucketController extends controller_1.Controller {
                     }
                     yield manager.setMeta(query, meta);
                 }
-                if (files.length > 0) {
+                for (var i = 0, l = files.length; i < l; i++) {
                     // Send file added events to sockets
-                    var fEvent = { username: user, eventType: socket_event_types_1.EventType.FilesUploaded, files: files, error: undefined };
+                    var fEvent = { username: user, eventType: socket_event_types_1.EventType.FileUploaded, file: files[i], error: undefined };
                     yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                 }
                 var error = false;

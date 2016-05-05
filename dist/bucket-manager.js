@@ -364,6 +364,9 @@ class BucketManager {
             yield bucketCollection.updateOne({ identifier: bucketEntry.identifier }, { $inc: { memoryUsed: -fileEntry.size } });
             yield files.deleteOne({ _id: fileEntry._id });
             yield stats.updateOne({ user: bucketEntry.user }, { $inc: { memoryUsed: -fileEntry.size, apiCallsUsed: 1 } });
+            // Update any listeners on the sockets
+            var fEvent = { eventType: socket_event_types_1.EventType.FileRemoved, file: fileEntry, error: undefined };
+            yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
             return fileEntry;
         });
     }
@@ -386,9 +389,6 @@ class BucketManager {
                 var fileEntry = yield this.deleteFile(fileEntries[i]);
                 filesRemoved.push(fileEntry._id);
             }
-            // Update any listeners on the sockets
-            var fEvent = { eventType: socket_event_types_1.EventType.FilesRemoved, files: filesRemoved, error: undefined };
-            yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
             return filesRemoved;
         });
     }

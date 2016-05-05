@@ -775,10 +775,10 @@ export class BucketController extends Controller
                 await manager.setMeta(query, meta);
             }
 
-            if (files.length > 0)
+            for (var i = 0, l = files.length; i < l; i++)
             {
                 // Send file added events to sockets
-                var fEvent: def.SocketEvents.IFilesAddedEvent = { username: user, eventType: EventType.FilesUploaded, files: files, error : undefined };
+                var fEvent: def.SocketEvents.IFileAddedEvent = { username: user, eventType: EventType.FileUploaded, file: files[i], error : undefined };
                 await CommsController.singleton.broadcastEventToAll(fEvent)
             }
 

@@ -34,8 +34,8 @@ var socketEvents = {
     logout: null,
     activated: null,
     removed: null,
-    filesUploaded: null,
-    filesRemoved: null,
+    fileUploaded: null,
+    fileRemoved: null,
     bucketUploaded: null,
     bucketRemoved: null,
     metaRequest: null,
@@ -46,8 +46,8 @@ var numWSCalls = {
     logout: 0,
     activated: 0,
     removed: 0,
-    filesUploaded: 0,
-    filesRemoved: 0,
+    fileUploaded: 0,
+    fileRemoved: 0,
     bucketUploaded: 0,
     bucketRemoved: 0,
     metaRequest: 0,
@@ -81,13 +81,13 @@ function onWsEvent(data) {
             socketEvents.removed = event;
             numWSCalls.removed++;
             break;
-        case 5: // FilesUploaded
-            socketEvents.filesUploaded = event;
-            numWSCalls.filesUploaded++;
+        case 5: // FileUploaded
+            socketEvents.fileUploaded = event;
+            numWSCalls.fileUploaded++;
             break;
-        case 6: // FilesRemoved
-            socketEvents.filesRemoved = event;
-            numWSCalls.filesRemoved++;
+        case 6: // FileRemoved
+            socketEvents.fileRemoved = event;
+            numWSCalls.fileRemoved++;
             break;
         case 7: // BucketUploaded
             socketEvents.bucketUploaded = event;
@@ -1969,14 +1969,14 @@ describe('Test WS API events are valid', function() {
         done();
     });
 
-    it('has valid filesAdded event properties', function(done) {
-        test.object(socketEvents.filesUploaded).hasProperty('username');
-        test.object(socketEvents.filesUploaded).hasProperty('files');
+    it('has valid fileAdded event properties', function(done) {
+        test.object(socketEvents.fileUploaded).hasProperty('username');
+        test.object(socketEvents.fileUploaded).hasProperty('file');
         done();
     });
 
-    it('has valid filesAdded event properties', function(done) {
-        test.object(socketEvents.filesRemoved).hasProperty('files');
+    it('has valid fileRemoved event properties', function(done) {
+        test.object(socketEvents.fileRemoved).hasProperty('file');
         done();
     });
 
@@ -2010,8 +2010,8 @@ describe('Test WS API events are valid', function() {
         test.number(numWSCalls.activated).is(2)
         test.number(numWSCalls.bucketRemoved).is(4)
         test.number(numWSCalls.bucketUploaded).is(4)
-        test.number(numWSCalls.filesRemoved).is(6)
-        test.number(numWSCalls.filesUploaded).is(3)
+        test.number(numWSCalls.fileRemoved).is(3)
+        test.number(numWSCalls.fileUploaded).is(3)
         test.number(numWSCalls.metaRequest).is(5)
         test.number(numWSCalls.removed).is(2)
         done();

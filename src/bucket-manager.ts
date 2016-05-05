@@ -432,6 +432,10 @@ export class BucketManager
         await files.deleteOne(<users.IFileEntry>{ _id: fileEntry._id });
         await stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } });
 
+        // Update any listeners on the sockets
+        var fEvent: def.SocketEvents.IFileRemovedEvent = { eventType: EventType.FileRemoved, file: fileEntry, error : undefined };
+        await CommsController.singleton.broadcastEventToAll(fEvent);
+
         return fileEntry;
     }
 
@@ -458,9 +462,6 @@ export class BucketManager
             filesRemoved.push(fileEntry._id);
         }
 
-        // Update any listeners on the sockets
-        var fEvent: def.SocketEvents.IFilesRemovedEvent = { eventType: EventType.FilesRemoved, files: filesRemoved, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(fEvent);
         return filesRemoved;
     }
 
