@@ -590,7 +590,6 @@ export class BucketController extends Controller
     private uploadUserFiles(req: users.AuthRequest, res: express.Response, next: Function)
     {
         var form = new multiparty.Form({ maxFields: 8, maxFieldsSize: 5 * 1024 * 1024, maxFilesSize: 10 * 1024 * 1024 });
-        var successfulParts = 0;
         var numParts = 0;
         var completedParts = 0;
         var closed = false;
@@ -607,9 +606,7 @@ export class BucketController extends Controller
         manager.getIBucket(bucketName, username).then(function (bucketEntry)
         {
             if (!bucketEntry)
-            {
                 return okJson<users.IUploadResponse>( { message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }, res );
-            }
 
             var metaJson : any;
 
@@ -657,7 +654,6 @@ export class BucketController extends Controller
                     {
                         filesUploaded.push(file);
                         completedParts++;
-                        successfulParts++;
                         newUpload.file = file.identifier;
                         newUpload.url = file.publicURL;
                         part.resume();
@@ -698,7 +694,7 @@ export class BucketController extends Controller
                         checkIfComplete();
                     });
                 }
-                // Check if this part is a meta tag
+                // Check if this (non-file) stream is allowed
                 else if (that.isPartAllowed(part))
                 {
                     // Add the token to the upload array we are sending back to the user
@@ -710,7 +706,6 @@ export class BucketController extends Controller
                     {
                         filesUploaded.push(file);
                         completedParts++;
-                        successfulParts++;
                         newUpload.file = file.identifier;
                         newUpload.url = file.publicURL;
                         part.resume();
@@ -725,78 +720,23 @@ export class BucketController extends Controller
                     part.resume();
             });
 
-            // Checks if the connection is closed and all the parts have been uploaded
-            var checkIfComplete = function ()
-            {
-                if (closed && completedParts == numParts)
-                {
-                    var promise: Promise<boolean>;
-
-                    // If we have any meta, then update the file entries with it
-                    if (metaJson && filesUploaded.length > 0)
-                    {
-                        var query = { $or: [] };
-                        for (var i = 0, l = filesUploaded.length; i < l; i++)
-                        {
-                            query.$or.push(<users.IFileEntry>{ _id: new mongodb.ObjectID(filesUploaded[i]._id) });
-
-                            // Manually add the meta to the files
-                            filesUploaded[i].meta = metaJson;
-                        }
-                        promise = manager.setMeta(query, metaJson);
-                    }
-                    else
-                        promise = Promise.resolve(true);
-
-                    // Once meta is updated
-                    promise.then(function ()
-                    {
-                        var promise: Promise<boolean>;
-
-                        if (filesUploaded.length > 0)
-                        {
-                            // Send file added events to sockets
-                            var fEvent: def.SocketEvents.IFilesAddedEvent = { username: username, eventType: EventType.FilesUploaded, files: filesUploaded, error : undefined };
-                            promise = CommsController.singleton.broadcastEventToAll(fEvent)
-                        }
-                        else
-                            promise = Promise.resolve(true);
-
-                        return promise;
-
-                    }).then(function(val)
-                    {
-                        var error = false;
-                        var msg = `Upload complete. [${successfulParts}] Files have been saved.`;
-                        for (var i = 0, l = uploadedTokens.length; i < l; i++)
-                            if (uploadedTokens[i].error)
-                            {
-                                error = true;
-                                msg = uploadedTokens[i].errorMsg;
-                                break;
-                            }
-
-                        if (error)
-                            winston.error(msg, { process: process.pid });
-                        else
-                            winston.info(msg, { process: process.pid });
-
-                        return okJson<users.IUploadResponse>({ message: msg, error: error, tokens: uploadedTokens }, res );
-
-                    }).catch(function (err: Error)
-                    {
-                        // Something happened while updating the meta
-                        return okJson<users.IUploadResponse>( { message: "Could not update files meta: " +  err.toString(), error: true, tokens: [] }, res );
-                    });
-                }
-            }
-
             // Close emitted after form parsed
             form.on('close', function ()
             {
                 closed = true;
                 checkIfComplete();
             });
+
+            // Checks if the connection is closed and all the parts have been uploaded
+            var checkIfComplete = function ()
+            {
+                if (closed && completedParts == numParts)
+                {
+                    that.finalizeUploads( metaJson, filesUploaded, username, uploadedTokens ).then(function( token ){
+                        return okJson<users.IUploadResponse>(token, res );
+                    });
+                }
+            }
 
             // Parse req
             form.parse(<express.Request><Express.Request>req);
@@ -808,64 +748,57 @@ export class BucketController extends Controller
     }
 
     /**
-	* Attempts to upload a file to the user's bucket
-	* @param {express.Request} req
-	* @param {express.Response} res
-	* @param {Function} next
-	*/
-    private uploadUserData(req: express.Request, res: express.Response, next: Function)
+     * After the uploads have been uploaded, we set any meta on the files and send file uploaded events
+     * @param {any} meta The optional meta to associate with the uploaded files
+     * @param {Array<users.IFileEntry>} files The uploaded files
+     * @param {string} user The user who uploaded the files
+     * @param {Array<users.IUploadToken>} tokens The upload tokens to be sent back to the client
+     */
+    private async finalizeUploads( meta: any, files: Array<users.IFileEntry>, user: string, tokens : Array<users.IUploadToken> ) : Promise<users.IUploadResponse>
     {
-        var form = new multiparty.Form();
-        var count = 0;
-
-        // Parts are emitted when parsing the form
-        form.on('part', function (part: multiparty.Part)
+        try
         {
-            // You *must* act on the part by reading it
-            // NOTE: if you want to ignore it, just call "part.resume()"
-            if (!!part.filename)
+            var manager = BucketManager.get;
+
+            // If we have any meta, then update the file entries with it
+            if (meta && files.length > 0)
             {
-                // filename is exists when this is a file
-                count++;
-                console.log('got field named ' + part.name + ' and got file named ' + part.filename);
-                // ignore file's content here
-                part.resume();
-            } else
-            {
-                // filename doesn't exist when this is a field and not a file
-                console.log('got field named ' + part.name);
-                // ignore field's content
-                part.resume();
+                var query = { $or: [] };
+                for (var i = 0, l = files.length; i < l; i++)
+                {
+                    query.$or.push(<users.IFileEntry>{ _id: new mongodb.ObjectID(files[i]._id) });
+
+                    // Manually add the meta to the files
+                    files[i].meta = meta;
+                }
+
+                await manager.setMeta(query, meta);
             }
 
-            part.on('error', function (err: Error)
+            if (files.length > 0)
             {
-                // decide what to do
-                winston.error(err.toString(), { process: process.pid });
-            });
-        });
+                // Send file added events to sockets
+                var fEvent: def.SocketEvents.IFilesAddedEvent = { username: user, eventType: EventType.FilesUploaded, files: files, error : undefined };
+                await CommsController.singleton.broadcastEventToAll(fEvent)
+            }
 
-        form.on('progress', function (bytesReceived: number, bytesExpected: number)
-        {
-            // decide what to do
-            console.log('BytesReceived: ' + bytesReceived, 'BytesExpected: ', bytesExpected);
-        });
+            var error = false;
+            var msg = `Upload complete. [${files.length}] Files have been saved.`;
+            for (var i = 0, l = tokens.length; i < l; i++)
+                if (tokens[i].error)
+                {
+                    error = true;
+                    msg = tokens[i].errorMsg;
+                    break;
+                }
 
-        form.on('field', function (name: string, value: string)
-        {
-            // decide what to do
-            console.log('Field Name: ' + name + ', Field Value: ' + value);
-        });
+            // The response error and message
+            var msg = `Upload complete. [${files.length}] Files have been saved.`;
+            return <users.IUploadResponse>{ message: msg, error: error, tokens: tokens };
 
-        // Close emitted after form parsed
-        form.on('close', function ()
-        {
-            console.log('Upload completed!');
-            res.end('Received ' + count + ' files');
-        });
-
-        // Parse req
-        form.parse(req);
+        } catch ( err ) {
+            return <users.IUploadResponse>{ message: err.toString(), error: true, tokens: [] };
+        };
     }
 
 	/**

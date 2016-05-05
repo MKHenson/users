@@ -523,7 +523,6 @@ class BucketController extends controller_1.Controller {
     */
     uploadUserFiles(req, res, next) {
         var form = new multiparty.Form({ maxFields: 8, maxFieldsSize: 5 * 1024 * 1024, maxFilesSize: 10 * 1024 * 1024 });
-        var successfulParts = 0;
         var numParts = 0;
         var completedParts = 0;
         var closed = false;
@@ -537,9 +536,8 @@ class BucketController extends controller_1.Controller {
         if (!bucketName || bucketName.trim() == "")
             return serializers_1.okJson({ message: `Please specify a bucket`, error: true, tokens: [] }, res);
         manager.getIBucket(bucketName, username).then(function (bucketEntry) {
-            if (!bucketEntry) {
+            if (!bucketEntry)
                 return serializers_1.okJson({ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }, res);
-            }
             var metaJson;
             // Parts are emitted when parsing the form
             form.on('part', function (part) {
@@ -576,7 +574,6 @@ class BucketController extends controller_1.Controller {
                     manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file) {
                         filesUploaded.push(file);
                         completedParts++;
-                        successfulParts++;
                         newUpload.file = file.identifier;
                         newUpload.url = file.publicURL;
                         part.resume();
@@ -617,7 +614,6 @@ class BucketController extends controller_1.Controller {
                     manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file) {
                         filesUploaded.push(file);
                         completedParts++;
-                        successfulParts++;
                         newUpload.file = file.identifier;
                         newUpload.url = file.publicURL;
                         part.resume();
@@ -629,58 +625,19 @@ class BucketController extends controller_1.Controller {
                 else
                     part.resume();
             });
-            // Checks if the connection is closed and all the parts have been uploaded
-            var checkIfComplete = function () {
-                if (closed && completedParts == numParts) {
-                    var promise;
-                    // If we have any meta, then update the file entries with it
-                    if (metaJson && filesUploaded.length > 0) {
-                        var query = { $or: [] };
-                        for (var i = 0, l = filesUploaded.length; i < l; i++) {
-                            query.$or.push({ _id: new mongodb.ObjectID(filesUploaded[i]._id) });
-                            // Manually add the meta to the files
-                            filesUploaded[i].meta = metaJson;
-                        }
-                        promise = manager.setMeta(query, metaJson);
-                    }
-                    else
-                        promise = Promise.resolve(true);
-                    // Once meta is updated
-                    promise.then(function () {
-                        var promise;
-                        if (filesUploaded.length > 0) {
-                            // Send file added events to sockets
-                            var fEvent = { username: username, eventType: socket_event_types_1.EventType.FilesUploaded, files: filesUploaded, error: undefined };
-                            promise = comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
-                        }
-                        else
-                            promise = Promise.resolve(true);
-                        return promise;
-                    }).then(function (val) {
-                        var error = false;
-                        var msg = `Upload complete. [${successfulParts}] Files have been saved.`;
-                        for (var i = 0, l = uploadedTokens.length; i < l; i++)
-                            if (uploadedTokens[i].error) {
-                                error = true;
-                                msg = uploadedTokens[i].errorMsg;
-                                break;
-                            }
-                        if (error)
-                            winston.error(msg, { process: process.pid });
-                        else
-                            winston.info(msg, { process: process.pid });
-                        return serializers_1.okJson({ message: msg, error: error, tokens: uploadedTokens }, res);
-                    }).catch(function (err) {
-                        // Something happened while updating the meta
-                        return serializers_1.okJson({ message: "Could not update files meta: " + err.toString(), error: true, tokens: [] }, res);
-                    });
-                }
-            };
             // Close emitted after form parsed
             form.on('close', function () {
                 closed = true;
                 checkIfComplete();
             });
+            // Checks if the connection is closed and all the parts have been uploaded
+            var checkIfComplete = function () {
+                if (closed && completedParts == numParts) {
+                    that.finalizeUploads(metaJson, filesUploaded, username, uploadedTokens).then(function (token) {
+                        return serializers_1.okJson(token, res);
+                    });
+                }
+            };
             // Parse req
             form.parse(req);
         }).catch(function (err) {
@@ -688,51 +645,48 @@ class BucketController extends controller_1.Controller {
         });
     }
     /**
-    * Attempts to upload a file to the user's bucket
-    * @param {express.Request} req
-    * @param {express.Response} res
-    * @param {Function} next
-    */
-    uploadUserData(req, res, next) {
-        var form = new multiparty.Form();
-        var count = 0;
-        // Parts are emitted when parsing the form
-        form.on('part', function (part) {
-            // You *must* act on the part by reading it
-            // NOTE: if you want to ignore it, just call "part.resume()"
-            if (!!part.filename) {
-                // filename is exists when this is a file
-                count++;
-                console.log('got field named ' + part.name + ' and got file named ' + part.filename);
-                // ignore file's content here
-                part.resume();
+     * After the uploads have been uploaded, we set any meta on the files and send file uploaded events
+     * @param {any} meta The optional meta to associate with the uploaded files
+     * @param {Array<users.IFileEntry>} files The uploaded files
+     * @param {string} user The user who uploaded the files
+     * @param {Array<users.IUploadToken>} tokens The upload tokens to be sent back to the client
+     */
+    finalizeUploads(meta, files, user, tokens) {
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                // If we have any meta, then update the file entries with it
+                if (meta && files.length > 0) {
+                    var query = { $or: [] };
+                    for (var i = 0, l = files.length; i < l; i++) {
+                        query.$or.push({ _id: new mongodb.ObjectID(files[i]._id) });
+                        // Manually add the meta to the files
+                        files[i].meta = meta;
+                    }
+                    yield manager.setMeta(query, meta);
+                }
+                if (files.length > 0) {
+                    // Send file added events to sockets
+                    var fEvent = { username: user, eventType: socket_event_types_1.EventType.FilesUploaded, files: files, error: undefined };
+                    yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
+                }
+                var error = false;
+                var msg = `Upload complete. [${files.length}] Files have been saved.`;
+                for (var i = 0, l = tokens.length; i < l; i++)
+                    if (tokens[i].error) {
+                        error = true;
+                        msg = tokens[i].errorMsg;
+                        break;
+                    }
+                // The response error and message
+                var msg = `Upload complete. [${files.length}] Files have been saved.`;
+                return { message: msg, error: error, tokens: tokens };
             }
-            else {
-                // filename doesn't exist when this is a field and not a file
-                console.log('got field named ' + part.name);
-                // ignore field's content
-                part.resume();
+            catch (err) {
+                return { message: err.toString(), error: true, tokens: [] };
             }
-            part.on('error', function (err) {
-                // decide what to do
-                winston.error(err.toString(), { process: process.pid });
-            });
+            ;
         });
-        form.on('progress', function (bytesReceived, bytesExpected) {
-            // decide what to do
-            console.log('BytesReceived: ' + bytesReceived, 'BytesExpected: ', bytesExpected);
-        });
-        form.on('field', function (name, value) {
-            // decide what to do
-            console.log('Field Name: ' + name + ', Field Value: ' + value);
-        });
-        // Close emitted after form parsed
-        form.on('close', function () {
-            console.log('Upload completed!');
-            res.end('Received ' + count + ' files');
-        });
-        // Parse req
-        form.parse(req);
     }
     /**
     * Called to initialize this controller and its related database objects
