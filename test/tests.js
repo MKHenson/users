@@ -1558,6 +1558,23 @@ describe('Checking media API', function(){
 				});
 		}).timeout(20000)
 
+		// it('did not upload a file when the meta was invalid', function(done){
+		// 	agent
+		// 		.post("/buckets/dinosaurs/upload").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+		// 		.set('Cookie', georgeCookie)
+		// 		.field('meta', 'BAD META')
+		// 		.attach('small-image', "file.png")
+		// 		.end(function(err, res){
+		// 			if (err) return done(err);
+		// 			test.object(res.body).hasProperty("message")
+		// 			test.object(res.body).hasProperty("tokens")
+		// 			test.string(res.body.message).is("Error: Meta data is not a valid JSON: SyntaxError: Unexpected token B in JSON at position 0")
+		// 			test.array(res.body.tokens).hasLength(0)
+		// 			test.bool(res.body.error).isTrue()
+		// 			done()
+		// 		});
+		// }).timeout(20000)
+
 		it('fetched the files of the dinosaur bucket', function(done){
 			agent
 				.get("/users/george/buckets/dinosaurs/files").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)

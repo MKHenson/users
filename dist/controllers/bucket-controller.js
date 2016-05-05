@@ -515,6 +515,26 @@ class BucketController extends controller_1.Controller {
             return false;
         return true;
     }
+    uploadMetaPart(part) {
+        var data = '';
+        part.setEncoding('utf8');
+        return new Promise(function (resolve, reject) {
+            part.on('data', function (chunk) {
+                data += chunk;
+            });
+            part.on('error', function (err) {
+                return reject(new Error("Could not download meta: " + err.toString()));
+            });
+            part.on('end', function () {
+                try {
+                    return resolve(JSON.parse(data));
+                }
+                catch (err) {
+                    return reject(new Error("Meta data is not a valid JSON: " + err.toString()));
+                }
+            });
+        });
+    }
     /**
     * Attempts to upload a file to the user's bucket
     * @param {express.Request} req
@@ -542,84 +562,70 @@ class BucketController extends controller_1.Controller {
             // Parts are emitted when parsing the form
             form.on('part', function (part) {
                 // Create a new upload token
-                var newUpload = {
-                    file: "",
-                    field: (!part.name ? "" : part.name),
-                    filename: part.filename,
-                    error: false,
-                    errorMsg: "",
-                    url: ""
+                var createToken = function () {
+                    return {
+                        file: "",
+                        field: (!part.name ? "" : part.name),
+                        filename: part.filename,
+                        error: false,
+                        errorMsg: "",
+                        url: ""
+                    };
                 };
                 // Deal with error logic
-                var errFunc = function (errMsg) {
+                var errFunc = function (errMsg, uploadToken) {
+                    if (uploadToken) {
+                        uploadToken.error = true;
+                        uploadToken.errorMsg = errMsg;
+                    }
                     completedParts++;
-                    newUpload.error = true;
-                    newUpload.errorMsg = errMsg;
+                    part.resume();
+                    checkIfComplete();
+                };
+                // Deal with file upload logic
+                var fileUploaded = function (uploadedFile, uploadToken) {
+                    filesUploaded.push(uploadedFile);
+                    completedParts++;
+                    uploadToken.file = uploadedFile.identifier;
+                    uploadToken.url = uploadedFile.publicURL;
                     part.resume();
                     checkIfComplete();
                 };
                 // This part is a file - so we act on it
-                if (!!part.filename) {
-                    // Is file type allowed
-                    if (!that.isFileTypeAllowed(part)) {
-                        numParts++;
-                        uploadedTokens.push(newUpload);
-                        errFunc(`Please only use approved file types '${that._allowedFileTypes.join(", ")}'`);
-                        return;
-                    }
+                if (!!part.filename && that.isFileTypeAllowed(part)) {
                     // Add the token to the upload array we are sending back to the user
-                    uploadedTokens.push(newUpload);
+                    var uploadToken = createToken();
+                    uploadedTokens.push(uploadToken);
                     numParts++;
                     // Upload the file part to the cloud
                     manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file) {
-                        filesUploaded.push(file);
-                        completedParts++;
-                        newUpload.file = file.identifier;
-                        newUpload.url = file.publicURL;
-                        part.resume();
-                        checkIfComplete();
+                        fileUploaded(file, uploadToken);
                     }).catch(function (err) {
-                        errFunc(err.toString());
+                        errFunc(err.toString(), uploadToken);
                     });
                 }
                 else if (part.name == "meta") {
                     numParts++;
-                    var metaString = '';
-                    uploadedTokens.push(newUpload);
-                    part.setEncoding('utf8');
-                    part.on('data', function (chunk) { metaString += chunk; });
-                    part.on('error', function (err) {
-                        metaJson = null;
-                        errFunc("Could not download meta: " + err.toString());
-                    });
-                    part.on('end', function () {
-                        try {
-                            metaJson = JSON.parse(metaString);
-                        }
-                        catch (err) {
-                            metaJson = null;
-                            newUpload.error = true;
-                            newUpload.errorMsg = "Meta data is not a valid JSON: " + err.toString();
-                        }
+                    that.uploadMetaPart(part).then(function (meta) {
+                        metaJson = meta;
                         part.resume();
                         completedParts++;
                         checkIfComplete();
+                    }).catch(function (err) {
+                        metaJson = err;
+                        errFunc(err.toString(), null);
                     });
                 }
                 else if (that.isPartAllowed(part)) {
                     // Add the token to the upload array we are sending back to the user
-                    uploadedTokens.push(newUpload);
+                    var uploadToken = createToken();
+                    uploadedTokens.push(uploadToken);
                     numParts++;
                     // Upload the file part to the cloud
                     manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file) {
-                        filesUploaded.push(file);
-                        completedParts++;
-                        newUpload.file = file.identifier;
-                        newUpload.url = file.publicURL;
-                        part.resume();
-                        checkIfComplete();
+                        fileUploaded(file, uploadToken);
                     }).catch(function (err) {
-                        errFunc(err.toString());
+                        errFunc(err.toString(), uploadToken);
                     });
                 }
                 else
@@ -646,7 +652,8 @@ class BucketController extends controller_1.Controller {
     }
     /**
      * After the uploads have been uploaded, we set any meta on the files and send file uploaded events
-     * @param {any} meta The optional meta to associate with the uploaded files
+     * @param {any | Error} meta The optional meta to associate with the uploaded files. The meta can be either a valid JSON or an error. If its
+     * an error, then that means the meta could not be parsed
      * @param {Array<users.IFileEntry>} files The uploaded files
      * @param {string} user The user who uploaded the files
      * @param {Array<users.IUploadToken>} tokens The upload tokens to be sent back to the client
@@ -655,8 +662,18 @@ class BucketController extends controller_1.Controller {
         return __awaiter(this, void 0, Promise, function* () {
             try {
                 var manager = bucket_manager_1.BucketManager.get;
-                // If we have any meta, then update the file entries with it
-                if (meta && files.length > 0) {
+                var error = false;
+                var msg = `Upload complete. [${files.length}] Files have been saved.`;
+                // If we have any an error with the meta, then remove all the uploaded files
+                if (meta && meta instanceof Error) {
+                    var error = true;
+                    var fileIds = files.map(file => file._id.toString());
+                    yield manager.removeFilesById(fileIds);
+                    files = [];
+                    tokens = [];
+                    msg = meta.toString();
+                }
+                else if (meta && meta && files.length > 0) {
                     var query = { $or: [] };
                     for (var i = 0, l = files.length; i < l; i++) {
                         query.$or.push({ _id: new mongodb.ObjectID(files[i]._id) });
@@ -665,21 +682,19 @@ class BucketController extends controller_1.Controller {
                     }
                     yield manager.setMeta(query, meta);
                 }
+                // Notify the sockets of each file that was uploaded
                 for (var i = 0, l = files.length; i < l; i++) {
                     // Send file added events to sockets
                     var fEvent = { username: user, eventType: socket_event_types_1.EventType.FileUploaded, file: files[i], error: undefined };
                     yield comms_controller_1.CommsController.singleton.broadcastEventToAll(fEvent);
                 }
-                var error = false;
-                var msg = `Upload complete. [${files.length}] Files have been saved.`;
+                // Override the default message if the tokens had an issue
                 for (var i = 0, l = tokens.length; i < l; i++)
                     if (tokens[i].error) {
                         error = true;
-                        msg = tokens[i].errorMsg;
+                        msg = "There was a problem with your upload. Please check the tokens for more information.";
                         break;
                     }
-                // The response error and message
-                var msg = `Upload complete. [${files.length}] Files have been saved.`;
                 return { message: msg, error: error, tokens: tokens };
             }
             catch (err) {
