@@ -10,6 +10,9 @@ import * as winston from "winston";
  */
 export function okJson<T extends def.IResponse>( data: T, res: express.Response )
 {
+    if (data.error)
+        winston.error(data.message, { process: process.pid });
+
     res.setHeader('Content-Type', 'application/json');
     res.end( JSON.stringify( data ) );
 }
