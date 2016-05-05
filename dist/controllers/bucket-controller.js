@@ -71,25 +71,25 @@ class BucketController extends controller_1.Controller {
      * @param {Function} next
      */
     verifyTargetValue(req, res, next) {
-        // Set the content type
-        var value = parseInt(req.params.value);
-        if (!req.params.target || req.params.target.trim() == "") {
-            return serializers_1.errJson(new Error("Please specify a valid user to target"), res);
-        }
-        if (!req.params.value || req.params.value.trim() == "" || isNaN(value)) {
-            return serializers_1.errJson(new Error("Please specify a valid value"), res);
-        }
-        // Make sure the user exists
-        users_1.UserManager.get.getUser(req.params.target).then(function (user) {
-            if (!user) {
-                return serializers_1.errJson(new Error(`Could not find the user '${req.params.target}'`), res);
-            }
-            else {
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                // Set the content type
+                var value = parseInt(req.params.value);
+                if (!req.params.target || req.params.target.trim() == "")
+                    throw new Error("Please specify a valid user to target");
+                if (!req.params.value || req.params.value.trim() == "" || isNaN(value))
+                    throw new Error("Please specify a valid value");
+                // Make sure the user exists
+                var user = yield users_1.UserManager.get.getUser(req.params.target);
+                if (!user)
+                    throw new Error(`Could not find the user '${req.params.target}'`);
                 req._target = user;
                 next();
             }
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -99,12 +99,17 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     updateCalls(req, res, next) {
-        var value = parseInt(req.params.value);
-        var manager = bucket_manager_1.BucketManager.get;
-        manager.updateStorage(req._target.dbEntry.username, { apiCallsUsed: value }).then(function () {
-            return serializers_1.okJson({ message: `Updated the user API calls to [${value}]`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var value = parseInt(req.params.value);
+                var manager = bucket_manager_1.BucketManager.get;
+                yield manager.updateStorage(req._target.dbEntry.username, { apiCallsUsed: value });
+                serializers_1.okJson({ message: `Updated the user API calls to [${value}]`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -114,12 +119,17 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     updateMemory(req, res, next) {
-        var value = parseInt(req.params.value);
-        var manager = bucket_manager_1.BucketManager.get;
-        manager.updateStorage(req._target.dbEntry.username, { memoryUsed: value }).then(function () {
-            return serializers_1.okJson({ message: `Updated the user memory to [${value}] bytes`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var value = parseInt(req.params.value);
+                var manager = bucket_manager_1.BucketManager.get;
+                yield manager.updateStorage(req._target.dbEntry.username, { memoryUsed: value });
+                serializers_1.okJson({ message: `Updated the user memory to [${value}] bytes`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -129,12 +139,17 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     updateAllocatedCalls(req, res, next) {
-        var value = parseInt(req.params.value);
-        var manager = bucket_manager_1.BucketManager.get;
-        manager.updateStorage(req._target.dbEntry.username, { apiCallsAllocated: value }).then(function () {
-            return serializers_1.okJson({ message: `Updated the user API calls to [${value}]`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var value = parseInt(req.params.value);
+                var manager = bucket_manager_1.BucketManager.get;
+                yield manager.updateStorage(req._target.dbEntry.username, { apiCallsAllocated: value });
+                serializers_1.okJson({ message: `Updated the user API calls to [${value}]`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -144,12 +159,17 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     updateAllocatedMemory(req, res, next) {
-        var value = parseInt(req.params.value);
-        var manager = bucket_manager_1.BucketManager.get;
-        manager.updateStorage(req._target.dbEntry.username, { memoryAllocated: value }).then(function () {
-            return serializers_1.okJson({ message: `Updated the user memory to [${value}] bytes`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var value = parseInt(req.params.value);
+                var manager = bucket_manager_1.BucketManager.get;
+                yield manager.updateStorage(req._target.dbEntry.username, { memoryAllocated: value });
+                serializers_1.okJson({ message: `Updated the user memory to [${value}] bytes`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -159,20 +179,25 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     removeFiles(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var files = null;
-        if (!req.params.files || req.params.files.trim() == "")
-            return serializers_1.errJson(new Error("Please specify the files to remove"), res);
-        files = req.params.files.split(",");
-        manager.removeFilesById(files, req._user.dbEntry.username).then(function (numRemoved) {
-            return serializers_1.okJson({
-                message: `Removed [${numRemoved.length}] files`,
-                error: false,
-                data: numRemoved,
-                count: numRemoved.length
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var files = null;
+                if (!req.params.files || req.params.files.trim() == "")
+                    throw new Error("Please specify the files to remove");
+                files = req.params.files.split(",");
+                var filesRemoved = yield manager.removeFilesById(files, req._user.dbEntry.username);
+                serializers_1.okJson({
+                    message: `Removed [${filesRemoved.length}] files`,
+                    error: false,
+                    data: filesRemoved,
+                    count: filesRemoved.length
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -182,19 +207,23 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     renameFile(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        if (!req.params.file || req.params.file.trim() == "")
-            return serializers_1.errJson(new Error("Please specify the file to rename"), res);
-        if (!req.body || !req.body.name || req.body.name.trim() == "")
-            return serializers_1.errJson(new Error("Please specify the new name of the file"), res);
-        manager.getFile(req.params.file, req._user.dbEntry.username).then(function (file) {
-            if (!file)
-                return Promise.reject(new Error(`Could not find the file '${req.params.file}'`));
-            return manager.renameFile(file, req.body.name);
-        }).then(function (file) {
-            return serializers_1.okJson({ message: `Renamed file to '${req.body.name}'`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                if (!req.params.file || req.params.file.trim() == "")
+                    throw new Error("Please specify the file to rename");
+                if (!req.body || !req.body.name || req.body.name.trim() == "")
+                    throw new Error("Please specify the new name of the file");
+                var fileEntry = yield manager.getFile(req.params.file, req._user.dbEntry.username);
+                if (!fileEntry)
+                    throw new Error(`Could not find the file '${req.params.file}'`);
+                var file = yield manager.renameFile(fileEntry, req.body.name);
+                serializers_1.okJson({ message: `Renamed file to '${req.body.name}'`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -204,20 +233,25 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     removeBuckets(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var buckets = null;
-        if (!req.params.buckets || req.params.buckets.trim() == "")
-            return serializers_1.errJson(new Error("Please specify the buckets to remove"), res);
-        buckets = req.params.buckets.split(",");
-        manager.removeBucketsByName(buckets, req._user.dbEntry.username).then(function (numRemoved) {
-            return serializers_1.okJson({
-                message: `Removed [${numRemoved.length}] buckets`,
-                error: false,
-                data: numRemoved,
-                count: numRemoved.length
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var buckets = null;
+                if (!req.params.buckets || req.params.buckets.trim() == "")
+                    throw new Error("Please specify the buckets to remove");
+                buckets = req.params.buckets.split(",");
+                var filesRemoved = yield manager.removeBucketsByName(buckets, req._user.dbEntry.username);
+                return serializers_1.okJson({
+                    message: `Removed [${filesRemoved.length}] buckets`,
+                    error: false,
+                    data: filesRemoved,
+                    count: filesRemoved.length
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -227,15 +261,20 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     getStats(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        manager.getUserStats(req._user.dbEntry.username).then(function (stats) {
-            return serializers_1.okJson({
-                message: `Successfully retrieved ${req._user.dbEntry.username}'s stats`,
-                error: false,
-                data: stats
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var stats = yield manager.getUserStats(req._user.dbEntry.username);
+                return serializers_1.okJson({
+                    message: `Successfully retrieved ${req._user.dbEntry.username}'s stats`,
+                    error: false,
+                    data: stats
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -245,23 +284,26 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     getFile(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var fileID = req.params.id;
-        var file = null;
-        var cache = this._config.google.bucket.cacheLifetime;
-        if (!fileID || fileID.trim() == "")
-            return serializers_1.errJson(new Error(`Please specify a file ID`), res);
-        manager.getFile(fileID).then(function (iFile) {
-            file = iFile;
-            res.setHeader('Content-Type', file.mimeType);
-            res.setHeader('Content-Length', file.size.toString());
-            if (cache)
-                res.setHeader("Cache-Control", "public, max-age=" + cache);
-            manager.downloadFile(req, res, file);
-            manager.incrementAPI(file.user);
-        }).catch(function (err) {
-            winston.error(err.toString(), { process: process.pid });
-            return res.status(404).send('File not found');
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var fileID = req.params.id;
+                var file = null;
+                var cache = this._config.google.bucket.cacheLifetime;
+                if (!fileID || fileID.trim() == "")
+                    throw new Error(`Please specify a file ID`);
+                file = yield manager.getFile(fileID);
+                res.setHeader('Content-Type', file.mimeType);
+                res.setHeader('Content-Length', file.size.toString());
+                if (cache)
+                    res.setHeader("Cache-Control", "public, max-age=" + cache);
+                manager.downloadFile(req, res, file);
+                manager.incrementAPI(file.user);
+            }
+            catch (err) {
+                winston.error(err.toString(), { process: process.pid });
+                return res.status(404).send('File not found');
+            }
         });
     }
     /**
@@ -271,18 +313,20 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     makePublic(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var fileID = req.params.id;
-        var file = null;
-        var cache = this._config.google.bucket.cacheLifetime;
-        if (!fileID || fileID.trim() == "")
-            return serializers_1.errJson(new Error(`Please specify a file ID`), res);
-        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
-            return manager.makeFilePublic(iFile);
-        }).then(function (iFile) {
-            return serializers_1.okJson({ message: `File is now public`, error: false, data: iFile }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var fileID = req.params.id;
+                var cache = this._config.google.bucket.cacheLifetime;
+                if (!fileID || fileID.trim() == "")
+                    throw new Error(`Please specify a file ID`);
+                var fileEntry = yield manager.getFile(fileID, req._user.dbEntry.username);
+                fileEntry = yield manager.makeFilePublic(fileEntry);
+                serializers_1.okJson({ message: `File is now public`, error: false, data: fileEntry }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
         });
     }
     /**
@@ -292,18 +336,21 @@ class BucketController extends controller_1.Controller {
    * @param {Function} next
    */
     makePrivate(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var fileID = req.params.id;
-        var file = null;
-        var cache = this._config.google.bucket.cacheLifetime;
-        if (!fileID || fileID.trim() == "")
-            return serializers_1.errJson(new Error(`Please specify a file ID`), res);
-        manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile) {
-            return manager.makeFilePrivate(iFile);
-        }).then(function (iFile) {
-            return serializers_1.okJson({ message: `File is now private`, error: false, data: iFile }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var fileID = req.params.id;
+                var fileEntry = null;
+                var cache = this._config.google.bucket.cacheLifetime;
+                if (!fileID || fileID.trim() == "")
+                    throw new Error(`Please specify a file ID`);
+                fileEntry = yield manager.getFile(fileID, req._user.dbEntry.username);
+                fileEntry = yield manager.makeFilePrivate(fileEntry);
+                serializers_1.okJson({ message: `File is now private`, error: false, data: fileEntry }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
         });
     }
     /**
@@ -313,34 +360,34 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     getFiles(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var numFiles = 0;
-        var index = parseInt(req.query.index);
-        var limit = parseInt(req.query.limit);
-        var bucketEntry;
-        if (!req.params.bucket || req.params.bucket.trim() == "")
-            return serializers_1.errJson(new Error("Please specify a valid bucket name"), res);
-        var searchTerm;
-        // Check for keywords
-        if (req.query.search)
-            searchTerm = new RegExp(req.query.search, "i");
-        manager.getIBucket(req.params.bucket, req._user.dbEntry.username).then(function (bucket) {
-            if (!bucket)
-                return Promise.reject(new Error(`Could not find the bucket '${req.params.bucket}'`));
-            bucketEntry = bucket;
-            return manager.numFiles({ bucketId: bucket.identifier });
-        }).then(function (count) {
-            numFiles = count;
-            return manager.getFilesByBucket(bucketEntry, index, limit, searchTerm);
-        }).then(function (files) {
-            return serializers_1.okJson({
-                message: `Found [${numFiles}] files`,
-                error: false,
-                data: files,
-                count: numFiles
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var manager = bucket_manager_1.BucketManager.get;
+            var index = parseInt(req.query.index);
+            var limit = parseInt(req.query.limit);
+            var bucketEntry;
+            var searchTerm;
+            try {
+                if (!req.params.bucket || req.params.bucket.trim() == "")
+                    throw new Error("Please specify a valid bucket name");
+                // Check for keywords
+                if (req.query.search)
+                    searchTerm = new RegExp(req.query.search, "i");
+                bucketEntry = yield manager.getIBucket(req.params.bucket, req._user.dbEntry.username);
+                if (!bucketEntry)
+                    throw new Error(`Could not find the bucket '${req.params.bucket}'`);
+                var count = yield manager.numFiles({ bucketId: bucketEntry.identifier });
+                var files = yield manager.getFilesByBucket(bucketEntry, index, limit, searchTerm);
+                return serializers_1.okJson({
+                    message: `Found [${count}] files`,
+                    error: false,
+                    data: files,
+                    count: count
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -350,22 +397,27 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     getBuckets(req, res, next) {
-        var user = req.params.user;
-        var manager = bucket_manager_1.BucketManager.get;
-        var numBuckets = 1;
-        var searchTerm;
-        // Check for keywords
-        if (req.query.search)
-            searchTerm = new RegExp(req.query.search, "i");
-        manager.getBucketEntries(user, searchTerm).then(function (buckets) {
-            return serializers_1.okJson({
-                message: `Found [${buckets.length}] buckets`,
-                error: false,
-                data: buckets,
-                count: buckets.length
-            }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var user = req.params.user;
+            var manager = bucket_manager_1.BucketManager.get;
+            var numBuckets = 1;
+            var searchTerm;
+            try {
+                // Check for keywords
+                if (req.query.search)
+                    searchTerm = new RegExp(req.query.search, "i");
+                var buckets = yield manager.getBucketEntries(user, searchTerm);
+                return serializers_1.okJson({
+                    message: `Found [${buckets.length}] buckets`,
+                    error: false,
+                    data: buckets,
+                    count: buckets.length
+                }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -375,11 +427,16 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     createStats(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        manager.createUserStats(req.params.target).then(function (stats) {
-            return serializers_1.okJson({ message: `Stats for the user '${req.params.target}' have been created`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                var manager = bucket_manager_1.BucketManager.get;
+                var stats = yield manager.createUserStats(req.params.target);
+                serializers_1.okJson({ message: `Stats for the user '${req.params.target}' have been created`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     alphaNumericDashSpace(str) {
@@ -395,28 +452,30 @@ class BucketController extends controller_1.Controller {
     * @param {Function} next
     */
     createBucket(req, res, next) {
-        var manager = bucket_manager_1.BucketManager.get;
-        var username = req.params.user;
-        var bucketName = req.params.name;
-        if (!username || username.trim() == "")
-            return serializers_1.errJson(new Error("Please specify a valid username"), res);
-        if (!bucketName || bucketName.trim() == "")
-            return serializers_1.errJson(new Error("Please specify a valid name"), res);
-        if (!this.alphaNumericDashSpace(bucketName))
-            return serializers_1.errJson(new Error("Please only use safe characters"), res);
-        users_1.UserManager.get.getUser(username).then(function (user) {
-            if (user)
-                return manager.withinAPILimit(username);
-            else
-                return Promise.reject(new Error(`Could not find a user with the name '${username}'`));
-        }).then(function (inLimits) {
-            if (!inLimits)
-                return Promise.reject(new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`));
-            return manager.createBucket(bucketName, username);
-        }).then(function (bucket) {
-            return serializers_1.okJson({ message: `Bucket '${bucketName}' created`, error: false }, res);
-        }).catch(function (err) {
-            return serializers_1.errJson(err, res);
+        return __awaiter(this, void 0, Promise, function* () {
+            var manager = bucket_manager_1.BucketManager.get;
+            var username = req.params.user;
+            var bucketName = req.params.name;
+            try {
+                if (!username || username.trim() == "")
+                    throw new Error("Please specify a valid username");
+                if (!bucketName || bucketName.trim() == "")
+                    throw new Error("Please specify a valid name");
+                if (!this.alphaNumericDashSpace(bucketName))
+                    throw new Error("Please only use safe characters");
+                var user = yield users_1.UserManager.get.getUser(username);
+                if (!user)
+                    throw new Error(`Could not find a user with the name '${username}'`);
+                var inLimits = yield manager.withinAPILimit(username);
+                if (!inLimits)
+                    throw new Error(`You have run out of API calls, please contact one of our sales team or upgrade your account.`);
+                var bucket = yield manager.createBucket(bucketName, username);
+                serializers_1.okJson({ message: `Bucket '${bucketName}' created`, error: false }, res);
+            }
+            catch (err) {
+                return serializers_1.errJson(err, res);
+            }
+            ;
         });
     }
     /**
@@ -677,42 +736,37 @@ class BucketController extends controller_1.Controller {
     }
     /**
     * Called to initialize this controller and its related database objects
-    * @returns {Promise<Controller>}
+    * @returns {Promise<void>}
     */
     initialize(db) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
+        return __awaiter(this, void 0, Promise, function* () {
             var bucketsCollection;
             var filesCollection;
             var statsCollection;
-            Promise.all([
-                that.createCollection(that._config.google.bucket.bucketsCollection, db),
-                that.createCollection(that._config.google.bucket.filesCollection, db),
-                that.createCollection(that._config.google.bucket.statsCollection, db)
-            ]).then(function (collections) {
-                bucketsCollection = collections[0];
-                filesCollection = collections[1];
-                statsCollection = collections[2];
-                return Promise.all([
-                    that.ensureIndex(bucketsCollection, "name"),
-                    that.ensureIndex(bucketsCollection, "user"),
-                    that.ensureIndex(bucketsCollection, "created"),
-                    that.ensureIndex(bucketsCollection, "memoryUsed"),
-                    that.ensureIndex(filesCollection, "name"),
-                    that.ensureIndex(filesCollection, "user"),
-                    that.ensureIndex(filesCollection, "created"),
-                    that.ensureIndex(filesCollection, "size"),
-                    that.ensureIndex(filesCollection, "mimeType"),
-                    that.ensureIndex(filesCollection, "numDownloads")
-                ]);
-            }).then(function () {
-                // Create the user manager
-                that._bucketManager = bucket_manager_1.BucketManager.create(bucketsCollection, filesCollection, statsCollection, that._config);
-                // Initialization is finished
-                resolve();
-            }).catch(function (error) {
-                reject(error);
-            });
+            var collections = yield Promise.all([
+                this.createCollection(this._config.google.bucket.bucketsCollection, db),
+                this.createCollection(this._config.google.bucket.filesCollection, db),
+                this.createCollection(this._config.google.bucket.statsCollection, db)
+            ]);
+            bucketsCollection = collections[0];
+            filesCollection = collections[1];
+            statsCollection = collections[2];
+            yield Promise.all([
+                this.ensureIndex(bucketsCollection, "name"),
+                this.ensureIndex(bucketsCollection, "user"),
+                this.ensureIndex(bucketsCollection, "created"),
+                this.ensureIndex(bucketsCollection, "memoryUsed"),
+                this.ensureIndex(filesCollection, "name"),
+                this.ensureIndex(filesCollection, "user"),
+                this.ensureIndex(filesCollection, "created"),
+                this.ensureIndex(filesCollection, "size"),
+                this.ensureIndex(filesCollection, "mimeType"),
+                this.ensureIndex(filesCollection, "numDownloads")
+            ]);
+            // Create the user manager
+            this._bucketManager = bucket_manager_1.BucketManager.create(bucketsCollection, filesCollection, statsCollection, this._config);
+            // Initialization is finished
+            return;
         });
     }
 }
