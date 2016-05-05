@@ -19,6 +19,7 @@ import * as gcloud from "gcloud";
 import {CommsController} from "./comms-controller";
 import {EventType} from "../socket-event-types";
 import * as def from "webinate-users";
+import {okJson, errJson} from "../serializers";
 
 /**
 * Main class to use for managing users
@@ -84,13 +85,11 @@ export class BucketController extends Controller
 
         if (!req.params.target || req.params.target.trim() == "")
         {
-            res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid user to target", error: true }));
+            return errJson( new Error("Please specify a valid user to target"), res );
         }
         if (!req.params.value || req.params.value.trim() == "" || isNaN(value))
         {
-            res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid value", error: true }));
+            return errJson( new Error("Please specify a valid value"), res );
         }
 
         // Make sure the user exists
@@ -98,8 +97,7 @@ export class BucketController extends Controller
         {
             if (!user)
             {
-                res.setHeader('Content-Type', 'application/json');
-                return res.end(JSON.stringify(<users.IResponse>{ message: `Could not find the user '${req.params.target}'`, error: true }));
+                return errJson( new Error(`Could not find the user '${req.params.target}'`), res );
             }
             else
             {
@@ -109,8 +107,7 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
-            res.setHeader('Content-Type', 'application/json');
-            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
+           return errJson( err, res );
         });
     }
 
@@ -122,19 +119,16 @@ export class BucketController extends Controller
    */
     private updateCalls(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
         manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ apiCallsUsed: value }).then(function ()
         {
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
+            return okJson<def.IResponse>( { message: `Updated the user API calls to [${value}]`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
+            return errJson( err, res );
         });
     }
 
@@ -146,19 +140,16 @@ export class BucketController extends Controller
    */
     private updateMemory(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
         manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ memoryUsed: value }).then(function ()
         {
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
+            return okJson<def.IResponse>( { message: `Updated the user memory to [${value}] bytes`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
+            return errJson( err, res );
         });
     }
 
@@ -170,19 +161,16 @@ export class BucketController extends Controller
    */
     private updateAllocatedCalls(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
         manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ apiCallsAllocated: value }).then(function ()
         {
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user API calls to [${value}]`, error: false }));
+            return okJson<def.IResponse>( { message: `Updated the user API calls to [${value}]`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
+            return errJson( err, res );
         });
     }
 
@@ -194,19 +182,16 @@ export class BucketController extends Controller
    */
     private updateAllocatedMemory(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var value = parseInt(req.params.value);
         var manager = BucketManager.get;
 
         manager.updateStorage(req._target.dbEntry.username, <users.IStorageStats>{ memoryAllocated: value }).then(function ()
         {
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Updated the user memory to [${value}] bytes`, error: false }));
+            return okJson<def.IResponse>( { message: `Updated the user memory to [${value}] bytes`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{ message: err.toString(), error: true }));
+           return errJson( err, res );
         });
     }
 
@@ -218,31 +203,26 @@ export class BucketController extends Controller
    */
     private removeFiles(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var files: Array<string> = null;
 
         if (!req.params.files || req.params.files.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the files to remove", error: true }));
+            return errJson( new Error("Please specify the files to remove"), res );
 
         files = req.params.files.split(",");
 
         manager.removeFilesById(files, req._user.dbEntry.username).then(function (numRemoved)
         {
-            return res.end(JSON.stringify(<users.IRemoveFiles>{
+            return okJson<users.IRemoveFiles>({
                 message: `Removed [${numRemoved.length}] files`,
                 error: false,
-                data:numRemoved
-            }));
+                data:numRemoved,
+                count: numRemoved.length
+            }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         });
     }
 
@@ -254,14 +234,12 @@ export class BucketController extends Controller
    */
     private renameFile(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
 
         if (!req.params.file || req.params.file.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the file to rename", error: true }));
+            return errJson( new Error("Please specify the file to rename"), res );
         if (!req.body || !req.body.name || req.body.name.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the new name of the file", error: true }));
+            return errJson( new Error("Please specify the new name of the file"), res );
 
         manager.getFile(req.params.file, req._user.dbEntry.username).then(function(file) : Promise<Error|users.IFileEntry>
         {
@@ -272,18 +250,11 @@ export class BucketController extends Controller
 
         }).then(function (file)
         {
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: `Renamed file to '${req.body.name}'`,
-                error: false
-            }));
+            return okJson<def.IResponse>( { message: `Renamed file to '${req.body.name}'`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         });
     }
 
@@ -295,31 +266,26 @@ export class BucketController extends Controller
    */
     private removeBuckets(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var buckets: Array<string> = null;
 
         if (!req.params.buckets || req.params.buckets.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify the buckets to remove", error: true }));
+            return errJson( new Error("Please specify the buckets to remove"), res );
 
         buckets = req.params.buckets.split(",");
 
         manager.removeBucketsByName(buckets, req._user.dbEntry.username).then(function (numRemoved)
         {
-            return res.end(JSON.stringify(<users.IRemoveFiles>{
+            return okJson<users.IRemoveFiles>( {
                 message: `Removed [${numRemoved.length}] buckets`,
                 error: false,
-                data: numRemoved
-            }));
+                data: numRemoved,
+                count: numRemoved.length
+            }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         });
     }
 
@@ -331,25 +297,19 @@ export class BucketController extends Controller
    */
     private getStats(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
 
         manager.getUserStats(req._user.dbEntry.username).then(function (stats)
         {
-            return res.end(JSON.stringify(<users.IGetUserStorageData>{
+            return okJson<users.IGetUserStorageData>( {
                 message: `Successfully retrieved ${req._user.dbEntry.username}'s stats`,
                 error: false,
                 data: stats
-            }));
+            }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+           return errJson( err, res );
         });
     }
 
@@ -367,8 +327,7 @@ export class BucketController extends Controller
         var cache = this._config.google.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
-
+            return errJson( new Error(`Please specify a file ID`), res );
 
         manager.getFile(fileID).then(function (iFile)
         {
@@ -396,16 +355,13 @@ export class BucketController extends Controller
    */
     private makePublic(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        res.setHeader('Content-Type', 'application/json');
-
         var manager = BucketManager.get;
         var fileID = req.params.id;
         var file: users.IFileEntry = null;
         var cache = this._config.google.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
-
+            return errJson( new Error(`Please specify a file ID`), res );
 
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
         {
@@ -413,15 +369,11 @@ export class BucketController extends Controller
 
         }).then(function (iFile)
         {
-            return res.end(JSON.stringify(<users.IGetFile>{ message: `File is now public`, error: false, data: iFile }));
+            return okJson<users.IGetFile>( { message: `File is now public`, error: false, data: iFile }, res );
 
         }).catch(function (err)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         })
     }
 
@@ -433,15 +385,13 @@ export class BucketController extends Controller
    */
     private makePrivate(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        res.setHeader('Content-Type', 'application/json');
-
         var manager = BucketManager.get;
         var fileID = req.params.id;
         var file: users.IFileEntry = null;
         var cache = this._config.google.bucket.cacheLifetime;
 
         if (!fileID || fileID.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: `Please specify a file ID`, error: true }));
+            return errJson( new Error(`Please specify a file ID`), res );
 
 
         manager.getFile(fileID, req._user.dbEntry.username).then(function (iFile)
@@ -450,15 +400,11 @@ export class BucketController extends Controller
 
         }).then(function (iFile)
         {
-            return res.end(JSON.stringify(<users.IGetFile>{ message: `File is now private`, error: false, data: iFile }));
+            return okJson<users.IGetFile>( { message: `File is now private`, error: false, data: iFile }, res );
 
         }).catch(function (err)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         })
     }
 
@@ -470,8 +416,6 @@ export class BucketController extends Controller
    */
     private getFiles(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var numFiles = 0;
         var index = parseInt(req.query.index);
@@ -480,7 +424,7 @@ export class BucketController extends Controller
         var bucketEntry: users.IBucketEntry;
 
         if (!req.params.bucket || req.params.bucket.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid bucket name", error: true }));
+            return errJson( new Error("Please specify a valid bucket name"), res );
 
         var searchTerm: RegExp;
 
@@ -503,20 +447,16 @@ export class BucketController extends Controller
 
         }).then(function (files)
         {
-            return res.end(JSON.stringify(<users.IGetFiles>{
+            return okJson<users.IGetFiles>( {
                 message: `Found [${numFiles}] files`,
                 error: false,
                 data: files,
                 count: numFiles
-            }));
+            }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         });
     }
 
@@ -530,8 +470,6 @@ export class BucketController extends Controller
     {
         var user = req.params.user;
 
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var numBuckets = 1;
         var searchTerm: RegExp;
@@ -542,20 +480,16 @@ export class BucketController extends Controller
 
         manager.getBucketEntries(user, searchTerm).then(function (buckets)
         {
-            return res.end(JSON.stringify(<users.IGetBuckets>{
+            return okJson<users.IGetBuckets>({
                 message: `Found [${buckets.length}] buckets`,
                 error: false,
                 data: buckets,
                 count: buckets.length
-            }));
+            }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         });
     }
 
@@ -567,23 +501,14 @@ export class BucketController extends Controller
    */
     private createStats(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         manager.createUserStats(req.params.target).then(function (stats)
         {
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: `Stats for the user '${req.params.target}' have been created`,
-                error: false
-            }));
+            return okJson<users.IResponse>( { message: `Stats for the user '${req.params.target}' have been created`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+           return errJson( err, res );
         });
     }
 
@@ -603,19 +528,16 @@ export class BucketController extends Controller
 	*/
     private createBucket(req: users.AuthRequest, res: express.Response, next: Function): any
     {
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
         var manager = BucketManager.get;
         var username: string = req.params.user;
         var bucketName: string = req.params.name;
 
         if (!username || username.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid username", error: true }));
+            return errJson( new Error("Please specify a valid username"), res );
         if (!bucketName || bucketName.trim() == "")
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please specify a valid name", error: true }));
+            return errJson( new Error("Please specify a valid name"), res );
         if (!this.alphaNumericDashSpace(bucketName))
-            return res.end(JSON.stringify(<users.IResponse>{ message: "Please only use safe characters", error: true }));
-
+            return errJson( new Error("Please only use safe characters"), res );
 
         UserManager.get.getUser(username).then(function(user) : Promise<Error|boolean>
         {
@@ -633,18 +555,11 @@ export class BucketController extends Controller
 
         }).then(function (bucket)
         {
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: `Bucket '${bucketName}' created`,
-                error: false
-            }));
+            return okJson<users.IResponse>( { message: `Bucket '${bucketName}' created`, error: false }, res );
 
         }).catch(function (err: Error)
         {
-            winston.error(err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IResponse>{
-                message: err.toString(),
-                error: true
-            }));
+            return errJson( err, res );
         });
     }
 
@@ -716,20 +631,15 @@ export class BucketController extends Controller
         var username = req._user.dbEntry.username;
         var parentFile = req.params.parentFile;
         var filesUploaded: Array<UsersInterface.IFileEntry> = [];
-
-        // Set the content type
-        res.setHeader('Content-Type', 'application/json');
-
         var bucketName = req.params.bucket;
         if (!bucketName || bucketName.trim() == "")
-            return res.end(JSON.stringify(<users.IUploadResponse>{ message: `Please specify a bucket`, error: true, tokens: [] }));
+            return okJson<users.IUploadResponse>( { message: `Please specify a bucket`, error: true, tokens: [] }, res );
 
         manager.getIBucket(bucketName, username).then(function (bucketEntry)
         {
             if (!bucketEntry)
             {
-                winston.error(`No bucket exists with the name '${bucketName}'`, { process: process.pid });
-                return res.end(JSON.stringify(<users.IUploadResponse>{ message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }));
+                return okJson<users.IUploadResponse>( { message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }, res );
             }
 
             var metaJson : any;
@@ -902,13 +812,12 @@ export class BucketController extends Controller
                         else
                             winston.info(msg, { process: process.pid });
 
-                        return res.end(JSON.stringify(<users.IUploadResponse>{ message: msg, error: error, tokens: uploadedTokens }));
+                        return okJson<users.IUploadResponse>({ message: msg, error: error, tokens: uploadedTokens }, res );
 
                     }).catch(function (err: Error)
                     {
                         // Something happened while updating the meta
-                        winston.error( "Could not update file meta: " + err.toString(), { process: process.pid });
-                        return res.end(JSON.stringify(<users.IUploadResponse>{ message: "Could not update files meta: " +  err.toString(), error: true, tokens: [] }));
+                        return okJson<users.IUploadResponse>( { message: "Could not update files meta: " +  err.toString(), error: true, tokens: [] }, res );
                     });
                 }
             }
@@ -925,8 +834,7 @@ export class BucketController extends Controller
 
         }).catch(function (err)
         {
-            winston.error("Could not get bucket: " + err.toString(), { process: process.pid });
-            return res.end(JSON.stringify(<users.IUploadResponse>{ message: "Could not get bucket: " + err.toString(), error: true, tokens: [] }));
+            return okJson<users.IUploadResponse>( { message: "Could not get bucket: " + err.toString(), error: true, tokens: [] }, res );
         });
     }
 

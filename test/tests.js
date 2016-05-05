@@ -1420,7 +1420,7 @@ describe('Checking media API', function(){
 					if (err) return done(err);
 
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Error: Could not find the bucket 'test'")
+					test.string(res.body.message).is("Could not find the bucket 'test'")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -1474,7 +1474,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Error: A Bucket with the name 'dinosaurs' has already been registered")
+					test.string(res.body.message).is("A Bucket with the name 'dinosaurs' has already been registered")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -1595,7 +1595,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Error: File '123' does not exist")
+					test.string(res.body.message).is("File '123' does not exist")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -1608,7 +1608,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Error: File '123' does not exist")
+					test.string(res.body.message).is("File '123' does not exist")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
@@ -1777,7 +1777,7 @@ describe('Checking media API', function(){
 					if (err) return done(err);
 
 					test.object(res.body).hasProperty("message")
-					test.string(res.body.message).is("Error: File '123' does not exist")
+					test.string(res.body.message).is("File '123' does not exist")
 					test.bool(res.body.error).isTrue()
 					done()
 				});
