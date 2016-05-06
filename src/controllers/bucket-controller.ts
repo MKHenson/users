@@ -203,7 +203,7 @@ export class BucketController extends Controller
                 throw new Error("Please specify the files to remove");
 
             files = req.params.files.split(",");
-            var filesRemoved = await manager.removeFilesById(files, req._user.dbEntry.username);
+            var filesRemoved = await manager.removeFilesByIdentifiers(files, req._user.dbEntry.username);
 
             okJson<users.IRemoveFiles>({
                 message: `Removed [${filesRemoved.length}] files`,
@@ -784,8 +784,9 @@ export class BucketController extends Controller
             if (meta && meta instanceof Error)
             {
                 var error = true;
-                var fileIds: Array<string> = files.map( file => file._id.toString() );
-                await manager.removeFilesById(fileIds);
+                var fileIds: Array<string> = files.map( file => file.identifier.toString() );
+                var filesRemoved = await manager.removeFilesByIdentifiers(fileIds);
+
                 files = [];
                 tokens = [];
                 msg = meta.toString();

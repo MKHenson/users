@@ -398,7 +398,7 @@ class BucketManager {
    * @param {string} user Optionally pass in the user to refine the search
    * @returns {Promise<string>} Returns the file IDs of the files removed
    */
-    removeFilesById(fileIDs, user) {
+    removeFilesByIdentifiers(fileIDs, user) {
         if (fileIDs.length == 0)
             return Promise.resolve([]);
         // Create the search query for each of the files

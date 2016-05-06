@@ -471,7 +471,7 @@ export class BucketManager
    * @param {string} user Optionally pass in the user to refine the search
    * @returns {Promise<string>} Returns the file IDs of the files removed
    */
-    removeFilesById(fileIDs: Array<string>, user? : string): Promise<Array<string>>
+    removeFilesByIdentifiers(fileIDs: Array<string>, user? : string): Promise<Array<string>>
     {
         if (fileIDs.length == 0)
             return Promise.resolve([]);

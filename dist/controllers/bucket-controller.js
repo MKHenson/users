@@ -186,7 +186,7 @@ class BucketController extends controller_1.Controller {
                 if (!req.params.files || req.params.files.trim() == "")
                     throw new Error("Please specify the files to remove");
                 files = req.params.files.split(",");
-                var filesRemoved = yield manager.removeFilesById(files, req._user.dbEntry.username);
+                var filesRemoved = yield manager.removeFilesByIdentifiers(files, req._user.dbEntry.username);
                 serializers_1.okJson({
                     message: `Removed [${filesRemoved.length}] files`,
                     error: false,
@@ -667,8 +667,8 @@ class BucketController extends controller_1.Controller {
                 // If we have any an error with the meta, then remove all the uploaded files
                 if (meta && meta instanceof Error) {
                     var error = true;
-                    var fileIds = files.map(file => file._id.toString());
-                    yield manager.removeFilesById(fileIds);
+                    var fileIds = files.map(file => file.identifier.toString());
+                    var filesRemoved = yield manager.removeFilesByIdentifiers(fileIds);
                     files = [];
                     tokens = [];
                     msg = meta.toString();
