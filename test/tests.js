@@ -1558,22 +1558,22 @@ describe('Checking media API', function(){
 				});
 		}).timeout(20000)
 
-		// it('did not upload a file when the meta was invalid', function(done){
-		// 	agent
-		// 		.post("/buckets/dinosaurs/upload").set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
-		// 		.set('Cookie', georgeCookie)
-		// 		.field('meta', 'BAD META')
-		// 		.attach('small-image', "file.png")
-		// 		.end(function(err, res){
-		// 			if (err) return done(err);
-		// 			test.object(res.body).hasProperty("message")
-		// 			test.object(res.body).hasProperty("tokens")
-		// 			test.string(res.body.message).is("Error: Meta data is not a valid JSON: SyntaxError: Unexpected token B in JSON at position 0")
-		// 			test.array(res.body.tokens).hasLength(0)
-		// 			test.bool(res.body.error).isTrue()
-		// 			done()
-		// 		});
-		// }).timeout(20000)
+		it('did not upload a file when the meta was invalid', function(done){
+			agent
+				.post("/buckets/dinosaurs/upload").set('content-type', 'application/x-www-form-urlencoded').set('Accept', 'application/json').expect(200).expect('Content-Type', /json/)
+				.set('Cookie', georgeCookie)
+				.field('meta', 'BAD META')
+				.attach('small-image', "file.png")
+				.end(function(err, res){
+					if (err) return done(err);
+					test.object(res.body).hasProperty("message")
+					test.object(res.body).hasProperty("tokens")
+					test.string(res.body.message).is("Error: Meta data is not a valid JSON: SyntaxError: Unexpected token B in JSON at position 0")
+					test.array(res.body.tokens).hasLength(0)
+					test.bool(res.body.error).isTrue()
+					done()
+				});
+		}).timeout(20000)
 
 		it('fetched the files of the dinosaur bucket', function(done){
 			agent
@@ -1676,7 +1676,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 
-					test.number(res.body.data.apiCallsUsed).is(6)
+					test.number(res.body.data.apiCallsUsed).is(8)
 					test.number(res.body.data.memoryUsed).is(226)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -1712,7 +1712,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 
-					test.number(res.body.data.apiCallsUsed).is(7)
+					test.number(res.body.data.apiCallsUsed).is(9)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -1744,7 +1744,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 
-					test.number(res.body.data.apiCallsUsed).is(8)
+					test.number(res.body.data.apiCallsUsed).is(10)
 					test.bool(res.body.error).isNotTrue()
 					done();
 				});
@@ -1869,7 +1869,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 
-					test.number(res.body.data.apiCallsUsed).is(11)
+					test.number(res.body.data.apiCallsUsed).is(13)
 					test.number(res.body.data.memoryUsed).is(226 * 2)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -1913,7 +1913,7 @@ describe('Checking media API', function(){
 				.end(function(err, res){
 					if (err) return done(err);
 
-					test.number(res.body.data.apiCallsUsed).is(13)
+					test.number(res.body.data.apiCallsUsed).is(15)
 					test.number(res.body.data.memoryUsed).is(226)
 					test.bool(res.body.error).isNotTrue()
 					done();
@@ -2027,7 +2027,7 @@ describe('Test WS API events are valid', function() {
         test.number(numWSCalls.activated).is(2)
         test.number(numWSCalls.bucketRemoved).is(4)
         test.number(numWSCalls.bucketUploaded).is(4)
-        test.number(numWSCalls.fileRemoved).is(3)
+        test.number(numWSCalls.fileRemoved).is(4)
         test.number(numWSCalls.fileUploaded).is(3)
         test.number(numWSCalls.metaRequest).is(5)
         test.number(numWSCalls.removed).is(2)
