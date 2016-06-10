@@ -567,7 +567,7 @@ class BucketManager {
         var files = this._files;
         return new Promise(function (resolve, reject) {
             var entry = {
-                name: part.name,
+                name: (part.filename || part.name),
                 user: user,
                 identifier: fileID,
                 bucketId: bucket.identifier,
