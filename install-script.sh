@@ -13,7 +13,7 @@ echo "Downloading latest version from github $(version)"
 
 #download latest
 wget https://github.com/MKHenson/users/archive/v$(version).zip
-unzip -o "v$(version).zip" "users-$(version)/dist/*"
+unzip -o "v$(version).zip" "users-$(version)/*"
 
 # Moves the dist folder to the current directory
 cp -r users-$(version)/* .

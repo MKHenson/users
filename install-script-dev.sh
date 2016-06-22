@@ -8,7 +8,7 @@ echo "Downloading latest version from github dev"
 
 #download latest
 wget https://github.com/MKHenson/users/archive/dev.zip
-unzip -o "dev.zip" "users-dev/dist/*"
+unzip -o "dev.zip" "users-dev/*"
 
 # Moves the dist folder to the current directory
 cp -r users-dev/* .
