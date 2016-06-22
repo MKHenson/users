@@ -22,6 +22,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 node_modules/
+dist/
 
 # Visual Studo 2015 cache/options directory
 .vs/
