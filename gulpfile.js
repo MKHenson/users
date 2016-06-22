@@ -28,7 +28,7 @@ gulp.task('ts-code', function() {
 // Copies the distribution files from src to the dist folder
 gulp.task('dist-files', function() {
 
-    return gulp.src(['src/dist/*.json'], { base: "src/dist/" })
+    return gulp.src(['src/dist-files/*.json'], { base: "src/dist-files/" })
         .pipe(gulp.dest(tsConfig.compilerOptions.outDir));
 });
 
