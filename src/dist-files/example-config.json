@@ -1,11 +1,11 @@
 {
     "host": "127.0.0.1",
-    "apiPrefix": "",
+    "apiPrefix": "/",
     "accountRedirectURL": "http://host.com/admin/message",
     "passwordResetURL": "http://host.com/admin/password-reset-form",
     "userCollection": "users",
-    "debugMode": false,
     "sessionCollection": "sessions",
+    "debugMode": false,
     "approvedDomains": [
         "webinate\\.net",
         "127.0.0.1:80",
@@ -16,14 +16,13 @@
         "^webinate\\.net$",
         "^.+\\.webinate\\.com$",
         "^webinate\\.org",
-        "^.+\\.webinate\\.org",
+        "^.+\\.webinate\\.org"
      ],
     "portHTTP": 80,
     "portHTTPS": 443,
     "databaseHost": "127.0.0.1",
     "databasePort": 27017,
     "ssl": false,
-    "debugMode": true,
     "sslKey": "",
     "sslCert": "",
     "sslRoot": "",
@@ -56,7 +55,7 @@
         }
     },
     "websocket": {
-        "port": 8080,
+        "port": 8063,
         "approvedSocketDomains": [
             "localhost",
             "^ws://www.webinate.net:123$",
@@ -64,7 +63,7 @@
             "^example\\.com$",
             "^.+\\.example\\.com$",
             "^example\\.org",
-            "^.+\\.example\\.org",
+            "^.+\\.example\\.org"
         ]
     }
 }
