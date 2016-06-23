@@ -174,6 +174,9 @@ export class CommsController extends events.EventEmitter
         {
             var headers = (<http.ServerRequest>ws.upgradeReq).headers;
 
+            if (cfg.debugMode)
+                winston.info(`Websocket connection origin: ${headers.origin}`, {process : process.pid})
+
             var clientApproved = false;
             for (var i = 0, l = cfg.websocket.approvedSocketDomains.length; i < l; i++)
             {
