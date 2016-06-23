@@ -1,5 +1,6 @@
 {
-    "host": "127.0.0.1",
+    "host": "localhost",
+    "hostName" : "webinate.net",
     "apiPrefix": "/",
     "accountRedirectURL": "http://host.com/admin/message",
     "passwordResetURL": "http://host.com/admin/password-reset-form",
