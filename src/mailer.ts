@@ -137,7 +137,7 @@ export class Mailer
                     auth: that._authorizer,
                     userId: 'me',
                     id: response.id,
-                    addLabelIds: ['UNREAD', 'INBOX', 'IMPORTANT']
+                    resource: { addLabelIds: ['UNREAD', 'INBOX', 'IMPORTANT'] }
                 }, function (err) {
                     if (!err) {
                         winston.info(`Modified email sent ${JSON.stringify(response)}`, { process: process.pid });
