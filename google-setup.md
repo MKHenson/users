@@ -1,13 +1,13 @@
 Setting Up with Google Developers
 =================================
 Users is built with both Google Storage and Gmail support. In order to use the upload and email features, you will need to have a Google Developers account.
-Each registered user can potentially create and upload data to private storage buckets. There are limits on the amounts that can be uploaded as well as number of API calls.
-Users also makes use of the Gmail API to send and recieve emails.
+Each registered user can create and upload data to a private storage bucket created for them. There are limits on the amounts that can be uploaded as well as number of API calls that can be made.
+We make use of the Gmail API to send emails to the admin as well as its registered users.
 
 ## Creating your application's google.keyFile file
 
 ### Setup Developers Account
-Go to the developers site and create yourself an [account](https://developers.google.com/)
+Go to the developer's site and create yourself an [account](https://developers.google.com/)
 
 ### Go to your console and enable the APISs
 [Login](https://console.developers.google.com/home/dashboard) to the developer console.
@@ -66,7 +66,7 @@ In the client name enter in the client_id. You can find the client_id in the JSO
 
 For the One ore More API Scopes, enter in the following:
 
-    https://mail.google.com/, https://www.googleapis.com/auth/gmail.compose, https://www.googleapis.com/auth/gmail.modify, https://www.googleapis.com/auth/gmail.send
+    https://mail.google.com/, https://www.googleapis.com/auth/gmail.compose, https://www.googleapis.com/auth/gmail.modify, https://www.googleapis.com/auth/gmail.send, https://www.googleapis.com/auth/gmail.insert
 
 Allowing us, to compose, draft, read and send emails.
 
