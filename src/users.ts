@@ -200,7 +200,7 @@ export class UserManager
 
         // If no admin user exists, so lets try to create one
         if (!user)
-            user = await this.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.host, UserPrivileges.SuperAdmin, {}, true);
+            user = await this.createUser(config.adminUser.username, config.adminUser.email, config.adminUser.password, (config.ssl ? "https://" : "http://") + config.hostName, UserPrivileges.SuperAdmin, {}, true);
 
         return;
 	}
@@ -280,7 +280,7 @@ export class UserManager
 	*/
 	private createActivationLink( user : User, origin : string ): string
 	{
-        return `${(this._config.ssl ? "https://" : "http://") }${this._config.host }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) }${this._config.apiPrefix}activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
+        return `${(this._config.ssl ? "https://" : "http://") }${this._config.hostName }:${(this._config.ssl ? this._config.portHTTPS : this._config.portHTTP) }${this._config.apiPrefix}activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
 	}
 
 	/**

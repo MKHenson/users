@@ -8,10 +8,10 @@ echo "Downloading latest version from github dev"
 
 #download latest
 wget https://github.com/MKHenson/users/archive/dev.zip
-unzip -o "dev.zip" "users-dev/dist/*"
+unzip -o "dev.zip" "users-dev/*"
 
 # Moves the dist folder to the current directory
-cp -r users-dev/dist/* .
+cp -r users-dev/* .
 
 # Remove modepress folder
 if [ -d "users-dev" ]; then
@@ -20,12 +20,6 @@ fi
 
 rm "dev.zip"
 
-# Copy the example config into config.json as long as it doesnt already exist
-if [ ! -f "config.json" ]; then
-	cp "example-config.json" "config.json"
-fi
-
-echo "Users successfully installed"
-echo "Please run an NPM update and edit the config.json"
+echo "Users successfully downloaded"
 exit
 } # this ensures the entire script is downloaded #

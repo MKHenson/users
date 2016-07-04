@@ -100,7 +100,9 @@ export class Mailer
     sendMail( to : string, from : string, subject : string, msg : string ): Promise<boolean>
     {
         var that = this;
-        return new Promise(function(resolve, reject){
+        return new Promise(function(resolve, reject) {
+
+            winston.info(`Sending email to: ${to}`, { process: process.pid });
 
             // Build the message string
             var message = that.buildMessage(to, from, subject, msg);
@@ -108,16 +110,44 @@ export class Mailer
             if ( that._debugMode )
                 return resolve(true);
 
+            winston.info(`Sending: ${message}`, { process: process.pid });
+
             // Send the message
-            that.gmail.users.messages.send({
+            that.gmail.users.messages.insert({
                 auth: that._authorizer,
                 userId: 'me',
                 resource: { raw: message }
             }, function(err, response) {
-                if (err)
-                    return reject(err);
 
-                resolve(true);
+                if (err) {
+                     winston.error(`Could not send email to ${to}: ${err}`, { process: process.pid });
+                     return reject(err);
+                }
+
+                // See explanation on next line
+                if ( that._apiEmail != to ) {
+                    winston.info(`Email sent ${JSON.stringify(response)} unmodified`, { process: process.pid });
+                    return resolve(true);
+                }
+
+                // When you send an email to yourself - it doesnt go to the inbox in gmail.
+                // You actually have to modify the sent email labels to tell it to do so.
+                // Sending to other emails is fine though
+                that.gmail.users.messages.modify({
+                    auth: that._authorizer,
+                    userId: 'me',
+                    id: response.id,
+                    resource: { addLabelIds: ['UNREAD', 'INBOX', 'IMPORTANT'] }
+                }, function (err) {
+                    if (!err) {
+                        winston.info(`Modified email sent ${JSON.stringify(response)}`, { process: process.pid });
+                        return resolve(true);
+                    }
+                    else {
+                        winston.error(`Could not modify email ${JSON.stringify(response)}: ${err}`, { process: process.pid });
+                        return reject(err);
+                    }
+                });
             });
         });
     }
@@ -132,12 +162,12 @@ export class Mailer
      */
     private buildMessage( to : string, from : string, subject : string, message : string ): string
     {
-        var str = ["Content-Type: text/plain; charset=\"UTF-8\"\n",
-            "MIME-Version: 1.0\n",
-            "Content-Transfer-Encoding: 7bit\n",
-            "to: ", to, "\n",
-            "from: ", from, "\n",
-            "subject: ", subject, "\n\n",
+        var str = ["Content-Type: text/plain; charset=\"UTF-8\"\r\n",
+            "MIME-Version: 1.0\r\n",
+            "Content-Transfer-Encoding: 7bit\r\n",
+            "to: ", to, "\r\n",
+            "from: ", from, "\r\n",
+            "subject: ", subject, "\r\n\r\n",
             message
         ].join('');
 

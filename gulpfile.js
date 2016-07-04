@@ -9,7 +9,7 @@ var tsConfig = JSON.parse(fs.readFileSync('tsconfig.json'));
 // Builds each of the ts files into JS files in the output folder
 gulp.task('ts-code', function() {
 
-    return gulp.src(['src/**/*.ts', 'src/**/*.json'], { base: "src" })
+    return gulp.src(['src/**/*.ts'], { base: "src" })
         .pipe(ts({
             "module": tsConfig.compilerOptions.module,
             "removeComments": tsConfig.compilerOptions.removeComments,
@@ -25,6 +25,13 @@ gulp.task('ts-code', function() {
         .pipe(gulp.dest(tsConfig.compilerOptions.outDir));
 });
 
+// Copies the distribution files from src to the dist folder
+gulp.task('dist-files', function() {
+
+    return gulp.src(['src/dist-files/*.json'], { base: "src/dist-files/" })
+        .pipe(gulp.dest(tsConfig.compilerOptions.outDir));
+});
+
 // Builds each of the ts files into JS files in the output folder
 gulp.task('ts-code-definitions', function() {
 
@@ -32,4 +39,4 @@ gulp.task('ts-code-definitions', function() {
         .pipe(gulp.dest(tsConfig.compilerOptions.outDir + "/definitions"));
 });
 
-gulp.task('build-all', ['ts-code', 'ts-code-definitions']);
+gulp.task('build-all', ['ts-code', 'ts-code-definitions', 'dist-files']);

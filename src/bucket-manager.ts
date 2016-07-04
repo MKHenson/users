@@ -674,7 +674,7 @@ export class BucketManager
         return new Promise<users.IFileEntry>(function (resolve, reject)
         {
             var entry: users.IFileEntry = {
-                name: part.name,
+                name: ( part.filename || part.name ),
                 user: user,
                 identifier: fileID,
                 bucketId: bucket.identifier,

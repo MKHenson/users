@@ -95,8 +95,8 @@ openDB(config).then(function (db)
 
     // Start node server.js
     var httpServer = http.createServer(app);
-    httpServer.listen(config.portHTTP);
-    winston.info(`Listening on HTTP port ${config.portHTTP}`, { process: process.pid });
+    httpServer.listen( {port: config.portHTTP, host: config.host } );
+    winston.info(`Listening on ${config.host}:${config.portHTTP}`, { process: process.pid });
 
     // If we use SSL then start listening for that as well
     if (config.ssl)
@@ -133,9 +133,9 @@ openDB(config).then(function (db)
         winston.info(`Attempting to start SSL server...`, { process: process.pid });
 
         var httpsServer = https.createServer({ key: privkey, cert: theCert, passphrase: config.sslPassPhrase, ca: caChain }, app);
-        httpsServer.listen(port);
+        httpsServer.listen( {port: port, host: config.host} );
 
-        winston.info(`Listening on HTTPS port ${port}`, { process: process.pid });
+        winston.info(`Listening on HTTPS ${config.host}:${port}`, { process: process.pid });
     }
 
     // Done!

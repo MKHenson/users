@@ -148,6 +148,7 @@ export class CommsController extends events.EventEmitter
         // Create the web socket server
         if (cfg.ssl)
         {
+            winston.info("Creating secure socket connection", { process: process.pid });
             var httpsServer: https.Server = null;
             var caChain = [fs.readFileSync(cfg.sslIntermediate), fs.readFileSync(cfg.sslRoot)];
             var privkey = cfg.sslKey ? fs.readFileSync(cfg.sslKey) : null;
@@ -159,7 +160,11 @@ export class CommsController extends events.EventEmitter
             this._server = new ws.Server({ server: httpsServer });
         }
         else
-            this._server = new ws.Server({ port: cfg.websocket.port });
+        {
+             winston.info("Creating regular socket connection", { process: process.pid });
+             this._server = new ws.Server({ port: cfg.websocket.port });
+        }
+
 
         winston.info("Websockets attempting to listen on HTTP port " + cfg.websocket.port, { process: process.pid });
 
@@ -174,6 +179,9 @@ export class CommsController extends events.EventEmitter
         {
             var headers = (<http.ServerRequest>ws.upgradeReq).headers;
 
+            if (cfg.debugMode)
+                winston.info(`Websocket connection origin: ${headers.origin}`, {process : process.pid})
+
             var clientApproved = false;
             for (var i = 0, l = cfg.websocket.approvedSocketDomains.length; i < l; i++)
             {
@@ -186,7 +194,7 @@ export class CommsController extends events.EventEmitter
 
             if (!clientApproved)
             {
-                winston.error(`A connection was made by ${headers.host || headers.origin} but it is not on the approved domain list. Make sure the host is on the approvedSocketDomains parameter in the config file.`);
+                winston.error(`A connection was made by ${headers.origin} but it is not on the approved domain list. Make sure the host is on the approvedSocketDomains parameter in the config file.`);
                 ws.terminate();
                 ws.close();
             }
