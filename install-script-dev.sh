@@ -7,7 +7,7 @@ set -e
 echo "Downloading latest version from github dev"
 
 #download latest
-wget https://github.com/MKHenson/users/archive/dev.zip
+wget https://github.com/Webinate/users/archive/dev.zip
 unzip -o "dev.zip" "users-dev/*"
 
 # Moves the dist folder to the current directory

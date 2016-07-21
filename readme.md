@@ -1,6 +1,5 @@
 Users
 ===============
-
 A small library providing utility methods for logging in and managing users. The application runs as a standalone
 server with a RESTful API that allows you to interact with the underlying functions. Users requires NodeJS v.0.12.0 (or IO.js),
 Node Package Manager (NPM) and a running instance of mongoDB
@@ -29,11 +28,11 @@ cd users
 
 If you want the latest stable release
 ```
-sudo curl -o- https://raw.githubusercontent.com/MKHenson/webinate-users/master/install-script.sh | bash
+sudo curl -o- https://raw.githubusercontent.com/Webinate/users/master/install-script.sh | bash
 ```
 If you want the latest dev release
 ```
-sudo curl -o- https://raw.githubusercontent.com/MKHenson/webinate-users/dev/install-script-dev.sh | bash
+sudo curl -o- https://raw.githubusercontent.com/Webinate/users/dev/install-script-dev.sh | bash
 ```
 
 3) Call 'npm install' to load the dependencies for building the project from source code
@@ -65,7 +64,7 @@ The server uses mongoDB as its database engine - make sure this is running befor
     node main.js --config="config.json" --logging="true" --logFile="logs.log" --numThreads="max"
 
 The config file must be formatted as a valid JSON.
-Please have a look at the [latest config definition](https://github.com/MKHenson/users/blob/master/src/definitions/custom/definitions.d.ts#L331)
+Please have a look at the [latest config definition](https://github.com/Webinate/users/blob/master/src/definitions/custom/definitions.d.ts#L331)
 for details of what each parameter does.
 
 ## Socket API
