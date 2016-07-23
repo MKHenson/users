@@ -5,14 +5,14 @@
 	"main": "server/Main.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/MKHenson/webinate-users.git"
+		"url": "https://github.com/Webinate/users.git"
 	},
 	"author": "Mathew Henson <mat@webinate.net> (http://webinate.net)",
 	"license": "ISC",
 	"bugs": {
-		"url": "https://github.com/MKHenson/webinate-users/issues"
+		"url": "https://github.com/Webinate/users/issues"
 	},
-	"homepage": "https://github.com/MKHenson/webinate-users",
+	"homepage": "https://github.com/Webinate/users",
 	"dependencies": {
         "entities": "~1.1.1",
         "morgan": "~1.5.1",
