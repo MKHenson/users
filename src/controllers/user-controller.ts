@@ -396,7 +396,7 @@ export class UserController extends Controller
         try
         {
             var token: def.IRegisterToken = req.body;
-            var user = await this._userManager.register(token.username, token.password, token.email, token.captcha, token.challenge, {}, req, res);
+            var user = await this._userManager.register(token.username, token.password, token.email, token.captcha, {}, req, res);
 
             return okJson<def.IAuthenticationResponse>({
 				message: (user ? "Please activate your account with the link sent to your email address" : "User is not authenticated"),

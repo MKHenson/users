@@ -4,10 +4,10 @@ import * as mongodb from "mongodb";
 import * as http from "http";
 import * as validator from "validator";
 import * as bcrypt from "bcryptjs";
-import * as recaptcha from "recaptcha-async";
 import * as bodyParser from "body-parser";
 import * as express from "express";
 import * as winston from "winston";
+import * as https from "https";
 
 import {CommsController} from "./controllers/comms-controller";
 import {EventType} from "./socket-event-types";
@@ -207,31 +207,35 @@ export class UserManager
 
     /**
 	* Checks if a Google captcha sent from a user is valid
-	* @param {string} captchaChallenge The captcha challenge
     * @param {string} captcha The captcha value the user guessed
 	* @param {http.ServerRequest} request
 	* @returns {Promise<boolean>}
 	*/
-    private checkCaptcha( captchaChallenge : string, captcha: string, request: express.Request ): Promise<boolean>
+    private checkCaptcha( captcha: string, request: express.Request ): Promise<boolean>
     {
         var that = this;
         return new Promise<boolean>(function(resolve, reject) {
 
-            // Create the captcha checker
-            var remoteIP: string = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
             var privatekey: string = that._config.captchaPrivateKey;
-            var captchaChecker = new recaptcha.reCaptcha();
+            https.get("https://www.google.com/recaptcha/api/siteverify?secret=" + privatekey + "&response=" + captcha, function(res) {
+                    var data = "";
+                    res.on('data', function (chunk) {
+                            data += chunk.toString();
+                    });
+                    res.on('end', function() {
+                        try {
+                            var parsedData = JSON.parse(data);
+                            if (!parsedData.success)
+                                return reject( new Error("Your captcha code seems to be wrong. Please try another."));
 
-            captchaChecker.on("data", function (captchaResult)
-            {
-                if (!captchaResult.is_valid)
-                    return reject( new Error("Your captcha code seems to be wrong. Please try another."));
+                            resolve(true);
 
-                resolve(true);
+                        } catch ( e ) {
+                            return reject( new Error("There was an error connecting to Google Captcha: " + e.message ));
+                        }
+                    });
             });
 
-            // Check for valid captcha
-            captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
         });
     }
 
@@ -241,13 +245,12 @@ export class UserManager
 	* @param {string} pass The users secret password
 	* @param {string} email The users email address
 	* @param {string} captcha The captcha value the user guessed
-	* @param {string} captchaChallenge The captcha challenge
     * @param {any} meta Any optional data associated with this user
 	* @param {http.ServerRequest} request
 	* @param {http.ServerResponse} response
 	* @returns {Promise<User>}
 	*/
-    async register(username: string = "", pass: string = "", email: string = "", captcha: string = "", captchaChallenge: string = "", meta: any = {}, request?: express.Request, response?: express.Response): Promise<User>
+    async register(username: string = "", pass: string = "", email: string = "", captcha: string = "", meta: any = {}, request?: express.Request, response?: express.Response): Promise<User>
 	{
         var origin = encodeURIComponent( request.headers["origin"] || request.headers["referer"] );
 
@@ -263,10 +266,9 @@ export class UserManager
         if (!email || email == "") throw new Error("Email cannot be null or empty");
         if (!validator.isEmail(email)) throw new Error("Please use a valid email address");
         if (request && (!captcha || captcha == "")) throw new Error("Captcha cannot be null or empty");
-        if (request && (!captchaChallenge || captchaChallenge == "")) throw new Error("Captcha challenge cannot be null or empty");
 
         // Check the captcha
-        await this.checkCaptcha( captchaChallenge, captcha, request);
+        await this.checkCaptcha( captcha, request );
 
         user = await this.createUser(username, email, pass, origin, UserPrivileges.Regular, meta);
         return user;
@@ -529,16 +531,6 @@ export class UserManager
 
         winston.info(`User '${username}' has been activated`, { process: process.pid });
         return true;
-	}
-
-	/**
-	* Creates the script tag for the Google captcha API
-	* @param {string}
-	*/
-	getCaptchaHTML(): string
-	{
-		var captchaChecker = new recaptcha.reCaptcha();
-		return captchaChecker.getCaptchaHtml(this._config.captchaPublicKey, "", this._config.ssl);
 	}
 
 	/**

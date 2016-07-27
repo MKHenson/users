@@ -14,7 +14,6 @@
 /// <reference path="./definitions/required/winston.d.ts" />
 /// <reference path="./definitions/required/ws.d.ts" />
 /// <reference path="./definitions/required/yargs.d.ts" />
-/// <reference path="./definitions/custom/recaptcha-async.d.ts" />
 /// <reference path="./definitions/custom/definitions.d.ts" />
 /// <reference path="./definitions/custom/googleapis.d.ts" />
 /// <reference path="./definitions/custom/google-auth-library.d.ts" />
