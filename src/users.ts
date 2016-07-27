@@ -216,24 +216,7 @@ export class UserManager
         var that = this;
         return new Promise<boolean>(function(resolve, reject) {
 
-            // Create the captcha checker
-            // var remoteIP: string = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
             var privatekey: string = that._config.captchaPrivateKey;
-            // var captchaChecker = new recaptcha.reCaptcha();
-
-            // captchaChecker.on("data", function (captchaResult)
-            // {
-            //     if (!captchaResult.is_valid)
-            //         return reject( new Error("Your captcha code seems to be wrong. Please try another."));
-
-            //     resolve(true);
-            // });
-
-            // // Check for valid captcha
-            // captchaChecker.checkAnswer(privatekey, remoteIP, captchaChallenge, captcha);
-
-
-
             https.get("https://www.google.com/recaptcha/api/siteverify?secret=" + privatekey + "&response=" + captcha, function(res) {
                     var data = "";
                     res.on('data', function (chunk) {
@@ -283,7 +266,6 @@ export class UserManager
         if (!email || email == "") throw new Error("Email cannot be null or empty");
         if (!validator.isEmail(email)) throw new Error("Please use a valid email address");
         if (request && (!captcha || captcha == "")) throw new Error("Captcha cannot be null or empty");
-        //if (request && (!captchaChallenge || captchaChallenge == "")) throw new Error("Captcha challenge cannot be null or empty");
 
         // Check the captcha
         await this.checkCaptcha( captcha, request );
