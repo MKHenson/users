@@ -353,7 +353,6 @@
         password: string;
         email: string;
         captcha?: string;
-        challenge?: string;
         meta?: any;
         privileges?: number;
     }
