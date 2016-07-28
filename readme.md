@@ -5,7 +5,7 @@ server with a RESTful API that allows you to interact with the underlying functi
 Node Package Manager (NPM) and a running instance of mongoDB
 
 ## Current stable version
-* Version 0.3.1
+* Version 0.3.2
 
 ## Requirements
 * [MongoDB v3](https://www.mongodb.com/)
