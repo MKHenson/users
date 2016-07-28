@@ -15,6 +15,7 @@ import * as def from "webinate-users";
 import {SessionManager, Session} from "./session";
 import {BucketManager} from "./bucket-manager";
 import {GMailer} from "./mailers/gmail"
+import {Mailguner} from "./mailers/mailgun"
 
 /*
 * Describes what kind of privileges the user has
@@ -182,10 +183,18 @@ export class UserManager
 		var that = this;
 		var config = this._config;
 
-        if (config.mail && config.mail.type == "gmail")
+        if (config.mail)
         {
-            this._mailer = new GMailer(config.debugMode);
-            this._mailer.initialize( config.mail.options as def.IGMail );
+            if (config.mail.type == "gmail")
+            {
+                this._mailer = new GMailer(config.debugMode);
+                this._mailer.initialize( config.mail.options as def.IGMail );
+            }
+            else if (config.mail.type == "mailgun")
+            {
+                this._mailer = new Mailguner(config.debugMode);
+                this._mailer.initialize( config.mail.options as def.IMailgun );
+            }
         }
 
         if (!this._mailer)

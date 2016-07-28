@@ -22,6 +22,7 @@
       "src/controllers/user-controller.ts",
       "src/bucket-manager.ts",
       "src/mailers/gmail.ts",
+      "src/mailers/mailgun.ts",
       "src/permission-controller.ts",
       "src/session.ts",
       "src/socket-api.ts",
