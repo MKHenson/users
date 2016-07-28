@@ -199,6 +199,35 @@
         approvedSocketDomains: Array<string>;
     }
 
+    /**
+     * Options for a gmail mailer
+     */
+    export interface IGMail
+    {
+        /*
+        * The email account to use the gmail API through. This account must be authorized to
+        * use this application. See: https://admin.google.com/AdminHome?fral=1#SecuritySettings:
+        */
+        apiEmail: string;
+
+        /*
+        * Path to the key file
+        */
+        keyFile: string;
+    }
+
+    /**
+     * Options for a mailgun mailer
+     */
+    export interface IMailgun
+    {
+        /** The domain for associated with the mailgun account */
+        domain: string;
+
+        /** The api key for your mailgun account */
+        apiKey: string;
+    }
+
     /*
     * Users stores data on an external cloud bucket with Google
     */
@@ -208,23 +237,6 @@
         * Path to the key file
         */
         keyFile: string;
-
-        /*
-        * Mail settings
-        */
-        mail: {
-
-            /*
-            * The email account to use the gmail API through. This account must be authorized to
-            * use this application. See: https://admin.google.com/AdminHome?fral=1#SecuritySettings:
-            */
-            apiEmail: string;
-
-            /*
-            * The email to use as the from field when sending mail. This can be different from the apiEmail.
-            */
-            from: string;
-        };
 
         /*
         * Describes the bucket details
@@ -550,6 +562,28 @@
             }
         */
         adminUser: IAdminUser;
+
+        /**
+         * Settings related to sending emails
+         */
+        mail: {
+
+            /**
+             * The from field sent to recipients
+             */
+            from: string;
+
+            /**
+             * Specify the type of mailer to use.
+             * Currently we support either 'gmail' or 'mailgun'
+             */
+            type: "gmail" | "mailgun";
+
+             /**
+             * Options to be sent to the desired mailer
+             */
+            options: IGMail | IMailgun;
+        }
 
         /**
         * Information relating to the Google storage platform

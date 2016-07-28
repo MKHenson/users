@@ -182,11 +182,14 @@ export class UserManager
 		var that = this;
 		var config = this._config;
 
-        if (config.google.bucket && config.google.keyFile)
+        if (config.mail && config.mail.type == "gmail")
         {
             this._mailer = new Mailer(config.debugMode);
-            this._mailer.initialize(config.google.keyFile, config.google.mail.apiEmail);
+            this._mailer.initialize( (config.mail.options as def.IGMail).keyFile, (config.mail.options as def.IGMail).apiEmail );
         }
+
+        if (!this._mailer)
+            winston.warn("No mailer has been specified and so the API cannot send emails. Please check your config.")
 
 
         // Clear all existing indices and then re-add them
@@ -333,7 +336,7 @@ export class UserManager
             throw new Error(`No email account has been setup`);
 
         try {
-            await this._mailer.sendMail( this._config.adminUser.email, this._config.google.mail.from, `Message from ${( name ? name : "a user" )}`,
+            await this._mailer.sendMail( this._config.adminUser.email, this._config.mail.from, `Message from ${( name ? name : "a user" )}`,
                 message + "<br /><br />Email: " + (from ? from : "") );
         } catch (err) {
             new Error(`Could not send email to user: ${err.message}`)
@@ -377,7 +380,7 @@ export class UserManager
 
         try {
             // Send mail using the mailer
-            await this._mailer.sendMail( user.dbEntry.email, this._config.google.mail.from, "Activate your account", message );
+            await this._mailer.sendMail( user.dbEntry.email, this._config.mail.from, "Activate your account", message );
         } catch (err) {
             new Error(`Could not send email to user: ${err.message}`)
         }
@@ -419,7 +422,7 @@ export class UserManager
 
         // Send mail using the mailer
         try {
-            await this._mailer.sendMail( user.dbEntry.email, this._config.google.mail.from, "Reset Password", message );
+            await this._mailer.sendMail( user.dbEntry.email, this._config.mail.from, "Reset Password", message );
         }
         catch(err) {
             throw new Error(`Could not send email to user: ${err.message}`)
@@ -630,7 +633,7 @@ export class UserManager
         // Send mail using the mailer
         await this._mailer.sendMail(
             newUser.dbEntry.email,
-            this._config.google.mail.from,
+            this._config.mail.from,
             "Activate your account",
             message
         );
