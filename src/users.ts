@@ -14,7 +14,7 @@ import {EventType} from "./socket-event-types";
 import * as def from "webinate-users";
 import {SessionManager, Session} from "./session";
 import {BucketManager} from "./bucket-manager";
-import {Mailer} from "./mailer"
+import {GMailer} from "./mailers/gmail"
 
 /*
 * Describes what kind of privileges the user has
@@ -126,7 +126,7 @@ export class UserManager
 	public sessionManager: SessionManager;
 	private _userCollection: mongodb.Collection;
 	private _config: def.IConfig;
-    private _mailer : Mailer;
+    private _mailer : def.IMailer;
 
 	/**
 	* Creates an instance of the user manager
@@ -184,8 +184,8 @@ export class UserManager
 
         if (config.mail && config.mail.type == "gmail")
         {
-            this._mailer = new Mailer(config.debugMode);
-            this._mailer.initialize( (config.mail.options as def.IGMail).keyFile, (config.mail.options as def.IGMail).apiEmail );
+            this._mailer = new GMailer(config.debugMode);
+            this._mailer.initialize( config.mail.options as def.IGMail );
         }
 
         if (!this._mailer)

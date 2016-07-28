@@ -4,11 +4,12 @@ import * as google from "googleapis";
 import * as googleAuth from "google-auth-library";
 import * as fs from "fs";
 import * as winston from "winston";
+import * as def from "webinate-users";
 
 /**
  * A simple class for sending mail using Google Mail's API
  */
-export class Mailer
+export class GMailer implements def.IMailer
 {
     public gmail: google.GMail;
     private _keyFile: any;
@@ -33,18 +34,17 @@ export class Mailer
 
     /**
      * Attempts to initialize the mailer
-     * @param {string} keyFilePath The path to the Google API key file
-     * @param {string} apiEmail The email address of the authorized email using the Gmail API
+     * @param {IGMail} options The gmail options for this mailer
      * @returns {Promise<boolean>}
      */
-    initialize(keyFilePath: string, apiEmail: string): Promise<boolean>
+    initialize(options: def.IGMail ): Promise<boolean>
     {
-        var that : Mailer = this;
+        var that = this;
         return new Promise(function(resolve, reject) {
 
             that.gmail = google.gmail('v1');
-            that._keyFile = JSON.parse( fs.readFileSync(keyFilePath, "utf8") );
-            that._apiEmail = apiEmail;
+            that._keyFile = JSON.parse( fs.readFileSync(options.keyFile, "utf8") );
+            that._apiEmail = options.apiEmail;
 
             // Authorize a client with the loaded credentials
             that.authorize(that._keyFile)
