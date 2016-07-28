@@ -24,6 +24,8 @@ bld/
 node_modules/
 dist/
 
+changes.md
+
 # Visual Studo 2015 cache/options directory
 .vs/
 
