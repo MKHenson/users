@@ -199,10 +199,32 @@
         approvedSocketDomains: Array<string>;
     }
 
+    export interface IMailer
+    {
+        /**
+         * Attempts to initialize the mailer
+         * @param {IMailOptions} options
+         * @returns {Promise<boolean>}
+         */
+        initialize(options: IMailOptions) : Promise<boolean>
+
+        /**
+         * Sends an email
+         * @param {stirng} to The email address to send the message to
+         * @param {stirng} from The email we're sending from
+         * @param {stirng} subject The message subject
+         * @param {stirng} msg The message to be sent
+         * @returns {Promise<boolean>}
+         */
+        sendMail( to : string, from : string, subject : string, msg : string ): Promise<boolean>
+    }
+
+    export interface IMailOptions { }
+
     /**
      * Options for a gmail mailer
      */
-    export interface IGMail
+    export interface IGMail extends IMailOptions
     {
         /*
         * The email account to use the gmail API through. This account must be authorized to
@@ -219,7 +241,7 @@
     /**
      * Options for a mailgun mailer
      */
-    export interface IMailgun
+    export interface IMailgun extends IMailOptions
     {
         /** The domain for associated with the mailgun account */
         domain: string;
