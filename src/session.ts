@@ -3,7 +3,7 @@
 import * as http from "http";
 import * as mongodb from "mongodb";
 import {ISessionEntry} from "webinate-users";
-import {EventEmitter} from "events"
+import {EventEmitter} from "events";
 
 /*
 * Describes the options for the session
@@ -36,11 +36,15 @@ export interface ISessionOptions
 
 	/**
 	* If you wish to create a persistent session (one that will last after the user closes the window and visits the site again) you must specify a lifetime as a number of seconds.
-	* Common values are 86400 for one day, and 604800 for one week.
 	* The lifetime controls both when the browser's cookie will expire, and when the session object will be freed by the sessions module.
 	* By default, the browser cookie will expire when the window is closed, and the session object will be freed 24 hours after the last request is seen.
 	*/
 	lifetime?: number;
+
+	/**
+	* Same as lifetime, but the extended version.
+	*/
+	lifetimeExtended? : number;
 }
 
 /**
@@ -66,7 +70,8 @@ export class SessionManager extends EventEmitter
 		this._options = {};
 		this._options.path = options.path || "/";
 		this._options.domain = options.domain || "";
-		this._options.lifetime = options.lifetime || 60 * 30; //30 minutes
+		this._options.lifetime = options.lifetime || 60 * 30; // 30 minutes
+		this._options.lifetime = options.lifetime || 60 * 60 * 48; // 2 days
 		this._options.persistent = options.persistent || true;
 		this._options.secure = options.secure || false;
     }
@@ -114,7 +119,7 @@ export class SessionManager extends EventEmitter
 			var session = new Session(sId, this._options);
 			session.expiration = -1;
 
-			// Adds / updates the DB with the new session
+			// Deletes the session entry
 			var result = await this._dbCollection.deleteOne( <ISessionEntry>{ sessionId: session.sessionId });
 
 			this.emit("sessionRemoved", sId);
@@ -150,7 +155,8 @@ export class SessionManager extends EventEmitter
 				return null;
 
 			// Create a new session
-			var session = new Session(sessionId, this._options, sessionDB);
+			var session = new Session(sessionId, this._options);
+			session.open(sessionDB);
 
 			// Adds / updates the DB with the new session
 			var result = await this._dbCollection.updateOne({ sessionId: session.sessionId }, session.save());
@@ -173,12 +179,15 @@ export class SessionManager extends EventEmitter
 
 	/**
 	* Attempts to create a session from the request object of the client
+	* @param {boolean} shortTerm If true, we use the short term cookie. Otherwise the longer term one is used. (See session options)
 	* @param {http.ServerRequest} request
 	* @returns {Promise<Session>}
 	*/
-	async createSession(request: http.ServerRequest, response?: http.ServerResponse): Promise<Session>
+	async createSession( shortTerm : boolean, request: http.ServerRequest, response?: http.ServerResponse): Promise<Session>
 	{
-		var session = new Session(this.createID(), this._options, null);
+		var session = new Session( this.createID(), this._options );
+
+		session.data.shortTerm = shortTerm;
 
 		// Adds / updates the DB with the new session
 		var insertResult = await this._dbCollection.insertOne(session.save());
@@ -305,7 +314,7 @@ export class Session
 	/*
 	* Any custom data associated with the session
 	*/
-	data: any;
+	data: { shortTerm : boolean; };
 
 	/**
 	* The specific time when this session will expire
@@ -323,15 +332,12 @@ export class Session
 	* @param {SessionOptions} options The options associated with this session
 	* @param {ISessionEntry} data The data of the session in the database
 	*/
-	constructor(sessionId: string, options: ISessionOptions, data?: ISessionEntry)
+	constructor(sessionId: string, options: ISessionOptions )
 	{
 		this.sessionId = sessionId;
-		this.data = data || {};
+		this.data = { shortTerm : true };
 		this.options = options;
 		this.expiration = (new Date(Date.now() + options.lifetime * 1000)).getTime();
-
-		if (data)
-			this.open(data);
 	}
 
 	/**
@@ -351,10 +357,11 @@ export class Session
 	*/
 	save(): ISessionEntry
 	{
-		var data: any = {};
-		data.sessionId = this.sessionId;
-		data.data = this.data;
-		data.expiration = (new Date(Date.now() + this.options.lifetime * 1000)).getTime();
+		var data: ISessionEntry = {
+			sessionId: this.sessionId,
+			data: this.data,
+			expiration: (new Date(Date.now() + ( this.data.shortTerm ? this.options.lifetime : this.options.lifetimeExtended ) * 1000)).getTime()
+		};
 		return data;
 	}
 

@@ -758,10 +758,7 @@ export class UserManager
         if (result.matchedCount === 0)
             throw new Error("Could not find the user in the database, please make sure its setup correctly");
 
-        if (!rememberMe)
-            return user;
-
-        var session: Session = await this.sessionManager.createSession(request, response);
+        var session: Session = await this.sessionManager.createSession(!rememberMe, request, response);
         result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } });
 
         if (result.matchedCount === 0)

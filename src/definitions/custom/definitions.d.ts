@@ -170,10 +170,10 @@
     */
     export interface ISessionEntry
     {
-        _id: any;
-        sessionId: string;
-        data: any;
-        expiration: number;
+        _id?: any;
+        sessionId?: string;
+        data?: any;
+        expiration?: number;
     }
 
     /*
@@ -559,6 +559,12 @@
         * e.g 1800
         */
         sessionLifetime?: number;
+
+        /**
+        * The longer period length of user sessions in seconds (Typically when a user clicks a 'remember me' type of button)
+        * e.g (60 * 60 * 24 * 2) = 2 days
+        */
+        sessionLifetimeExtended?: number;
 
         /**
         * The private key to use for Google captcha
