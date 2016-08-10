@@ -34,6 +34,7 @@
     "sessionDomain": "",
     "sessionPersistent": true,
     "sessionLifetime": 1800,
+    "sessionLifetimeExtended": 172800,
     "captchaPrivateKey": "GOOGLE_CAPTHCA_PRIVATE_KEY",
     "captchaPublicKey": "GOOGLE_CAPTHCA_PUBLIC_KEY",
     "adminUser": {
