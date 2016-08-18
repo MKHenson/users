@@ -9,8 +9,8 @@ import * as express from "express";
 import * as winston from "winston";
 import * as https from "https";
 
-import {CommsController} from "./controllers/comms-controller";
-import {EventType} from "./socket-event-types";
+import {CommsController} from "./socket-api/comms-controller";
+import {EventType} from "./socket-api/socket-event-types";
 import * as def from "webinate-users";
 import {SessionManager, Session} from "./session";
 import {BucketManager} from "./bucket-manager";

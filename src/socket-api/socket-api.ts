@@ -1,7 +1,8 @@
 "use strict";
 
-import {UserManager, User, UserPrivileges} from "./users";
-import {CommsController, ClientEvent} from "./controllers/comms-controller";
+import {UserManager, User, UserPrivileges} from "../users";
+import {ClientEvent} from "./client-event";
+import {CommsController} from "./comms-controller";
 import {EventType, EventResponseType} from "./socket-event-types";
 import * as def from "webinate-users";
 

@@ -9,116 +9,10 @@ import * as http from "http";
 import * as fs from "fs";
 import * as winston from "winston";
 import {UserManager, User} from "../users";
-import {EventResponseType, EventType} from "../socket-event-types";
-import {SocketAPI} from "../socket-api";
-
-interface ISocketClient extends ws
-{
-    clientConnection: ClientConnection;
-}
-
-/**
- * An event class that is emitted to all listeners of the communications controller.
- * This wraps data around events sent via the web socket to the users server. Optionally
- * these events can respond to the client who initiated the event as well as to all listeners.
- */
-export class ClientEvent<T extends def.SocketEvents.IEvent>
-{
-    /** The client who initiated the request */
-    client: ClientConnection;
-
-    /** The event sent from the client */
-    clientEvent: T;
-
-    /** An optional response event to be sent back to the client or all connected clients. This is dependent on the responseType */
-    responseEvent: def.SocketEvents.IEvent;
-
-    /** Describes how users should respond to a socket event. By default the response is EventResponseType.NoResponse.
-     * if EventResponseType.RespondClient then the responseEvent is sent back to the initiating client.
-     * if EventResponseType.ReBroadcast then the responseEvent is sent to all clients.
-     */
-    responseType: EventResponseType;
-
-    /**
-     * BY default the error is null, but if set, then an error response is given to the client
-     */
-    error : Error;
-
-    constructor(event: T, client: ClientConnection)
-    {
-        this.client = client;
-        this.error = null;
-        this.clientEvent = event;
-        this.responseType = EventResponseType.NoResponse;
-    }
-}
-
-/**
- * A wrapper class for client connections made to the CommsController
- */
-class ClientConnection
-{
-    public ws: ISocketClient;
-    public user: User;
-    public domain: string;
-    private _controller: CommsController;
-
-    constructor(ws: ws, domain: string, controller : CommsController)
-    {
-        var that = this;
-        this.domain = domain;
-        this._controller = controller;
-
-        UserManager.get.loggedIn(ws.upgradeReq, null).then(function (user)
-        {
-            (<ISocketClient>ws).clientConnection = that;
-            that.ws = (<ISocketClient>ws);
-            that.user = user;
-            ws.on('message', that.onMessage.bind(that));
-            ws.on('close', that.onClose.bind(that));
-            ws.on('error', that.onError.bind(that));
-
-        }).catch(this.onError);
-    }
-
-    /**
-	* Called whenever we recieve a message from a client
-    * @param {string|any} message
-	*/
-    private onMessage(message: string)
-    {
-        winston.info(`Received message from client: '${message}'`, { process: process.pid } );
-        try {
-            var event : def.SocketEvents.IEvent = JSON.parse(message);
-            this._controller.alertMessage(new ClientEvent(event, this));
-        }
-        catch(err) {
-            winston.error(`Could not parse socket message: '${err}'`, { process: process.pid } );
-        }
-    }
-
-    /**
-	* Called whenever a client disconnnects
-	*/
-    private onClose()
-    {
-        this.ws.removeAllListeners("message");
-        this.ws.removeAllListeners("close");
-        this.ws.removeAllListeners("error");
-        this.ws.clientConnection = null;
-        this.ws = null;
-        this._controller = null;
-    }
-
-    /**
-	* Called whenever an error has occurred
-    * @param {Error} err
-	*/
-    private onError(err: Error)
-    {
-        winston.error(`An error has occurred for web socket : '${err.message}'`, { process: process.pid })
-    }
-}
+import {EventResponseType, EventType} from "./socket-event-types";
+import {SocketAPI} from "./socket-api";
+import {ClientConnection} from "./client-connection";
+import {ClientEvent} from "./client-event";
 
 /**
 * A controller that deals with any any IPC or web socket communications
@@ -187,7 +81,7 @@ export class CommsController extends events.EventEmitter
             {
                 if ((headers.origin && headers.origin.match(new RegExp(cfg.websocket.approvedSocketDomains[i]))))
                 {
-                    new ClientConnection(ws, cfg.websocket.approvedSocketDomains[i], that);
+                    new ClientConnection(ws, headers.origin, that);
                     clientApproved = true;
                 }
             }
@@ -216,7 +110,7 @@ export class CommsController extends events.EventEmitter
         this.emit( EventType[event.clientEvent.eventType], event );
 
         if (event.responseType != EventResponseType.NoResponse && !event.responseEvent)
-            return winston.error(`Websocket alert error: The response type is expecting a responseEvent but one is not created`, { process: process.pid } );
+            return winston.error(`Websocket alert error: The response type is expecting a responseEvent but none exist`, { process: process.pid } );
 
         if ( event.responseType == EventResponseType.RespondClient )
             this.broadcastEventToClient(event.responseEvent, event.client);
@@ -258,12 +152,12 @@ export class CommsController extends events.EventEmitter
         {
             var numResponded = 0,
                 errorOccurred = false,
-                releventClients: Array<ISocketClient>  = [];
+                releventClients: Array<ws>  = [];
 
             // First find all listening clients that need to be notified when this event happens
             for (var i = 0, l = that._server.clients.length; i < l; i++)
             {
-                var client: ISocketClient = <ISocketClient>that._server.clients[i];
+                var client = that._server.clients[i];
                 releventClients.push(client);
             }
 
@@ -271,7 +165,7 @@ export class CommsController extends events.EventEmitter
             var clientLength = releventClients.length;
             for (var i = 0; i < clientLength; i++)
             {
-                var client: ISocketClient = releventClients[i];
+                var client = releventClients[i];
                 client.send(JSON.stringify(event), undefined, function (error: Error)
                 {
                     if (errorOccurred)

@@ -16,8 +16,8 @@ import * as validator from "validator";
 import * as compression from "compression";
 import * as winston from "winston";
 import * as gcloud from "gcloud";
-import {CommsController} from "./comms-controller";
-import {EventType} from "../socket-event-types";
+import {CommsController} from "../socket-api/comms-controller";
+import {EventType} from "../socket-api/socket-event-types";
 import * as def from "webinate-users";
 import {okJson, errJson} from "../serializers";
 

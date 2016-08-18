@@ -12,8 +12,8 @@ import * as winston from "winston";
 import {BucketController} from "./controllers/bucket-controller";
 import {UserController} from "./controllers/user-controller";
 import {CORSController} from "./controllers/cors-controller";
-import {CommsController} from "./controllers/comms-controller";
 import {ErrorController} from "./controllers/error-controller";
+import {CommsController} from "./socket-api/comms-controller";
 import * as yargs from "yargs";
 import * as mongodb from "mongodb";
 
