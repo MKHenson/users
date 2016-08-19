@@ -811,7 +811,7 @@ export class BucketController extends Controller
             for (var i = 0, l = files.length; i < l; i++)
             {
                 // Send file added events to sockets
-                var token: def.SocketEvents.IFileToken = { username: user, type: ClientInstructionType[ClientInstructionType.FileUploaded], file: files[i] };
+                var token: def.SocketTokens.IFileToken = { username: user, type: ClientInstructionType[ClientInstructionType.FileUploaded], file: files[i] };
                 await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, user))
             }
 

@@ -51,7 +51,7 @@ export class ClientConnection
     {
         winston.info(`Received message from client: '${message}'`, { process: process.pid } );
         try {
-            var token : def.SocketEvents.IToken = JSON.parse(message);
+            var token : def.SocketTokens.IToken = JSON.parse(message);
             this._controller.processServerInstruction(new ServerInstruction(token, this));
         }
         catch(err) {

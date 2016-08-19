@@ -167,7 +167,7 @@ export class UserManager
         if (useEntry)
         {
             // Send logged out event to socket
-            var token: def.SocketEvents.IUserToken = { username: useEntry.username, type: ClientInstructionType[ClientInstructionType.Logout] };
+            var token: def.SocketTokens.IUserToken = { username: useEntry.username, type: ClientInstructionType[ClientInstructionType.Logout] };
             await CommsController.singleton.processClientInstruction( new ClientInstruction(token, null, useEntry.username));
             winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
         }
@@ -326,7 +326,7 @@ export class UserManager
         var result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
 
         // Send activated event
-        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Activated] };
+        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Activated] };
         await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
 
         winston.info(`User '${username}' has been activated`, { process: process.pid });
@@ -539,7 +539,7 @@ export class UserManager
         await this._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
 
         // Send activated event
-        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Activated]  };
+        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Activated]  };
         await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
 
         winston.info(`User '${username}' has been activated`, { process: process.pid });
@@ -682,7 +682,7 @@ export class UserManager
             throw new Error("Could not remove the user from the database");
 
         // Send event to sockets
-        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Removed] };
+        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Removed] };
         CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
 
         winston.info(`User '${username}' has been removed`, { process: process.pid });
@@ -766,7 +766,7 @@ export class UserManager
             throw new Error("Could not find the user in the database, please make sure its setup correctly");
 
         // Send logged in event to socket
-        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Login] };
+        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Login] };
         await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
         return user;
 	}

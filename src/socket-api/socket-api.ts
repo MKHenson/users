@@ -27,7 +27,7 @@ export class SocketAPI
      * Responds to a meta request from a client
      * @param {SocketEvents.IMetaEvent} e
      */
-    private onMeta( e: ServerInstruction<def.SocketEvents.IMetaToken> )
+    private onMeta( e: ServerInstruction<def.SocketTokens.IMetaToken> )
     {
         var comms = this._comms;
 
@@ -54,23 +54,23 @@ export class SocketAPI
 
         }).then(function( metaVal ) {
 
-            let responseToken : def.SocketEvents.IMetaToken = {
+            let responseToken : def.SocketTokens.IMetaToken = {
                 type : ClientInstructionType[ClientInstructionType.MetaRequest],
                 val: metaVal,
                 property: e.token.property,
                 username: e.token.username
             };
 
-            comms.processClientInstruction(new ClientInstruction<def.SocketEvents.IMetaToken>( responseToken, [e.from] ));
+            comms.processClientInstruction(new ClientInstruction<def.SocketTokens.IMetaToken>( responseToken, [e.from] ));
 
         }).catch(function( err: Error ) {
 
-            let responseToken : def.SocketEvents.IMetaToken = {
+            let responseToken : def.SocketTokens.IMetaToken = {
                 type : ClientInstructionType[ClientInstructionType.MetaRequest],
                 error: err.message
             };
 
-            comms.processClientInstruction(new ClientInstruction<def.SocketEvents.IMetaToken>( responseToken, [e.from] ));
+            comms.processClientInstruction(new ClientInstruction<def.SocketTokens.IMetaToken>( responseToken, [e.from] ));
         });
     }
 }

@@ -62,7 +62,7 @@ export class CommsController extends events.EventEmitter
 	 * Sends an instruction to the relevant client connections
      * @param {ClientInstruction<def.SocketEvents.IToken>} instruction The instruction from the server
 	 */
-    processClientInstruction( instruction: ClientInstruction<def.SocketEvents.IToken> )
+    processClientInstruction( instruction: ClientInstruction<def.SocketTokens.IToken> )
     {
         let recipients: ClientConnection[];
 
@@ -89,7 +89,7 @@ export class CommsController extends events.EventEmitter
      * instruction - and in some cases might resond to the client with a ClientInstruction.
      * @param {ServerInstruction<def.SocketEvents.IToken>} instruction The instruction from the client
 	 */
-    processServerInstruction( instruction: ServerInstruction<def.SocketEvents.IToken> )
+    processServerInstruction( instruction: ServerInstruction<def.SocketTokens.IToken> )
     {
         if (!instruction.token)
             return winston.error(`Websocket error: An instruction was sent from '${instruction.from.domain}' without a token`, { process: process.pid } );
@@ -104,7 +104,7 @@ export class CommsController extends events.EventEmitter
     /**
      * Attempts to send a token to a specific client
      */
-    private sendToken(connection : ClientConnection, token : def.SocketEvents.IToken) : Promise<void>
+    private sendToken(connection : ClientConnection, token : def.SocketTokens.IToken) : Promise<void>
     {
         return new Promise<void>(function(resolve, reject) {
             let serializedData: string;

@@ -8,7 +8,7 @@
     /*
     * Describes the different types of event interfaces we can use to interact with the system via web sockets
     */
-    export module SocketEvents
+    export module SocketTokens
     {
         export type ClientInstructionType =  (
             'Login' |
