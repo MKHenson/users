@@ -1,6 +1,6 @@
 {
   "name": "webinate-users-tests",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Tests each of the functions for the users API and web socket endpoints",
   "main": "tests.js",
   "author": "Mathew Henson",
