@@ -11,7 +11,8 @@ import * as zlib from "zlib"
 import * as compressible from "compressible"
 import express = require("express");
 import {CommsController} from "./socket-api/comms-controller";
-import {EventType} from "./socket-api/socket-event-types";
+import {ClientInstructionType} from "./socket-api/socket-event-types";
+import {ClientInstruction} from "./socket-api/client-instruction";
 import * as def from "webinate-users";
 
 /**
@@ -270,8 +271,8 @@ export class BucketManager
         var updateResult = await stats.updateOne(<users.IStorageStats>{ user: user }, { $inc: <users.IStorageStats>{ apiCallsUsed: 1 } });
 
         // Send bucket added events to sockets
-        var fEvent: def.SocketEvents.IBucketAddedEvent = { eventType: EventType.BucketUploaded, bucket: bucketEntry, username: user, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(fEvent);
+        var token: def.SocketEvents.IBucketToken = { type: ClientInstructionType[ClientInstructionType.BucketUploaded], bucket: bucketEntry, username: user };
+        await CommsController.singleton.processClientInstruction( new ClientInstruction(token, null, user));
         return gBucket;
     }
 
@@ -379,8 +380,8 @@ export class BucketManager
         var result = await stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ apiCallsUsed : 1 } });
 
         // Send events to sockets
-        var fEvent: def.SocketEvents.IBucketRemovedEvent = { eventType: EventType.BucketRemoved, bucket: bucketEntry, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(fEvent);
+        var token: def.SocketEvents.IBucketToken = { type: ClientInstructionType[ClientInstructionType.BucketRemoved], bucket: bucketEntry, username : bucketEntry.user };
+        await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, bucketEntry.user ));
 
         return bucketEntry;
     }
@@ -433,8 +434,8 @@ export class BucketManager
         await stats.updateOne(<users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } });
 
         // Update any listeners on the sockets
-        var fEvent: def.SocketEvents.IFileRemovedEvent = { eventType: EventType.FileRemoved, file: fileEntry, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(fEvent);
+        var token: def.SocketEvents.IFileToken = { type: ClientInstructionType[ClientInstructionType.FileRemoved], file: fileEntry, username : fileEntry.user };
+        await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, fileEntry.user));
 
         return fileEntry;
     }

@@ -1,9 +1,11 @@
 "use strict";
 
+import * as winston from "winston";
 import {UserManager, User, UserPrivileges} from "../users";
-import {ClientEvent} from "./client-event";
+import {ServerInstruction} from "./server-instruction";
+import {ClientInstruction} from "./client-instruction";
 import {CommsController} from "./comms-controller";
-import {EventType, EventResponseType} from "./socket-event-types";
+import {ClientInstructionType, ServerInstructionType} from "./socket-event-types";
 import * as def from "webinate-users";
 
 /**
@@ -18,60 +20,57 @@ export class SocketAPI
         this._comms = comms;
 
         // Setup all socket API listeners
-        comms.on( EventType[EventType.Echo], this.onEcho.bind(this) );
-        comms.on( EventType[EventType.MetaRequest], this.onMeta.bind(this) );
+        comms.on( ServerInstructionType[ServerInstructionType.MetaRequest], this.onMeta.bind(this) );
     }
 
     /**
      * Responds to a meta request from a client
      * @param {SocketEvents.IMetaEvent} e
      */
-    private onMeta( e: ClientEvent<def.SocketEvents.IMetaEvent> )
+    private onMeta( e: ServerInstruction<def.SocketEvents.IMetaToken> )
     {
         var comms = this._comms;
 
         if (!UserManager.get)
             return;
 
-        UserManager.get.getUser(e.clientEvent.username).then(function(user) {
+        UserManager.get.getUser(e.token.username).then(function(user) {
 
             if ( !user )
-                return Promise.reject("Could not find user " + e.clientEvent.username );
-            if ( e.clientEvent.property && e.clientEvent.val !== undefined )
-                return UserManager.get.setMetaVal(user.dbEntry, e.clientEvent.property, e.clientEvent.val );
-            else if ( e.clientEvent.property )
-                return UserManager.get.getMetaVal(user.dbEntry, e.clientEvent.property );
-            else if ( e.clientEvent.val )
-                return UserManager.get.setMeta(user.dbEntry, e.clientEvent.val );
+                return Promise.reject(new Error("Could not find user " + e.token.username ));
+
+            // Make sure the client is authorized to make this request
+            if ( !e.from.authorizedThirdParty )
+                return Promise.reject( new Error("You do not have permission to make this request"));
+
+            if ( e.token.property && e.token.val !== undefined )
+                return UserManager.get.setMetaVal(user.dbEntry, e.token.property, e.token.val );
+            else if ( e.token.property )
+                return UserManager.get.getMetaVal(user.dbEntry, e.token.property );
+            else if ( e.token.val )
+                return UserManager.get.setMeta(user.dbEntry, e.token.val );
             else
                return UserManager.get.getMetaData( user.dbEntry );
 
         }).then(function( metaVal ) {
 
-            comms.broadcastEventToClient( <def.SocketEvents.IMetaEvent>{
-                error : undefined,
-                eventType : e.clientEvent.eventType,
-                val: metaVal
-            }, e.client );
+            let responseToken : def.SocketEvents.IMetaToken = {
+                type : ClientInstructionType[ClientInstructionType.MetaRequest],
+                val: metaVal,
+                property: e.token.property,
+                username: e.token.username
+            };
+
+            comms.processClientInstruction(new ClientInstruction<def.SocketEvents.IMetaToken>( responseToken, [e.from] ));
 
         }).catch(function( err: Error ) {
-            comms.broadcastEventToClient( { error : err.toString(), eventType : e.clientEvent.eventType }, e.client );
+
+            let responseToken : def.SocketEvents.IMetaToken = {
+                type : ClientInstructionType[ClientInstructionType.MetaRequest],
+                error: err.message
+            };
+
+            comms.processClientInstruction(new ClientInstruction<def.SocketEvents.IMetaToken>( responseToken, [e.from] ));
         });
-    }
-
-    /**
-     * Responds to a echo request from a client
-     */
-    private onEcho( e: ClientEvent<def.SocketEvents.IEchoEvent> )
-    {
-        e.responseEvent = <def.SocketEvents.IEchoEvent> {
-            eventType: EventType.Echo,
-            message : e.clientEvent.message
-        };
-
-        if ( e.clientEvent.broadcast )
-            e.responseType = EventResponseType.ReBroadcast;
-        else
-            e.responseType = EventResponseType.RespondClient;
     }
 }

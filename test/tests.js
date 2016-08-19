@@ -26,7 +26,6 @@ var activation = "";
 var fileId = "";
 var publicURL = "";
 var wsClient;
-var wsClient2;
 
 // A map of all web socket events
 var socketEvents = {
@@ -58,47 +57,47 @@ var numWSCalls = {
  */
 function onWsEvent(data) {
 
-    var event = JSON.parse(data);
+    var token = JSON.parse(data);
 
-    if (!event.eventType)
-        throw new Error("eventType does not exist on socket event");
+    if (!token.type)
+        throw new Error("type does not exist on socket token");
 
-    switch (event.eventType)
+    switch (token.type)
     {
-        case 1: // Login
-            socketEvents.login = event;
+        case 'Login':
+            socketEvents.login = token;
             numWSCalls.login++;
             break;
-        case 2: // Logout
-            socketEvents.logout = event;
+        case 'Logout':
+            socketEvents.logout = token;
             numWSCalls.logout++;
             break;
-        case 3: // Activated
-            socketEvents.activated = event;
+        case 'Activated':
+            socketEvents.activated = token;
             numWSCalls.activated++;
             break;
-        case 4: // Removed
-            socketEvents.removed = event;
+        case 'Removed':
+            socketEvents.removed = token;
             numWSCalls.removed++;
             break;
-        case 5: // FileUploaded
-            socketEvents.fileUploaded = event;
+        case 'FileUploaded':
+            socketEvents.fileUploaded = token;
             numWSCalls.fileUploaded++;
             break;
-        case 6: // FileRemoved
-            socketEvents.fileRemoved = event;
+        case 'FileRemoved':
+            socketEvents.fileRemoved = token;
             numWSCalls.fileRemoved++;
             break;
-        case 7: // BucketUploaded
-            socketEvents.bucketUploaded = event;
+        case 'BucketUploaded':
+            socketEvents.bucketUploaded = token;
             numWSCalls.bucketUploaded++;
             break;
-        case 8: // BucketRemoved
-            socketEvents.bucketRemoved = event;
+        case 'BucketRemoved':
+            socketEvents.bucketRemoved = token;
             numWSCalls.bucketRemoved++;
             break;
-        case 9: // MetaRequest
-            socketEvents.metaRequest = event;
+        case 'MetaRequest':
+            socketEvents.metaRequest = token;
             numWSCalls.metaRequest++;
             break;
     }
@@ -127,7 +126,10 @@ describe('Testing WS connectivity', function() {
     it('connected to the users socket API', function(done) {
 
         var socketUrl = "ws://localhost:" + config.websocket.port;
-        wsClient = new ws( socketUrl, { headers: { origin: "localhost" } });
+		var options = { headers: { origin: "localhost" } };
+		options.headers['users-api-key'] = config.websocket.socketApiKey;
+
+        wsClient = new ws( socketUrl, options);
 
         // Opens a stream to the users socket events
         wsClient.on('open', function () {
@@ -140,71 +142,6 @@ describe('Testing WS connectivity', function() {
             return done(err);
         });
     })
-
-    it('connected a separate WS connection', function(done) {
-
-        var socketUrl = "ws://localhost:" + config.websocket.port;
-        wsClient2 = new ws( socketUrl, { headers: { origin: "localhost" } });
-
-        // Opens a stream to the users socket events
-        wsClient2.on('open', function () {
-            wsClient2.on( 'message', onSocketMessage );
-            return done();
-        });
-
-        // Report if there are any errors
-        wsClient2.on('error', function (err) {
-            return done(err);
-        });
-    })
-
-    it('recieved an echo test to sender', function(done) {
-
-        var onMessge = function(data) {
-            var response = JSON.parse(data);
-            wsClient.removeListener( 'message', onMessge );
-            wsClient2.removeListener( 'message', onMessge );
-
-            test.string(response.message).is("Echo worked!")
-            test.number(response.eventType).is(10)
-            done();
-        }
-
-        wsClient.on( 'message', onMessge );
-        wsClient2.on( 'message', onMessge );
-
-        wsClient.send( JSON.stringify({ eventType: 10, message : "Echo worked!" }), function(err) {
-             wsClient.removeListener( 'message', onMessge );
-             wsClient2.removeListener( 'message', onMessge );
-             done(err);
-        });
-    });
-
-    it('recieved a broadcast echo test', function(done) {
-
-        var echoCount = 0;
-
-        var onMessge = function(data) {
-            var response = JSON.parse(data);
-            wsClient.removeListener( 'message', onMessge );
-            wsClient2.removeListener( 'message', onMessge );
-            echoCount++;
-
-            test.string(response.message).is("Echo worked!")
-            test.number(response.eventType).is(10)
-            if (echoCount == 2)
-                done();
-        }
-
-        wsClient.on( 'message', onMessge );
-        wsClient2.on( 'message', onMessge );
-
-        wsClient.send( JSON.stringify({ eventType: 10, message : "Echo worked!", broadcast: true }), function(err) {
-             wsClient.removeListener( 'message', onMessge );
-             wsClient2.removeListener( 'message', onMessge );
-             done(err);
-        });
-    });
 })
 
 
@@ -1158,61 +1095,57 @@ describe('Testing WS API calls', function(){
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify({ eventType: 9, val : { sister : "sam", brother: "mat" }, username : "george3"  }));
+        wsClient.send( JSON.stringify({ type: "MetaRequest", val : { sister : "sam", brother: "mat" }, username : "george3"  }));
 	});
 
 	it('Can set meta data for user george', function(done) {
         var onMessge = function(data) {
             var response = JSON.parse(data);
             wsClient.removeListener( 'message', onMessge );
-            test.value(response.error).isUndefined()
 			test.string(response.val.sister).is("sam")
 			test.string(response.val.brother).is("mat")
             done();
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify({ eventType: 9, val : { sister : "sam", brother: "mat" }, username : "george"  }));
+        wsClient.send( JSON.stringify({ type: "MetaRequest", val : { sister : "sam", brother: "mat" }, username : "george"  }));
 	});
 
 	it('Can get meta data for user george', function(done) {
         var onMessge = function(data) {
             var response = JSON.parse(data);
             wsClient.removeListener( 'message', onMessge );
-            test.value(response.error).isUndefined()
 			test.string(response.val.sister).is("sam")
 			test.string(response.val.brother).is("mat")
             done();
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify({ eventType: 9, username : "george"  }));
+        wsClient.send( JSON.stringify({ type: "MetaRequest", username : "george"  }));
 	});
 
 	it('Can set the meta property "brother" for user george', function(done) {
         var onMessge = function(data) {
             var response = JSON.parse(data);
             wsClient.removeListener( 'message', onMessge );
-            test.value(response.error).isUndefined()
 			test.string(response.val).is("George's brother")
             done();
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify({ eventType: 9, property: "brother", val : "George's brother", username : "george"  }));
+        wsClient.send( JSON.stringify({ type: "MetaRequest", property: "brother", val : "George's brother", username : "george"  }));
 	});
 
 	it('Can get the meta property "brother" for user george', function(done) {
         var onMessge = function(data) {
             var response = JSON.parse(data);
             wsClient.removeListener( 'message', onMessge );
-            test.value(response.error).isUndefined()
 			test.string(response.val).is("George's brother")
             done();
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify({ eventType: 9, property: "brother", username : "george"  }));
+        wsClient.send( JSON.stringify({ type: "MetaRequest", property: "brother", username : "george"  }));
 	});
 })
 
@@ -2062,10 +1995,8 @@ describe('Cleaning up socket', function(){
 
         if ( wsClient )
         {
-             wsClient2.removeListener( 'message', onSocketMessage );
              wsClient.removeListener( 'message', onSocketMessage );
              wsClient.close();
-             wsClient2.close();
              wsClient = null;
              wsClient2 = null;
         }

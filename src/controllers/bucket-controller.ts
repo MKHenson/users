@@ -17,7 +17,8 @@ import * as compression from "compression";
 import * as winston from "winston";
 import * as gcloud from "gcloud";
 import {CommsController} from "../socket-api/comms-controller";
-import {EventType} from "../socket-api/socket-event-types";
+import {ClientInstruction} from "../socket-api/client-instruction";
+import {ClientInstructionType} from "../socket-api/socket-event-types";
 import * as def from "webinate-users";
 import {okJson, errJson} from "../serializers";
 
@@ -810,8 +811,8 @@ export class BucketController extends Controller
             for (var i = 0, l = files.length; i < l; i++)
             {
                 // Send file added events to sockets
-                var fEvent: def.SocketEvents.IFileAddedEvent = { username: user, eventType: EventType.FileUploaded, file: files[i], error : undefined };
-                await CommsController.singleton.broadcastEventToAll(fEvent)
+                var token: def.SocketEvents.IFileToken = { username: user, type: ClientInstructionType[ClientInstructionType.FileUploaded], file: files[i] };
+                await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, user))
             }
 
 

@@ -58,6 +58,7 @@
     },
     "websocket": {
         "port": 8063,
+        "socketApiKey" : "my-secret-key",
         "approvedSocketDomains": [
             "localhost",
             "^ws://www.webinate.net:123$",

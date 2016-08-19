@@ -1,81 +1,73 @@
 "use strict";
 
 /**
-* Describes the event being sent to connected clients
-*/
-export enum EventType
+ * Describes the type of token data being sent to connected clients
+ */
+export enum ClientInstructionType
 {
     /**
      * Event sent to clients whenever a user logs in.
-     * Event type: IUserEvent
+     * Event type: IUserToken
      */
     Login = 1,
 
     /**
      * Event sent to clients whenever a user logs out.
-     * Event type: IUserEvent
+     * Event type: IUserToken
      */
     Logout = 2,
 
     /**
      * Event sent to clients whenever a user's account is activated.
-     * Event type: IUserEvent
+     * Event type: IUserToken
      */
     Activated = 3,
 
     /**
      * Event sent to clients whenever a user's account is removed.
-     * Event type: IUserEvent
+     * Event type: IUserToken
      */
     Removed = 4,
 
     /**
      * Event sent to clients whenever a user uploads a new file.
-     * Event type: IFileAddedEvent
+     * Event type: IFileToken
      */
     FileUploaded = 5,
 
     /**
      * Event sent to clients whenever a user file is removed.
-     * Event type: IFileRemovedEvent
+     * Event type: IFileToken
      */
     FileRemoved = 6,
 
     /**
      * Event sent to clients whenever a user creates a new bucket
-     * Event type: IBucketAddedEvent
+     * Event type: IBucketToken
      */
     BucketUploaded = 7,
 
     /**
      * Event sent to clients whenever a user removes a bucket
-     * Event type: IBucketRemovedEvent
+     * Event type: IBucketToken
      */
     BucketRemoved = 8,
 
     /**
      * Event both sent to the server as well as optionally to clients. Gets or sets user meta data.
-     * Event type: IMetaEvent
+     * Event type: IMetaToken
      */
-    MetaRequest = 9,
-
-    /**
-     * Event both sent to the server as well as to clients. The echo simply echoes a message.
-     * Event type: IEchoEvent
-     */
-    Echo = 10
+    MetaRequest = 9
 }
 
-/** Describes how users should respond to a socket events
+/**
+ * Describes the type of token data being sent to connected clients
  */
-export enum EventResponseType
+export enum ServerInstructionType
 {
-    /** The default the response is EventResponseType.NoResponse. */
-    NoResponse,
-
-    /** A response event is sent back to the initiating client. */
-    RespondClient,
-
-    /** A response event is sent to all connected clients. */
-    ReBroadcast
+    /**
+     * Event both sent to the server as well as optionally to clients. Gets or sets user meta data.
+     * Event type: IMetaToken
+     */
+    MetaRequest = 9
 }

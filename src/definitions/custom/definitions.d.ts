@@ -10,27 +10,30 @@
     */
     export module SocketEvents
     {
-        /*
-        * The base interface for all socket events
-        */
-        export interface IEvent
-        {
-            eventType: number;
+        export type ClientInstructionType =  (
+            'Login' |
+            'Logout' |
+            'Activated' |
+            'Removed' |
+            'FileUploaded' |
+            'FileRemoved' |
+            'BucketUploaded' |
+            'BucketRemoved' |
+            'MetaRequest'
+        );
 
-            /*
-            * Will be null if no error, or a string if there is
-            */
-            error: string;
-        }
+        export type ServerInstructionType =  (
+            'MetaRequest'
+        );
 
-        /*
-        * A very simple echo event. This simply pings the server with a message, which then returns with the same message
-        * either to the client or, if broadcast is true, to all clients.
-        */
-        export interface IEchoEvent extends IEvent
+        /**
+         * The base interface for all data that is serialized & sent to clients or server.
+         * The type property describes to the reciever what kind of data to expect.
+         */
+        export interface IToken
         {
-            message: string;
-            broadcast?: boolean;
+            error? : string;
+            type: ClientInstructionType | ServerInstructionType | string;
         }
 
         /*
@@ -38,17 +41,17 @@
         * if you provide a property value, then only that specific meta property is edited.
         * If not provided, then the entire meta data is set.
         */
-        export interface IMetaEvent extends IEvent
+        export interface IMetaToken extends IToken
         {
             username?: string;
-            property: string;
-            val: any;
+            property?: string;
+            val?: any;
         }
 
         /*
         * The socket user event
         */
-        export interface IUserEvent extends IEvent
+        export interface IUserToken extends IToken
         {
             username: string;
         }
@@ -56,34 +59,18 @@
         /*
         * Interface for file added events
         */
-        export interface IFileAddedEvent extends IEvent
+        export interface IFileToken extends IToken
         {
             username: string;
-            file: IFileEntry;
-        }
-
-        /*
-        * Interface for file removed events
-        */
-        export interface IFileRemovedEvent extends IEvent
-        {
             file: IFileEntry;
         }
 
         /*
         * Interface for a bucket being added
         */
-        export interface IBucketAddedEvent extends IEvent
+        export interface IBucketToken extends IToken
         {
             username: string;
-            bucket: IBucketEntry
-        }
-
-        /*
-        * Interface for a bucket being removed
-        */
-        export interface IBucketRemovedEvent extends IEvent
-        {
             bucket: IBucketEntry
         }
     }
@@ -181,6 +168,12 @@
     */
     export interface IWebsocket
     {
+        /**
+         * A key that must be provided in the headers of socket client connections. If the connection headers
+         * contain 'users-api-key', and it matches this key, then the connection is considered an authorized connection.
+         */
+        socketApiKey: string;
+
         /**
         * The port number to use for web socket communication. You can use this port to send and receive events or messages
         * to the server.

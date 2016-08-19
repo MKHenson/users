@@ -80,7 +80,7 @@ openDB(config).then(function (db)
 {
     winston.info(`Initializing controllers...`, { process: process.pid });
     return Promise.all([
-        new CommsController(config).initialize(db),
+        new CommsController(config).initialize(),
         new CORSController(app, config).initialize(db),
         new BucketController(app, config).initialize(db),
         new UserController(app, config).initialize(db),

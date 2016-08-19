@@ -10,7 +10,8 @@ import * as winston from "winston";
 import * as https from "https";
 
 import {CommsController} from "./socket-api/comms-controller";
-import {EventType} from "./socket-api/socket-event-types";
+import {ClientInstruction} from "./socket-api/client-instruction";
+import {ClientInstructionType} from "./socket-api/socket-event-types";
 import * as def from "webinate-users";
 import {SessionManager, Session} from "./session";
 import {BucketManager} from "./bucket-manager";
@@ -166,8 +167,8 @@ export class UserManager
         if (useEntry)
         {
             // Send logged out event to socket
-            var sEvent: def.SocketEvents.IUserEvent = { username: useEntry.username, eventType: EventType.Logout, error : undefined };
-            await CommsController.singleton.broadcastEventToAll(sEvent);
+            var token: def.SocketEvents.IUserToken = { username: useEntry.username, type: ClientInstructionType[ClientInstructionType.Logout] };
+            await CommsController.singleton.processClientInstruction( new ClientInstruction(token, null, useEntry.username));
             winston.info(`User '${useEntry.username}' has logged out`, { process: process.pid });
         }
 
@@ -325,8 +326,8 @@ export class UserManager
         var result = await this._userCollection.updateOne({ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
 
         // Send activated event
-        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(sEvent);
+        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Activated] };
+        await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
 
         winston.info(`User '${username}' has been activated`, { process: process.pid });
         return;
@@ -538,8 +539,8 @@ export class UserManager
         await this._userCollection.updateOne(<def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
 
         // Send activated event
-        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Activated, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(sEvent);
+        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Activated]  };
+        await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
 
         winston.info(`User '${username}' has been activated`, { process: process.pid });
         return true;
@@ -681,10 +682,10 @@ export class UserManager
             throw new Error("Could not remove the user from the database");
 
         // Send event to sockets
-        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Removed, error : undefined };
-        CommsController.singleton.broadcastEventToAll(sEvent).then(function() {
-            winston.info(`User '${username}' has been removed`, { process: process.pid });
-        });
+        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Removed] };
+        CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
+
+        winston.info(`User '${username}' has been removed`, { process: process.pid });
 
         return;
 	}
@@ -765,8 +766,8 @@ export class UserManager
             throw new Error("Could not find the user in the database, please make sure its setup correctly");
 
         // Send logged in event to socket
-        var sEvent: def.SocketEvents.IUserEvent = { username: username, eventType: EventType.Login, error : undefined };
-        await CommsController.singleton.broadcastEventToAll(sEvent);
+        var token: def.SocketEvents.IUserToken = { username: username, type: ClientInstructionType[ClientInstructionType.Login] };
+        await CommsController.singleton.processClientInstruction(new ClientInstruction(token, null, username));
         return user;
 	}
 

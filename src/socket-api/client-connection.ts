@@ -10,8 +10,7 @@ import * as fs from "fs";
 import * as winston from "winston";
 import {UserManager, User} from "../users";
 import {CommsController} from "./comms-controller";
-import {ClientEvent} from "./client-event";
-import {EventResponseType, EventType} from "./socket-event-types";
+import {ServerInstruction} from "./server-instruction";
 import {SocketAPI} from "./socket-api";
 
 /**
@@ -19,16 +18,19 @@ import {SocketAPI} from "./socket-api";
  */
 export class ClientConnection
 {
+    public onDisconnected: (connection: ClientConnection) => void;
     public ws: ws;
     public user: User;
     public domain: string;
+    public authorizedThirdParty: boolean;
     private _controller: CommsController;
 
-    constructor(ws: ws, domain: string, controller : CommsController)
+    constructor(ws: ws, domain: string, controller : CommsController, authorizedThirdParty: boolean)
     {
         var that = this;
         this.domain = domain;
         this._controller = controller;
+        this.authorizedThirdParty = authorizedThirdParty;
 
         UserManager.get.loggedIn(ws.upgradeReq, null).then(function (user)
         {
@@ -49,8 +51,8 @@ export class ClientConnection
     {
         winston.info(`Received message from client: '${message}'`, { process: process.pid } );
         try {
-            var event : def.SocketEvents.IEvent = JSON.parse(message);
-            this._controller.alertMessage(new ClientEvent(event, this));
+            var token : def.SocketEvents.IToken = JSON.parse(message);
+            this._controller.processServerInstruction(new ServerInstruction(token, this));
         }
         catch(err) {
             winston.error(`Could not parse socket message: '${err}'`, { process: process.pid } );
@@ -62,6 +64,9 @@ export class ClientConnection
 	*/
     private onClose()
     {
+        if (this.onDisconnected)
+            this.onDisconnected(this);
+
         winston.info(`Websocket disconnected: ${this.domain}`, {process : process.pid})
 
         this.ws.removeAllListeners("message");
