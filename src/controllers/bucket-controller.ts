@@ -681,22 +681,27 @@ export class BucketController extends Controller
                 }
 
                 // This part is a file - so we act on it
-                if (!!part.filename && that.isFileTypeAllowed(part))
+                if (!!part.filename)
                 {
                     // Add the token to the upload array we are sending back to the user
                     var uploadToken = createToken();
                     uploadedTokens.push(uploadToken);
                     numParts++;
 
-                    // Upload the file part to the cloud
-                    manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
-                    {
-                        fileUploaded(file, uploadToken);
+                    if ( that.isFileTypeAllowed(part) ) {
+                        // Upload the file part to the cloud
+                        manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
+                        {
+                            fileUploaded(file, uploadToken);
 
-                    }).catch(function(err: Error)
-                    {
-                        errFunc(err.toString(), uploadToken);
-                    });
+                        }).catch(function(err: Error)
+                        {
+                            errFunc(err.toString(), uploadToken);
+                        });
+                    }
+                    else {
+                        errFunc(`File '${part.filename}' cannot be uploaded as its file type is not currently supported`, uploadToken);
+                    }
                 }
                 // Check if this part is a meta tag
                 else if (part.name == "meta")
