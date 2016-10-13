@@ -143,7 +143,7 @@ openDB(config).then(function (db)
 
 }).catch(function (error: Error)
 {
-    winston.error(`An error has occurred and the application needs to shut down: '${error.message}'`, { process: process.pid }, function ()
+    winston.error(`An error has occurred and the application needs to shut down: '${error.message}' : '${error.stack}'`, { process: process.pid }, function ()
     {
         process.exit();
     });
