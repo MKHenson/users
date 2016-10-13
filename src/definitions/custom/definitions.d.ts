@@ -318,6 +318,7 @@
         error: boolean;
         errorMsg: string;
         url: string;
+        extension: string
     }
 
     /*

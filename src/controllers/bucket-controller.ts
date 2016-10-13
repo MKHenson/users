@@ -652,7 +652,8 @@ export class BucketController extends Controller
                         filename: part.filename,
                         error: false,
                         errorMsg: "",
-                        url: ""
+                        url: "",
+                        extension: ""
                     }
                 }
 
@@ -689,6 +690,9 @@ export class BucketController extends Controller
                     numParts++;
 
                     if ( that.isFileTypeAllowed(part) ) {
+
+                        uploadToken.extension = part.headers["content-type"].toLowerCase();
+
                         // Upload the file part to the cloud
                         manager.uploadStream(part, bucketEntry, username, true, parentFile).then(function (file)
                         {
