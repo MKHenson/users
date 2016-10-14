@@ -10,30 +10,12 @@
     "noImplicitAny": false,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "strictNullChecks": true,
+    "noUnusedLocals": true
   },
-  "files": [
-      "src/references.d.ts",
-      "src/controllers/controller.ts",
-      "src/controllers/bucket-controller.ts",
-      "src/controllers/cors-controller.ts",
-      "src/controllers/error-controller.ts",
-      "src/controllers/user-controller.ts",
-      "src/bucket-manager.ts",
-      "src/mailers/gmail.ts",
-      "src/mailers/mailgun.ts",
-      "src/permission-controller.ts",
-      "src/session.ts",
-      "src/socket-api/client-instruction.ts",
-      "src/socket-api/server-instruction.ts",
-      "src/socket-api/socket-event-types.ts",
-      "src/socket-api/client-connection.ts",
-      "src/socket-api/comms-controller.ts",
-      "src/socket-api/socket-api.ts",
-      "src/startup.ts",
-      "src/serializers.ts",
-      "src/users.ts",
-      "src/main.ts",
-      "src/startup.ts"
+  "include": [
+    "src/references.d.ts",
+    "src/**/*.ts"
   ]
 }
