@@ -83,7 +83,7 @@ wsClient..on('message', function (data) {
     var echoEvent = JSON.parse(data);
 
     // Do something based on the event type:
-    if ( echoEvent.eventType == 10 )
+    if ( echoEvent.eventType === 10 )
         console.log('We got an echo: ' + echoEvent.message );
 });
 

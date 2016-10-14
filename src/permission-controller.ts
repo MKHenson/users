@@ -1,14 +1,14 @@
-﻿"use strict";
+﻿'use strict';
 
-import express = require( "express" );
-import * as def from "webinate-users";
-import { UserManager, UserPrivileges } from "./users";
+import express = require( 'express' );
+import * as def from 'webinate-users';
+import { UserManager, UserPrivileges } from './users';
 
 /**
  * Checks if the request has owner rights (admin/owner). If not, an error is sent back to the user
  */
 export function ownerRights( req: def.AuthRequest, res: express.Response, next: Function ): any {
-    var username = req.params.username || req.params.user;
+    const username = req.params.username || req.params.user;
     requestHasPermission( UserPrivileges.Admin, req, res, username ).then( function() {
         next();
 
@@ -27,11 +27,11 @@ export function ownerRights( req: def.AuthRequest, res: express.Response, next: 
 export function adminRights( req: def.AuthRequest, res: express.Response, next: Function ): any {
     UserManager.get.loggedIn( <express.Request><Express.Request>req, res ).then( function( user ) {
         if ( !user )
-            return res.end( JSON.stringify( <def.IResponse>{ message: "You must be logged in to make this request", error: true }) );
+            return res.end( JSON.stringify( <def.IResponse>{ message: 'You must be logged in to make this request', error: true }) );
 
         req._user = user;
         if ( user.dbEntry.privileges > UserPrivileges.Admin )
-            return res.end( JSON.stringify( <def.IResponse>{ message: "You don't have permission to make this request", error: true }) );
+            return res.end( JSON.stringify( <def.IResponse>{ message: 'You don\'t have permission to make this request', error: true }) );
         else
             next();
     });
@@ -58,7 +58,7 @@ export function requireUser( req: def.AuthRequest, res: express.Response, next: 
         if ( !user ) {
             res.setHeader( 'Content-Type', 'application/json' );
             return res.end( JSON.stringify( <def.IResponse>{
-                message: "You must be logged in to make this request",
+                message: 'You must be logged in to make this request',
                 error: true
             }) );
         }
@@ -80,17 +80,17 @@ export function requireUser( req: def.AuthRequest, res: express.Response, next: 
  * @param next
  */
 export async function requestHasPermission( level: UserPrivileges, req: def.AuthRequest, res: express.Response, existingUser?: string ): Promise<boolean> {
-    var user = await UserManager.get.loggedIn( <express.Request><Express.Request>req, res );
+    const user = await UserManager.get.loggedIn( <express.Request><Express.Request>req, res );
 
     if ( !user )
-        throw new Error( "You must be logged in to make this request" );
+        throw new Error( 'You must be logged in to make this request' );
 
     if ( existingUser !== undefined ) {
-        if ( ( user.dbEntry.email != existingUser && user.dbEntry.username != existingUser ) && user.dbEntry.privileges > level )
-            throw new Error( "You don't have permission to make this request" );
+        if ( ( user.dbEntry.email !== existingUser && user.dbEntry.username !== existingUser ) && user.dbEntry.privileges > level )
+            throw new Error( 'You don\'t have permission to make this request' );
     }
     else if ( user.dbEntry.privileges > level )
-        throw new Error( "You don't have permission to make this request" );
+        throw new Error( 'You don\'t have permission to make this request' );
 
     req._user = user;
 

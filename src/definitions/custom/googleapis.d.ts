@@ -1,8 +1,6 @@
-declare module "googleapis"
-{
-    export interface GMail
-    {
-        users : {
+declare module 'googleapis' {
+    export interface GMail {
+        users: {
 
             /**
              * gmail.users.getProfile
@@ -17,7 +15,7 @@ declare module "googleapis"
              * @param  {callback} callback - The callback that handles the response.
              * @return {object} Request object
              */
-            getProfile(params, callback);
+            getProfile( params, callback );
 
             /**
              * gmail.users.stop
@@ -32,7 +30,7 @@ declare module "googleapis"
              * @param  {callback} callback - The callback that handles the response.
              * @return {object} Request object
              */
-            stop(params, callback);
+            stop( params, callback );
 
             /**
              * gmail.users.watch
@@ -48,7 +46,7 @@ declare module "googleapis"
              * @param  {callback} callback - The callback that handles the response.
              * @return {object} Request object
              */
-            watch(params, callback);
+            watch( params, callback );
 
             drafts:
             {
@@ -69,7 +67,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                create(params, callback);
+                create( params, callback );
 
                 /**
                  * gmail.users.drafts.delete
@@ -85,7 +83,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                delete(params, callback);
+                delete( params, callback );
 
                 /**
                  * gmail.users.drafts.get
@@ -102,7 +100,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                get(params, callback);
+                get( params, callback );
 
                 /**
                  * gmail.users.drafts.list
@@ -119,7 +117,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                list(params, callback);
+                list( params, callback );
 
                 /**
                  * gmail.users.drafts.send
@@ -138,7 +136,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                send(params, callback);
+                send( params, callback );
 
                 /**
                  * gmail.users.drafts.update
@@ -158,7 +156,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                update(params, callback);
+                update( params, callback );
             }
 
             history:
@@ -186,7 +184,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                list(params, callback);
+                list( params, callback );
             }
 
             labels:
@@ -206,7 +204,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                create(params, callback);
+                create( params, callback );
 
                 /**
                  * gmail.users.labels.delete
@@ -222,7 +220,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                delete(params, callback);
+                delete( params, callback );
 
                 /**
                  * gmail.users.labels.get
@@ -238,7 +236,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                get(params, callback);
+                get( params, callback );
 
                 /**
                  * gmail.users.labels.list
@@ -253,7 +251,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                list(params, callback);
+                list( params, callback );
 
                 /**
                  * gmail.users.labels.patch
@@ -270,7 +268,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                patch(params, callback);
+                patch( params, callback );
 
                 /**
                  * gmail.users.labels.update
@@ -287,7 +285,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                update(params, callback);
+                update( params, callback );
             }
 
             messages:
@@ -307,7 +305,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                delete(params, callback);
+                delete( params, callback );
 
                 /**
                  * gmail.users.messages.get
@@ -325,7 +323,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                get(params, callback);
+                get( params, callback );
 
                 /**
                  * gmail.users.messages.import
@@ -348,7 +346,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                import(params, callback);
+                import( params, callback );
 
                 /**
                  * gmail.users.messages.insert
@@ -369,7 +367,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                insert(params, callback);
+                insert( params, callback );
 
                 /**
                  * gmail.users.messages.list
@@ -389,7 +387,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                list(params, callback);
+                list( params, callback );
 
                 /**
                  * gmail.users.messages.modify
@@ -406,7 +404,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                modify(params, callback);
+                modify( params, callback );
 
                 /**
                  * gmail.users.messages.send
@@ -425,7 +423,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                send(params, callback);
+                send( params, callback );
 
                 /**
                  * gmail.users.messages.trash
@@ -441,7 +439,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                trash(params, callback);
+                trash( params, callback );
 
                 /**
                  * gmail.users.messages.untrash
@@ -457,7 +455,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                untrash(params, callback);
+                untrash( params, callback );
 
 
                 attachments:
@@ -478,7 +476,7 @@ declare module "googleapis"
                      * @param  {callback} callback - The callback that handles the response.
                      * @return {object} Request object
                      */
-                    get(params, callback);
+                    get( params, callback );
                 }
             }
 
@@ -499,7 +497,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                delete(params, callback);
+                delete( params, callback );
 
                 /**
                  * gmail.users.threads.get
@@ -517,7 +515,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                get(params, callback);
+                get( params, callback );
 
                 /**
                  * gmail.users.threads.list
@@ -537,7 +535,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                list(params, callback);
+                list( params, callback );
 
                 /**
                  * gmail.users.threads.modify
@@ -554,7 +552,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                modify(params, callback);
+                modify( params, callback );
 
                 /**
                  * gmail.users.threads.trash
@@ -570,7 +568,7 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                trash(params, callback);
+                trash( params, callback );
 
                 /**
                  * gmail.users.threads.untrash
@@ -586,10 +584,10 @@ declare module "googleapis"
                  * @param  {callback} callback - The callback that handles the response.
                  * @return {object} Request object
                  */
-                untrash(params, callback);
+                untrash( params, callback );
             }
         };
     }
 
-    export function gmail(version): GMail;
+    export function gmail( version ): GMail;
 }

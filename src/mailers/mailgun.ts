@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
-import * as winston from "winston";
-import * as def from "webinate-users";
+import * as winston from 'winston';
+import * as def from 'webinate-users';
 
 /**
  * A simple class for sending mail using Google Mail's API
@@ -22,9 +22,9 @@ export class Mailguner implements def.IMailer {
      * @param options The mailgun options for this mailer
      */
     initialize( options: def.IMailgun ): Promise<boolean> {
-        var that = this;
-        return new Promise( function( resolve ) {
-            that.mailgun = require( "mailgun-js" )( { apiKey: options.apiKey, domain: options.domain });
+
+        return new Promise(( resolve ) => {
+            this.mailgun = require( 'mailgun-js' )( { apiKey: options.apiKey, domain: options.domain });
             resolve( true );
         });
     }
@@ -37,18 +37,17 @@ export class Mailguner implements def.IMailer {
      * @param msg The message to be sent
      */
     sendMail( to: string, from: string, subject: string, msg: string ): Promise<boolean> {
-        var that = this;
-        return new Promise( function( resolve, reject ) {
+        return new Promise(( resolve, reject ) => {
 
             winston.info( `Sending email to: ${to}`, { process: process.pid });
 
-            if ( that._debugMode )
+            if ( this._debugMode )
                 return resolve( true );
 
             winston.info( `Sending: ${msg}`, { process: process.pid });
 
             // Send the message
-            that.mailgun.messages().send( { from: from, subject: subject, text: msg, to: to }, function( err, response ) {
+            this.mailgun.messages().send( { from: from, subject: subject, text: msg, to: to }, function( err, response ) {
 
                 if ( err ) {
                     winston.error( `Could not send email to ${to}: ${err}`, { process: process.pid });

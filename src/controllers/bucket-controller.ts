@@ -1,21 +1,21 @@
-﻿"use strict";
+﻿'use strict';
 
-import express = require( "express" );
+import express = require( 'express' );
 import bodyParser = require( 'body-parser' );
-import * as users from "webinate-users";
-import * as mongodb from "mongodb";
-import { UserManager } from "../users";
-import { ownerRights, requireUser } from "../permission-controller";
-import { Controller } from "./controller"
-import { BucketManager } from "../bucket-manager";
-import * as multiparty from "multiparty";
-import * as compression from "compression";
-import * as winston from "winston";
-import { CommsController } from "../socket-api/comms-controller";
-import { ClientInstruction } from "../socket-api/client-instruction";
-import { ClientInstructionType } from "../socket-api/socket-event-types";
-import * as def from "webinate-users";
-import { okJson, errJson } from "../serializers";
+import * as users from 'webinate-users';
+import * as mongodb from 'mongodb';
+import { UserManager } from '../users';
+import { ownerRights, requireUser } from '../permission-controller';
+import { Controller } from './controller'
+import { BucketManager } from '../bucket-manager';
+import * as multiparty from 'multiparty';
+import * as compression from 'compression';
+import * as winston from 'winston';
+import { CommsController } from '../socket-api/comms-controller';
+import { ClientInstruction } from '../socket-api/client-instruction';
+import { ClientInstructionType } from '../socket-api/socket-event-types';
+import * as def from 'webinate-users';
+import { okJson, errJson } from '../serializers';
 
 /**
  * Main class to use for managing users
@@ -36,7 +36,7 @@ export class BucketController extends Controller {
 
         this._config = config;
 
-        this._allowedFileTypes = [ "image/bmp", "image/png", "image/jpeg", "image/jpg", "image/gif", "image/tiff", "text/plain", "text/json", "application/octet-stream" ];
+        this._allowedFileTypes = [ 'image/bmp', 'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/tiff', 'text/plain', 'text/json', 'application/octet-stream' ];
 
         // Setup the rest calls
         const router = express.Router();
@@ -45,22 +45,22 @@ export class BucketController extends Controller {
         router.use( bodyParser.json() );
         router.use( bodyParser.json( { type: 'application/vnd.api+json' }) );
 
-        router.get( "/files/:id/download", <any>[ this.getFile.bind( this ) ] );
-        router.get( "/users/:user/buckets/:bucket/files", <any>[ ownerRights, this.getFiles.bind( this ) ] );
-        router.get( "/users/:user/get-stats", <any>[ ownerRights, this.getStats.bind( this ) ] );
-        router.get( "/users/:user/buckets", <any>[ ownerRights, this.getBuckets.bind( this ) ] );
-        router.delete( "/buckets/:buckets", <any>[ requireUser, this.removeBuckets.bind( this ) ] );
-        router.delete( "/files/:files", <any>[ requireUser, this.removeFiles.bind( this ) ] );
-        router.post( "/buckets/:bucket/upload/:parentFile?", <any>[ requireUser, this.uploadUserFiles.bind( this ) ] );
-        router.post( "/users/:user/buckets/:name", <any>[ ownerRights, this.createBucket.bind( this ) ] );
-        router.post( "/create-stats/:target", <any>[ ownerRights, this.createStats.bind( this ) ] );
-        router.put( "/stats/storage-calls/:target/:value", <any>[ ownerRights, this.verifyTargetValue, this.updateCalls.bind( this ) ] );
-        router.put( "/stats/storage-memory/:target/:value", <any>[ ownerRights, this.verifyTargetValue, this.updateMemory.bind( this ) ] );
-        router.put( "/stats/storage-allocated-calls/:target/:value", <any>[ ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind( this ) ] );
-        router.put( "/stats/storage-allocated-memory/:target/:value", <any>[ ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind( this ) ] );
-        router.put( "/files/:file/rename-file", <any>[ requireUser, this.renameFile.bind( this ) ] );
-        router.put( "/files/:id/make-public", <any>[ requireUser, this.makePublic.bind( this ) ] );
-        router.put( "/files/:id/make-private", <any>[ requireUser, this.makePrivate.bind( this ) ] );
+        router.get( '/files/:id/download', <any>[ this.getFile.bind( this ) ] );
+        router.get( '/users/:user/buckets/:bucket/files', <any>[ ownerRights, this.getFiles.bind( this ) ] );
+        router.get( '/users/:user/get-stats', <any>[ ownerRights, this.getStats.bind( this ) ] );
+        router.get( '/users/:user/buckets', <any>[ ownerRights, this.getBuckets.bind( this ) ] );
+        router.delete( '/buckets/:buckets', <any>[ requireUser, this.removeBuckets.bind( this ) ] );
+        router.delete( '/files/:files', <any>[ requireUser, this.removeFiles.bind( this ) ] );
+        router.post( '/buckets/:bucket/upload/:parentFile?', <any>[ requireUser, this.uploadUserFiles.bind( this ) ] );
+        router.post( '/users/:user/buckets/:name', <any>[ ownerRights, this.createBucket.bind( this ) ] );
+        router.post( '/create-stats/:target', <any>[ ownerRights, this.createStats.bind( this ) ] );
+        router.put( '/stats/storage-calls/:target/:value', <any>[ ownerRights, this.verifyTargetValue, this.updateCalls.bind( this ) ] );
+        router.put( '/stats/storage-memory/:target/:value', <any>[ ownerRights, this.verifyTargetValue, this.updateMemory.bind( this ) ] );
+        router.put( '/stats/storage-allocated-calls/:target/:value', <any>[ ownerRights, this.verifyTargetValue, this.updateAllocatedCalls.bind( this ) ] );
+        router.put( '/stats/storage-allocated-memory/:target/:value', <any>[ ownerRights, this.verifyTargetValue, this.updateAllocatedMemory.bind( this ) ] );
+        router.put( '/files/:file/rename-file', <any>[ requireUser, this.renameFile.bind( this ) ] );
+        router.put( '/files/:id/make-public', <any>[ requireUser, this.makePublic.bind( this ) ] );
+        router.put( '/files/:id/make-private', <any>[ requireUser, this.makePrivate.bind( this ) ] );
 
         // Register the path
         e.use( `${config.apiPrefix}`, router );
@@ -74,11 +74,11 @@ export class BucketController extends Controller {
             // Set the content type
             const value = parseInt( req.params.value );
 
-            if ( !req.params.target || req.params.target.trim() == "" )
-                throw new Error( "Please specify a valid user to target" );
+            if ( !req.params.target || req.params.target.trim() === '' )
+                throw new Error( 'Please specify a valid user to target' );
 
-            if ( !req.params.value || req.params.value.trim() == "" || isNaN( value ) )
-                throw new Error( "Please specify a valid value" );
+            if ( !req.params.value || req.params.value.trim() === '' || isNaN( value ) )
+                throw new Error( 'Please specify a valid value' );
 
             // Make sure the user exists
             const user = await UserManager.get.getUser( req.params.target );
@@ -163,10 +163,10 @@ export class BucketController extends Controller {
             const manager = BucketManager.get;
             let files: Array<string>;
 
-            if ( !req.params.files || req.params.files.trim() == "" )
-                throw new Error( "Please specify the files to remove" );
+            if ( !req.params.files || req.params.files.trim() === '' )
+                throw new Error( 'Please specify the files to remove' );
 
-            files = req.params.files.split( "," );
+            files = req.params.files.split( ',' );
             const filesRemoved = await manager.removeFilesByIdentifiers( files, req._user!.dbEntry.username );
 
             okJson<users.IRemoveFiles>( {
@@ -188,10 +188,10 @@ export class BucketController extends Controller {
         try {
             const manager = BucketManager.get;
 
-            if ( !req.params.file || req.params.file.trim() == "" )
-                throw new Error( "Please specify the file to rename" );
-            if ( !req.body || !req.body.name || req.body.name.trim() == "" )
-                throw new Error( "Please specify the new name of the file" );
+            if ( !req.params.file || req.params.file.trim() === '' )
+                throw new Error( 'Please specify the file to rename' );
+            if ( !req.body || !req.body.name || req.body.name.trim() === '' )
+                throw new Error( 'Please specify the new name of the file' );
 
             const fileEntry = await manager.getFile( req.params.file, req._user!.dbEntry.username );
 
@@ -214,10 +214,10 @@ export class BucketController extends Controller {
             const manager = BucketManager.get;
             let buckets: Array<string>;
 
-            if ( !req.params.buckets || req.params.buckets.trim() == "" )
-                throw new Error( "Please specify the buckets to remove" );
+            if ( !req.params.buckets || req.params.buckets.trim() === '' )
+                throw new Error( 'Please specify the buckets to remove' );
 
-            buckets = req.params.buckets.split( "," );
+            buckets = req.params.buckets.split( ',' );
 
             const filesRemoved = await manager.removeBucketsByName( buckets, req._user!.dbEntry.username! );
 
@@ -262,14 +262,14 @@ export class BucketController extends Controller {
             let file: users.IFileEntry;
             const cache = this._config.google.bucket.cacheLifetime;
 
-            if ( !fileID || fileID.trim() == "" )
+            if ( !fileID || fileID.trim() === '' )
                 throw new Error( `Please specify a file ID` );
 
             file = await manager.getFile( fileID );
             res.setHeader( 'Content-Type', file.mimeType! );
             res.setHeader( 'Content-Length', file.size!.toString() );
             if ( cache )
-                res.setHeader( "Cache-Control", "public, max-age=" + cache );
+                res.setHeader( 'Cache-Control', 'public, max-age=' + cache );
 
             manager.downloadFile( <express.Request><Express.Request>req, res, file );
             manager.incrementAPI( file.user! );
@@ -288,7 +288,7 @@ export class BucketController extends Controller {
             const manager = BucketManager.get;
             const fileID = req.params.id;
 
-            if ( !fileID || fileID.trim() == "" )
+            if ( !fileID || fileID.trim() === '' )
                 throw new Error( `Please specify a file ID` );
 
             let fileEntry = await manager.getFile( fileID, req._user!.dbEntry.username );
@@ -310,7 +310,7 @@ export class BucketController extends Controller {
             const fileID = req.params.id;
             let fileEntry: users.IFileEntry;
 
-            if ( !fileID || fileID.trim() == "" )
+            if ( !fileID || fileID.trim() === '' )
                 throw new Error( `Please specify a file ID` );
 
             fileEntry = await manager.getFile( fileID, req._user!.dbEntry.username );
@@ -334,20 +334,20 @@ export class BucketController extends Controller {
         let searchTerm: RegExp | undefined;
 
         try {
-            if ( !req.params.bucket || req.params.bucket.trim() == "" )
-                throw new Error( "Please specify a valid bucket name" );
+            if ( !req.params.bucket || req.params.bucket.trim() === '' )
+                throw new Error( 'Please specify a valid bucket name' );
 
             // Check for keywords
             if ( req.query.search )
-                searchTerm = new RegExp( req.query.search, "i" );
+                searchTerm = new RegExp( req.query.search, 'i' );
 
             bucketEntry = await manager.getIBucket( req.params.bucket, req._user!.dbEntry.username );
 
             if ( !bucketEntry )
                 throw new Error( `Could not find the bucket '${req.params.bucket}'` );
 
-            var count = await manager.numFiles( { bucketId: bucketEntry.identifier });
-            var files = await manager.getFilesByBucket( bucketEntry, index, limit, searchTerm );
+            const count = await manager.numFiles( { bucketId: bucketEntry.identifier });
+            const files = await manager.getFilesByBucket( bucketEntry, index, limit, searchTerm );
 
             return okJson<users.IGetFiles>( {
                 message: `Found [${count}] files`,
@@ -372,7 +372,7 @@ export class BucketController extends Controller {
         try {
             // Check for keywords
             if ( req.query.search )
-                searchTerm = new RegExp( req.query.search, "i" );
+                searchTerm = new RegExp( req.query.search, 'i' );
 
             const buckets = await manager.getBucketEntries( user, searchTerm );
 
@@ -418,12 +418,12 @@ export class BucketController extends Controller {
         const bucketName: string = req.params.name;
 
         try {
-            if ( !username || username.trim() == "" )
-                throw new Error( "Please specify a valid username" );
-            if ( !bucketName || bucketName.trim() == "" )
-                throw new Error( "Please specify a valid name" );
+            if ( !username || username.trim() === '' )
+                throw new Error( 'Please specify a valid username' );
+            if ( !bucketName || bucketName.trim() === '' )
+                throw new Error( 'Please specify a valid name' );
             if ( !this.alphaNumericDashSpace( bucketName ) )
-                throw new Error( "Please only use safe characters" );
+                throw new Error( 'Please only use safe characters' );
 
             const user = await UserManager.get.getUser( username );
             if ( !user )
@@ -449,12 +449,12 @@ export class BucketController extends Controller {
         if ( !part.headers )
             return false;
 
-        if ( !part.headers[ "content-type" ] )
+        if ( !part.headers[ 'content-type' ] )
             return false;
 
-        const type = part.headers[ "content-type" ].toLowerCase();
+        const type = part.headers[ 'content-type' ].toLowerCase();
 
-        if ( type == "text/plain" || type == "application/octet-stream" )
+        if ( type === 'text/plain' || type === 'application/octet-stream' )
             return true;
         else
             return false;
@@ -468,14 +468,14 @@ export class BucketController extends Controller {
         if ( !part.headers )
             return false;
 
-        if ( !part.headers[ "content-type" ] )
+        if ( !part.headers[ 'content-type' ] )
             return false;
 
         const allowedTypes = this._allowedFileTypes;
-        const type = part.headers[ "content-type" ].toLowerCase();
+        const type = part.headers[ 'content-type' ].toLowerCase();
         let found = false;
         for ( let i = 0, l = allowedTypes.length; i < l; i++ )
-            if ( allowedTypes[ i ] == type ) {
+            if ( allowedTypes[ i ] === type ) {
                 found = true;
                 break;
             }
@@ -499,14 +499,14 @@ export class BucketController extends Controller {
             });
 
             part.on( 'error', function( err: Error ) {
-                return reject( new Error( "Could not download meta: " + err.toString() ) );
+                return reject( new Error( 'Could not download meta: ' + err.toString() ) );
             });
 
             part.on( 'end', function() {
                 try {
                     return resolve( JSON.parse( data ) );
                 } catch ( err ) {
-                    return reject( new Error( "Meta data is not a valid JSON: " + err.toString() ) );
+                    return reject( new Error( 'Meta data is not a valid JSON: ' + err.toString() ) );
                 }
             });
         });
@@ -521,12 +521,12 @@ export class BucketController extends Controller {
         let completedParts = 0;
         let closed = false;
         const uploadedTokens: Array<users.IUploadToken> = [];
-        const manager = BucketManager.get;;
+        const manager = BucketManager.get;
         const username = req._user!.dbEntry.username!;
         const parentFile = req.params.parentFile;
         const filesUploaded: Array<UsersInterface.IFileEntry> = [];
         const bucketName = req.params.bucket;
-        if ( !bucketName || bucketName.trim() == "" )
+        if ( !bucketName || bucketName.trim() === '' )
             return okJson<users.IUploadResponse>( { message: `Please specify a bucket`, error: true, tokens: [] }, res );
 
         manager.getIBucket( bucketName, username ).then(( bucketEntry ) => {
@@ -540,13 +540,13 @@ export class BucketController extends Controller {
                 // Create a new upload token
                 const createToken = function() {
                     return {
-                        file: "",
-                        field: ( !part.name ? "" : part.name ),
+                        file: '',
+                        field: ( !part.name ? '' : part.name ),
                         filename: part.filename,
                         error: false,
-                        errorMsg: "",
-                        url: "",
-                        extension: ""
+                        errorMsg: '',
+                        url: '',
+                        extension: ''
                     } as users.IUploadToken;
                 }
 
@@ -580,7 +580,7 @@ export class BucketController extends Controller {
 
                     if ( this.isFileTypeAllowed( part ) ) {
 
-                        uploadToken.extension = part.headers[ "content-type" ].toLowerCase();
+                        uploadToken.extension = part.headers[ 'content-type' ].toLowerCase();
 
                         // Upload the file part to the cloud
                         manager.uploadStream( part, bucketEntry, username, true, parentFile ).then( function( file ) {
@@ -595,7 +595,7 @@ export class BucketController extends Controller {
                     }
                 }
                 // Check if this part is a meta tag
-                else if ( part.name == "meta" ) {
+                else if ( part.name === 'meta' ) {
                     numParts++;
 
                     this.uploadMetaPart( part ).then( function( meta ) {
@@ -638,7 +638,7 @@ export class BucketController extends Controller {
 
             // Checks if the connection is closed and all the parts have been uploaded
             const checkIfComplete = () => {
-                if ( closed && completedParts == numParts ) {
+                if ( closed && completedParts === numParts ) {
                     this.finalizeUploads( metaJson, filesUploaded, username, uploadedTokens ).then( function( token ) {
                         return okJson<users.IUploadResponse>( token, res );
                     });
@@ -649,7 +649,7 @@ export class BucketController extends Controller {
             form.parse( <express.Request><Express.Request>req );
 
         }).catch( function( err ) {
-            return okJson<users.IUploadResponse>( { message: "Could not get bucket: " + err.toString(), error: true, tokens: [] }, res );
+            return okJson<users.IUploadResponse>( { message: 'Could not get bucket: ' + err.toString(), error: true, tokens: [] }, res );
         });
     }
 
@@ -702,7 +702,7 @@ export class BucketController extends Controller {
             for ( let i = 0, l = tokens.length; i < l; i++ )
                 if ( tokens[ i ].error ) {
                     error = true;
-                    msg = "There was a problem with your upload. Please check the tokens for more information.";
+                    msg = 'There was a problem with your upload. Please check the tokens for more information.';
                     break;
                 }
 
@@ -733,17 +733,17 @@ export class BucketController extends Controller {
         statsCollection = collections[ 2 ];
 
         await Promise.all( [
-            this.ensureIndex( bucketsCollection, "name" ),
-            this.ensureIndex( bucketsCollection, "user" ),
-            this.ensureIndex( bucketsCollection, "created" ),
-            this.ensureIndex( bucketsCollection, "memoryUsed" ),
+            this.ensureIndex( bucketsCollection, 'name' ),
+            this.ensureIndex( bucketsCollection, 'user' ),
+            this.ensureIndex( bucketsCollection, 'created' ),
+            this.ensureIndex( bucketsCollection, 'memoryUsed' ),
 
-            this.ensureIndex( filesCollection, "name" ),
-            this.ensureIndex( filesCollection, "user" ),
-            this.ensureIndex( filesCollection, "created" ),
-            this.ensureIndex( filesCollection, "size" ),
-            this.ensureIndex( filesCollection, "mimeType" ),
-            this.ensureIndex( filesCollection, "numDownloads" )
+            this.ensureIndex( filesCollection, 'name' ),
+            this.ensureIndex( filesCollection, 'user' ),
+            this.ensureIndex( filesCollection, 'created' ),
+            this.ensureIndex( filesCollection, 'size' ),
+            this.ensureIndex( filesCollection, 'mimeType' ),
+            this.ensureIndex( filesCollection, 'numDownloads' )
         ] );
 
         // Create the user manager

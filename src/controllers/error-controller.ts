@@ -1,8 +1,8 @@
-﻿"use strict";
+﻿'use strict';
 
-import * as def from "webinate-users";
-import { Controller } from "./controller"
-import express = require( "express" );
+import * as def from 'webinate-users';
+import { Controller } from './controller'
+import express = require( 'express' );
 
 /**
  * Handles express errors

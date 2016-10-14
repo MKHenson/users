@@ -1,6 +1,6 @@
 {
     "host": "localhost",
-    "hostName" : "webinate.net",
+    "hostName": "webinate.net",
     "apiPrefix": "/",
     "accountRedirectURL": "http://host.com/admin/message",
     "passwordResetURL": "http://host.com/admin/password-reset-form",
@@ -18,7 +18,7 @@
         "^.+\\.webinate\\.com$",
         "^webinate\\.org",
         "^.+\\.webinate\\.org"
-     ],
+    ],
     "portHTTP": 80,
     "portHTTPS": 443,
     "databaseHost": "127.0.0.1",
@@ -44,7 +44,7 @@
     },
     "google": {
         "keyFile": "",
-        "mail":{
+        "mail": {
             "apiEmail": "",
             "from": ""
         },
@@ -58,7 +58,7 @@
     },
     "websocket": {
         "port": 8063,
-        "socketApiKey" : "my-secret-key",
+        "socketApiKey": "my-secret-key",
         "approvedSocketDomains": [
             "localhost",
             "^ws://www.webinate.net:123$",

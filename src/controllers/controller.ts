@@ -1,6 +1,6 @@
-﻿"use strict";
+﻿'use strict';
 
-import * as mongodb from "mongodb";
+import * as mongodb from 'mongodb';
 
 /**
  * Base class for all controllers
@@ -39,7 +39,7 @@ export abstract class Controller {
         return new Promise<mongodb.Collection>( function( resolve, reject ) {
             db.createCollection( name, function( err: Error, collection: mongodb.Collection ) {
                 if ( err || !collection )
-                    return reject( new Error( "Error creating collection: " + err.message ) );
+                    return reject( new Error( 'Error creating collection: ' + err.message ) );
                 else
                     return resolve( collection );
             });

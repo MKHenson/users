@@ -1,11 +1,11 @@
-"use strict";
+'use strict';
 
-import * as ws from "ws";
-import * as def from "webinate-users";
-import * as winston from "winston";
-import { UserManager, User } from "../users";
-import { CommsController } from "./comms-controller";
-import { ServerInstruction } from "./server-instruction";
+import * as ws from 'ws';
+import * as def from 'webinate-users';
+import * as winston from 'winston';
+import { UserManager, User } from '../users';
+import { CommsController } from './comms-controller';
+import { ServerInstruction } from './server-instruction';
 
 /**
  * A wrapper class for client connections made to the CommsController
@@ -39,7 +39,7 @@ export class ClientConnection {
     private onMessage( message: string ) {
         winston.info( `Received message from client: '${message}'`, { process: process.pid });
         try {
-            var token: def.SocketTokens.IToken = JSON.parse( message );
+            const token: def.SocketTokens.IToken = JSON.parse( message );
             this._controller.processServerInstruction( new ServerInstruction( token, this ) );
         }
         catch ( err ) {
@@ -56,9 +56,9 @@ export class ClientConnection {
 
         winston.info( `Websocket disconnected: ${this.domain}`, { process: process.pid })
 
-        this.ws.removeAllListeners( "message" );
-        this.ws.removeAllListeners( "close" );
-        this.ws.removeAllListeners( "error" );
+        this.ws.removeAllListeners( 'message' );
+        this.ws.removeAllListeners( 'close' );
+        this.ws.removeAllListeners( 'error' );
     }
 
     /**

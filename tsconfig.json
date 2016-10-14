@@ -20,6 +20,7 @@
     "src/**/*.ts"
   ],
   "exclude": [
-    "src/definitions/generated/*"
+    "src/definitions/generated/*",
+    "src/definitions/required/**/*"
   ]
 }

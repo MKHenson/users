@@ -1,21 +1,21 @@
-﻿"use strict";
+﻿'use strict';
 
-import * as mongodb from "mongodb";
-import * as http from "http";
-import * as validator from "validator";
-import * as bcrypt from "bcryptjs";
-import * as express from "express";
-import * as winston from "winston";
-import * as https from "https";
+import * as mongodb from 'mongodb';
+import * as http from 'http';
+import * as validator from 'validator';
+import * as bcrypt from 'bcryptjs';
+import * as express from 'express';
+import * as winston from 'winston';
+import * as https from 'https';
 
-import { CommsController } from "./socket-api/comms-controller";
-import { ClientInstruction } from "./socket-api/client-instruction";
-import { ClientInstructionType } from "./socket-api/socket-event-types";
-import * as def from "webinate-users";
-import { SessionManager, Session } from "./session";
-import { BucketManager } from "./bucket-manager";
-import { GMailer } from "./mailers/gmail"
-import { Mailguner } from "./mailers/mailgun"
+import { CommsController } from './socket-api/comms-controller';
+import { ClientInstruction } from './socket-api/client-instruction';
+import { ClientInstructionType } from './socket-api/socket-event-types';
+import * as def from 'webinate-users';
+import { SessionManager, Session } from './session';
+import { BucketManager } from './bucket-manager';
+import { GMailer } from './mailers/gmail'
+import { Mailguner } from './mailers/mailgun'
 
 /*
  * Describes what kind of privileges the user has
@@ -46,10 +46,10 @@ export class User {
 	*/
     generateCleanedData( verbose: boolean = false ): def.IUserEntry {
         if ( !this.dbEntry.passwordTag )
-            this.dbEntry.passwordTag = "";
+            this.dbEntry.passwordTag = '';
 
         if ( !this.dbEntry.sessionId )
-            this.dbEntry.sessionId = "";
+            this.dbEntry.sessionId = '';
 
         if ( verbose )
             return {
@@ -84,7 +84,7 @@ export class User {
             lastLoggedIn: Date.now(),
             createdOn: Date.now(),
             password: this.dbEntry.password,
-            registerKey: ( this.dbEntry.privileges == UserPrivileges.SuperAdmin ? "" : this.generateKey( 10 ) ),
+            registerKey: ( this.dbEntry.privileges === UserPrivileges.SuperAdmin ? '' : this.generateKey( 10 ) ),
             sessionId: this.dbEntry.sessionId,
             username: this.dbEntry.username,
             privileges: this.dbEntry.privileges,
@@ -98,10 +98,10 @@ export class User {
 	 * @param length The length of the password
 	 */
     generateKey( length: number = 10 ): string {
-        var text = "";
-        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let text = '';
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-        for ( var i = 0; i < length; i++ )
+        for ( let i = 0; i < length; i++ )
             text += possible.charAt( Math.floor( Math.random() * possible.length ) );
 
         return text;
@@ -139,20 +139,20 @@ export class UserManager {
             secure: config.ssl
         });
 
-        this.sessionManager.on( "sessionRemoved", this.onSessionRemoved.bind( this ) );
+        this.sessionManager.on( 'sessionRemoved', this.onSessionRemoved.bind( this ) );
     }
 
     /**
 	 * Called whenever a session is removed from the database
 	 */
     async onSessionRemoved( sessionId: string ) {
-        if ( !sessionId || sessionId == "" )
+        if ( !sessionId || sessionId === '' )
             return;
 
-        var useEntry: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ sessionId: sessionId }).limit( 1 ).next();
+        const useEntry: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ sessionId: sessionId }).limit( 1 ).next();
         if ( useEntry ) {
             // Send logged out event to socket
-            var token: def.SocketTokens.IUserToken = { username: useEntry.username!, type: ClientInstructionType[ ClientInstructionType.Logout ] };
+            const token: def.SocketTokens.IUserToken = { username: useEntry.username!, type: ClientInstructionType[ ClientInstructionType.Logout ] };
             await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, useEntry.username ) );
             winston.info( `User '${useEntry.username}' has logged out`, { process: process.pid });
         }
@@ -164,35 +164,35 @@ export class UserManager {
 	 * Initializes the API
 	 */
     async initialize(): Promise<void> {
-        var config = this._config;
+        const config = this._config;
 
         if ( config.mail ) {
-            if ( config.mail.type == "gmail" ) {
+            if ( config.mail.type === 'gmail' ) {
                 this._mailer = new GMailer( config.debugMode );
                 this._mailer.initialize( config.mail.options as def.IGMail );
             }
-            else if ( config.mail.type == "mailgun" ) {
+            else if ( config.mail.type === 'mailgun' ) {
                 this._mailer = new Mailguner( config.debugMode );
                 this._mailer.initialize( config.mail.options as def.IMailgun );
             }
         }
 
         if ( !this._mailer )
-            winston.warn( "No mailer has been specified and so the API cannot send emails. Please check your config." )
+            winston.warn( 'No mailer has been specified and so the API cannot send emails. Please check your config.' )
 
 
         // Clear all existing indices and then re-add them
         await this._userCollection.dropIndexes();
 
         // Make sure the user collection has an index to search the username field
-        await this._userCollection.createIndex( <def.IUserEntry>{ username: "text", email: "text" });
+        await this._userCollection.createIndex( <def.IUserEntry>{ username: 'text', email: 'text' });
 
         // See if we have an admin user
-        var user = await this.getUser( config.adminUser.username );
+        let user = await this.getUser( config.adminUser.username );
 
         // If no admin user exists, so lets try to create one
         if ( !user )
-            user = await this.createUser( config.adminUser.username, config.adminUser.email, config.adminUser.password, ( config.ssl ? "https://" : "http://" ) + config.hostName, UserPrivileges.SuperAdmin, {}, true );
+            user = await this.createUser( config.adminUser.username, config.adminUser.email, config.adminUser.password, ( config.ssl ? 'https://' : 'http://' ) + config.hostName, UserPrivileges.SuperAdmin, {}, true );
 
         return;
     }
@@ -202,25 +202,24 @@ export class UserManager {
      * @param captcha The captcha value the user guessed
 	 */
     private checkCaptcha( captcha: string ): Promise<boolean> {
-        var that = this;
-        return new Promise<boolean>( function( resolve, reject ) {
+        return new Promise<boolean>(( resolve, reject ) => {
 
-            var privatekey: string = that._config.captchaPrivateKey;
-            https.get( "https://www.google.com/recaptcha/api/siteverify?secret=" + privatekey + "&response=" + captcha, function( res ) {
-                var data = "";
+            const privatekey: string = this._config.captchaPrivateKey;
+            https.get( 'https://www.google.com/recaptcha/api/siteverify?secret=' + privatekey + '&response=' + captcha, function( res ) {
+                let data = '';
                 res.on( 'data', function( chunk ) {
                     data += chunk.toString();
                 });
                 res.on( 'end', function() {
                     try {
-                        var parsedData = JSON.parse( data );
+                        const parsedData = JSON.parse( data );
                         if ( !parsedData.success )
-                            return reject( new Error( "Your captcha code seems to be wrong. Please try another." ) );
+                            return reject( new Error( 'Your captcha code seems to be wrong. Please try another.' ) );
 
                         resolve( true );
 
                     } catch ( e ) {
-                        return reject( new Error( "There was an error connecting to Google Captcha: " + e.message ) );
+                        return reject( new Error( 'There was an error connecting to Google Captcha: ' + e.message ) );
                     }
                 });
             });
@@ -238,21 +237,21 @@ export class UserManager {
 	 * @param request
 	 * @param response
 	 */
-    async register( username: string = "", pass: string = "", email: string = "", captcha: string = "", meta: any = {}, request: express.Request ): Promise<User> {
-        var origin = encodeURIComponent( request.headers[ "origin" ] || request.headers[ "referer" ] );
+    async register( username: string = '', pass: string = '', email: string = '', captcha: string = '', meta: any = {}, request: express.Request ): Promise<User> {
+        const origin = encodeURIComponent( request.headers[ 'origin' ] || request.headers[ 'referer' ] );
 
         // First check if user exists, make sure the details supplied are ok, then create the new user
-        var user: User | null = await this.getUser( username, email );
+        let user: User | null = await this.getUser( username, email );
 
         // If we already a user then error out
         if ( user )
-            throw new Error( "That username or email is already in use; please choose another or login." );
+            throw new Error( 'That username or email is already in use; please choose another or login.' );
 
         // Validate other data
-        if ( !pass || pass == "" ) throw new Error( "Password cannot be null or empty" );
-        if ( !email || email == "" ) throw new Error( "Email cannot be null or empty" );
-        if ( !validator.isEmail( email ) ) throw new Error( "Please use a valid email address" );
-        if ( request && ( !captcha || captcha == "" ) ) throw new Error( "Captcha cannot be null or empty" );
+        if ( !pass || pass === '' ) throw new Error( 'Password cannot be null or empty' );
+        if ( !email || email === '' ) throw new Error( 'Email cannot be null or empty' );
+        if ( !validator.isEmail( email ) ) throw new Error( 'Please use a valid email address' );
+        if ( request && ( !captcha || captcha === '' ) ) throw new Error( 'Captcha cannot be null or empty' );
 
         // Check the captcha
         await this.checkCaptcha( captcha );
@@ -267,7 +266,7 @@ export class UserManager {
      * @param origin The origin of where the activation link came from
 	 */
     private createActivationLink( user: User, origin: string ): string {
-        return `${( this._config.ssl ? "https://" : "http://" )}${this._config.hostName}:${( this._config.ssl ? this._config.portHTTPS : this._config.portHTTP )}${this._config.apiPrefix}activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
+        return `${( this._config.ssl ? 'https://' : 'http://' )}${this._config.hostName}:${( this._config.ssl ? this._config.portHTTPS : this._config.portHTTP )}${this._config.apiPrefix}activate-account?key=${user.dbEntry.registerKey}&user=${user.dbEntry.username}&origin=${origin}`;
     }
 
 	/**
@@ -285,16 +284,16 @@ export class UserManager {
 	 */
     async approveActivation( username: string ): Promise<void> {
         // Get the user
-        var user: User | null = await this.getUser( username );
+        const user: User | null = await this.getUser( username );
 
         if ( !user )
-            throw new Error( "No user exists with the specified details" );
+            throw new Error( 'No user exists with the specified details' );
 
         // Clear the user's activation
-        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
+        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: '' } });
 
         // Send activated event
-        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Activated ] };
+        const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Activated ] };
         await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
 
         winston.info( `User '${username}' has been activated`, { process: process.pid });
@@ -312,8 +311,8 @@ export class UserManager {
             throw new Error( `No email account has been setup` );
 
         try {
-            await this._mailer.sendMail( this._config.adminUser.email, this._config.mail.from, `Message from ${( name ? name : "a user" )}`,
-                message + "<br /><br />Email: " + ( from ? from : "" ) );
+            await this._mailer.sendMail( this._config.adminUser.email, this._config.mail.from, `Message from ${( name ? name : 'a user' )}`,
+                message + '<br /><br />Email: ' + ( from ? from : '' ) );
         } catch ( err ) {
             new Error( `Could not send email to user: ${err.message}` )
         }
@@ -328,25 +327,25 @@ export class UserManager {
 	 */
     async resendActivation( username: string, origin: string ): Promise<boolean> {
         // Get the user
-        var user: User | null = await this.getUser( username );
+        const user: User | null = await this.getUser( username );
 
         if ( !user )
-            throw new Error( "No user exists with the specified details" );
+            throw new Error( 'No user exists with the specified details' );
 
-        if ( user.dbEntry.registerKey == "" )
-            throw new Error( "Account has already been activated" );
+        if ( user.dbEntry.registerKey === '' )
+            throw new Error( 'Account has already been activated' );
 
-        var newKey = user.generateKey();
+        const newKey = user.generateKey();
         user.dbEntry.registerKey = newKey;
 
         // Update the collection with a new key
         await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } });
 
         // Send a message to the user to say they are registered but need to activate their account
-        var message: string = "Thank you for registering with Webinate!\nTo activate your account please click the link below:" +
+        const message: string = 'Thank you for registering with Webinate!\nTo activate your account please click the link below:' +
             this.createActivationLink( user, origin ) +
-            "Thanks\n\n" +
-            "The Webinate Team";
+            'Thanks\n\n' +
+            'The Webinate Team';
 
         // If no mailer is setup
         if ( !this._mailer )
@@ -354,7 +353,7 @@ export class UserManager {
 
         try {
             // Send mail using the mailer
-            await this._mailer.sendMail( user.dbEntry.email!, this._config.mail.from, "Activate your account", message );
+            await this._mailer.sendMail( user.dbEntry.email!, this._config.mail.from, 'Activate your account', message );
         } catch ( err ) {
             new Error( `Could not send email to user: ${err.message}` )
         }
@@ -369,12 +368,12 @@ export class UserManager {
 	 */
     async requestPasswordReset( username: string, origin: string ): Promise<boolean> {
         // Get the user
-        var user: User | null = await this.getUser( username );
+        const user: User | null = await this.getUser( username );
 
         if ( !user )
-            throw new Error( "No user exists with the specified details" );
+            throw new Error( 'No user exists with the specified details' );
 
-        var newKey = user.generateKey();
+        const newKey = user.generateKey();
 
         // Password token
         user.dbEntry.passwordTag = newKey;
@@ -383,10 +382,10 @@ export class UserManager {
         await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } });
 
         // Send a message to the user to say they are registered but need to activate their account
-        var message: string = "A request has been made to reset your password. To change your password please click the link below:\n\n" +
+        const message: string = 'A request has been made to reset your password. To change your password please click the link below:\n\n' +
             this.createResetLink( user, origin ) +
-            "Thanks\n\n" +
-            "The Webinate Team";
+            'Thanks\n\n' +
+            'The Webinate Team';
 
         // If no mailer is setup
         if ( !this._mailer )
@@ -394,7 +393,7 @@ export class UserManager {
 
         // Send mail using the mailer
         try {
-            await this._mailer.sendMail( user.dbEntry.email!, this._config.mail.from, "Reset Password", message );
+            await this._mailer.sendMail( user.dbEntry.email!, this._config.mail.from, 'Reset Password', message );
         }
         catch ( err ) {
             throw new Error( `Could not send email to user: ${err.message}` )
@@ -442,24 +441,24 @@ export class UserManager {
 	 */
     async resetPassword( username: string, code: string, newPassword: string ): Promise<boolean> {
         // Get the user
-        var user: User | null = await this.getUser( username );
+        const user: User | null = await this.getUser( username );
 
         // No user - so invalid
         if ( !user )
-            throw new Error( "No user exists with those credentials" );
+            throw new Error( 'No user exists with those credentials' );
 
         // If key is the same
-        if ( user.dbEntry.passwordTag != code )
-            throw new Error( "Password codes do not match. Please try resetting your password again" );
+        if ( user.dbEntry.passwordTag !== code )
+            throw new Error( 'Password codes do not match. Please try resetting your password again' );
 
         // Make sure password is valid
-        if ( newPassword === undefined || newPassword == "" || validator.blacklist( newPassword, "@\'\"{}" ) != newPassword )
-            throw new Error( "Please enter a valid password" );
+        if ( newPassword === undefined || newPassword === '' || validator.blacklist( newPassword, '@\'\'{}' ) !== newPassword )
+            throw new Error( 'Please enter a valid password' );
 
-        var hashed = await this.hashPassword( newPassword );
+        const hashed = await this.hashPassword( newPassword );
 
         // Update the key to be blank
-        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: "", password: hashed } });
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: '', password: hashed } });
 
         // All done :)
         return true;
@@ -471,25 +470,25 @@ export class UserManager {
 	 */
     async checkActivation( username: string, code: string ): Promise<boolean> {
         // Get the user
-        var user = await this.getUser( username );
+        const user = await this.getUser( username );
 
         // No user - so invalid
         if ( !user )
-            throw new Error( "No user exists with those credentials" );
+            throw new Error( 'No user exists with those credentials' );
 
         // If key is already blank - then its good to go
-        if ( user.dbEntry.registerKey == "" )
+        if ( user.dbEntry.registerKey === '' )
             return true;
 
         // Check key
-        if ( user.dbEntry.registerKey != code )
-            throw new Error( "Activation key is not valid. Please try send another." );
+        if ( user.dbEntry.registerKey !== code )
+            throw new Error( 'Activation key is not valid. Please try send another.' );
 
         // Update the key to be blank
-        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: "" } });
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: '' } });
 
         // Send activated event
-        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Activated ] };
+        const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Activated ] };
         await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
 
         winston.info( `User '${username}' has been activated`, { process: process.pid });
@@ -504,11 +503,11 @@ export class UserManager {
 	 */
     async loggedIn( request: http.ServerRequest, response: http.ServerResponse | null ): Promise<User | null> {
         // If no request or response, then assume its an admin user
-        var session = await this.sessionManager.getSession( request, response );
+        const session = await this.sessionManager.getSession( request, response );
         if ( !session )
             return null;
 
-        var useEntry = await this._userCollection.find( { sessionId: session.sessionId }).limit( 1 ).next();
+        const useEntry = await this._userCollection.find( { sessionId: session.sessionId }).limit( 1 ).next();
         if ( !useEntry )
             return null;
         else
@@ -521,7 +520,7 @@ export class UserManager {
 	 * @param response
 	 */
     async logOut( request: http.ServerRequest, response: http.ServerResponse ): Promise<boolean> {
-        var sessionCleaered = await this.sessionManager.clearSession( null, request, response );
+        const sessionCleaered = await this.sessionManager.clearSession( null, request, response );
         return sessionCleaered;
     }
 
@@ -537,49 +536,49 @@ export class UserManager {
 	 */
     async createUser( user: string, email: string, password: string, origin: string, privilege: UserPrivileges = UserPrivileges.Regular, meta: any = {}, allowAdmin: boolean = false ): Promise<User> {
         // Basic checks
-        if ( !user || validator.trim( user ) == "" )
-            throw new Error( "Username cannot be empty" );
+        if ( !user || validator.trim( user ) === '' )
+            throw new Error( 'Username cannot be empty' );
         if ( !validator.isAlphanumeric( user ) )
-            throw new Error( "Username must be alphanumeric" );
-        if ( !email || validator.trim( email ) == "" )
-            throw new Error( "Email cannot be empty" );
+            throw new Error( 'Username must be alphanumeric' );
+        if ( !email || validator.trim( email ) === '' )
+            throw new Error( 'Email cannot be empty' );
         if ( !validator.isEmail( email ) )
-            throw new Error( "Email must be valid" );
-        if ( !password || validator.trim( password ) == "" )
-            throw new Error( "Password cannot be empty" );
+            throw new Error( 'Email must be valid' );
+        if ( !password || validator.trim( password ) === '' )
+            throw new Error( 'Password cannot be empty' );
         if ( privilege > 3 )
-            throw new Error( "Privilege type is unrecognised" );
-        if ( privilege == UserPrivileges.SuperAdmin && allowAdmin == false )
-            throw new Error( "You cannot create a super user" );
+            throw new Error( 'Privilege type is unrecognised' );
+        if ( privilege === UserPrivileges.SuperAdmin && allowAdmin === false )
+            throw new Error( 'You cannot create a super user' );
 
         // Check if the user already exists
-        var hashedPsw: string = await this.hashPassword( password );
-        var existingUser = await this.getUser( user, email );
+        const hashedPsw: string = await this.hashPassword( password );
+        const existingUser = await this.getUser( user, email );
 
         if ( existingUser )
             throw new Error( `A user with that name or email already exists` );
 
         // Create the user
-        var newUser: User = new User( {
+        const newUser: User = new User( {
             username: user,
             password: hashedPsw,
             email: email,
             privileges: privilege,
-            passwordTag: "",
+            passwordTag: '',
             meta: meta
         });
 
         // Update the database
-        var insertResult = await this._userCollection.insertOne( newUser.generateDbEntry() );
+        const insertResult = await this._userCollection.insertOne( newUser.generateDbEntry() );
 
         // Assing the ID and pass the user on
         newUser.dbEntry = insertResult.ops[ 0 ];
 
         // Send a message to the user to say they are registered but need to activate their account
-        var message: string = "Thank you for registering with Webinate! To activate your account please click the link below: \n\n" +
-            this.createActivationLink( newUser, origin ) + "\n\n" +
-            "Thanks\n" +
-            "The Webinate Team";
+        const message: string = 'Thank you for registering with Webinate! To activate your account please click the link below: \n\n' +
+            this.createActivationLink( newUser, origin ) + '\n\n' +
+            'Thanks\n' +
+            'The Webinate Team';
 
         // If no mailer is setup
         if ( !this._mailer )
@@ -589,7 +588,7 @@ export class UserManager {
         await this._mailer.sendMail(
             newUser.dbEntry.email!,
             this._config.mail.from,
-            "Activate your account",
+            'Activate your account',
             message
         );
 
@@ -597,7 +596,7 @@ export class UserManager {
         await BucketManager.get.createUserStats( newUser.dbEntry.username! );
 
         // All users have a bucket created for them
-        await BucketManager.get.createBucket( newUser.dbEntry.username + "-bucket", newUser.dbEntry.username! );
+        await BucketManager.get.createBucket( newUser.dbEntry.username + '-bucket', newUser.dbEntry.username! );
 
         return newUser;
     }
@@ -607,25 +606,25 @@ export class UserManager {
 	 * @param user The unique username or email of the user to remove
 	 */
     async removeUser( user: string ): Promise<void> {
-        var username: string = "";
-        var userInstance = await this.getUser( user );
+        let username: string = '';
+        const userInstance = await this.getUser( user );
 
         if ( !userInstance )
-            throw new Error( "Could not find any users with those credentials" );
+            throw new Error( 'Could not find any users with those credentials' );
 
-        if ( userInstance.dbEntry.privileges == UserPrivileges.SuperAdmin )
-            throw new Error( "You cannot remove a super user" );
+        if ( userInstance.dbEntry.privileges === UserPrivileges.SuperAdmin )
+            throw new Error( 'You cannot remove a super user' );
 
         username = userInstance.dbEntry.username!;
 
         await BucketManager.get.removeUser( username );
-        var result = await this._userCollection.deleteOne( <def.IUserEntry>{ _id: userInstance.dbEntry._id! });
+        const result = await this._userCollection.deleteOne( <def.IUserEntry>{ _id: userInstance.dbEntry._id! });
 
-        if ( result.deletedCount == 0 )
-            throw new Error( "Could not remove the user from the database" );
+        if ( result.deletedCount === 0 )
+            throw new Error( 'Could not remove the user from the database' );
 
         // Send event to sockets
-        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Removed ] };
+        const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Removed ] };
         CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
 
         winston.info( `User '${username}' has been removed`, { process: process.pid });
@@ -640,21 +639,21 @@ export class UserManager {
 	 * @returns Resolves with either a valid user or null if none exists
 	 */
     async getUser( user: string, email?: string ): Promise<User | null> {
-        email = email != undefined ? email : user;
+        email = email !== undefined ? email : user;
 
         // Validate user string
         user = validator.trim( user );
 
-        if ( !user || user == "" )
-            throw new Error( "Please enter a valid username" );
+        if ( !user || user === '' )
+            throw new Error( 'Please enter a valid username' );
 
         if ( !validator.isAlphanumeric( user ) && !validator.isEmail( user ) )
-            throw new Error( "Please only use alpha numeric characters for your username" );
+            throw new Error( 'Please only use alpha numeric characters for your username' );
 
-        var target = [ { email: email }, { username: user }];
+        const target = [ { email: email }, { username: user }];
 
         // Search the collection for the user
-        var userEntry: def.IUserEntry = await this._userCollection.find( { $or: target }).limit( 1 ).next();
+        const userEntry: def.IUserEntry = await this._userCollection.find( { $or: target }).limit( 1 ).next();
         if ( !userEntry )
             return null;
         else
@@ -669,44 +668,44 @@ export class UserManager {
 	 * @param request
 	 * @param response
 	 */
-    async logIn( username: string = "", pass: string = "", rememberMe: boolean = true, request: http.ServerRequest, response: http.ServerResponse ): Promise<User> {
+    async logIn( username: string = '', pass: string = '', rememberMe: boolean = true, request: http.ServerRequest, response: http.ServerResponse ): Promise<User> {
         await this.logOut( request, response );
-        var user: User | null = await this.getUser( username );
+        const user: User | null = await this.getUser( username );
 
         // If no user - then reject
         if ( !user )
-            throw new Error( "The username or password is incorrect." );
+            throw new Error( 'The username or password is incorrect.' );
 
         // Validate password
         pass = validator.trim( pass );
-        if ( !pass || pass == "" )
-            throw new Error( "Please enter a valid password" );
+        if ( !pass || pass === '' )
+            throw new Error( 'Please enter a valid password' );
 
         // Check if the registration key has been removed yet
-        if ( user.dbEntry.registerKey != "" )
-            throw new Error( "Please authorise your account by clicking on the link that was sent to your email" );
+        if ( user.dbEntry.registerKey !== '' )
+            throw new Error( 'Please authorise your account by clicking on the link that was sent to your email' );
 
-        var passworldValid: boolean = await this.comparePassword( pass, user.dbEntry.password! );
+        const passworldValid: boolean = await this.comparePassword( pass, user.dbEntry.password! );
         if ( !passworldValid )
-            throw new Error( "The username or password is incorrect." );
+            throw new Error( 'The username or password is incorrect.' );
 
         // Set the user last login time
         user.dbEntry.lastLoggedIn = Date.now();
 
         // Update the collection
-        var result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } });
+        let result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } });
 
         if ( result.matchedCount === 0 )
-            throw new Error( "Could not find the user in the database, please make sure its setup correctly" );
+            throw new Error( 'Could not find the user in the database, please make sure its setup correctly' );
 
-        var session: Session = await this.sessionManager.createSession( !rememberMe, response );
+        const session: Session = await this.sessionManager.createSession( !rememberMe, response );
         result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } });
 
         if ( result.matchedCount === 0 )
-            throw new Error( "Could not find the user in the database, please make sure its setup correctly" );
+            throw new Error( 'Could not find the user in the database, please make sure its setup correctly' );
 
         // Send logged in event to socket
-        var token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Login ] };
+        const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Login ] };
         await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
         return user;
     }
@@ -716,15 +715,15 @@ export class UserManager {
 	 * @param username The username or email of the user
 	 * @returns True if the user was in the DB or false if they were not
 	 */
-    async remove( username: string = "" ): Promise<boolean> {
-        var user = await this.getUser( username );
+    async remove( username: string = '' ): Promise<boolean> {
+        const user = await this.getUser( username );
 
         // There was no user
         if ( !user )
             return false;
 
         // Remove the user from the DB
-        var result = await this._userCollection.deleteOne( { _id: user.dbEntry._id });
+        const result = await this._userCollection.deleteOne( { _id: user.dbEntry._id });
         if ( result.deletedCount === 0 )
             return false;
         else
@@ -738,14 +737,13 @@ export class UserManager {
 	 * @returns Returns the data set
 	 */
     async setMeta( user: def.IUserEntry, data?: any ): Promise<boolean | any> {
-        var that = this;
 
         // There was no user
         if ( !user )
             return false;
 
         // Remove the user from the DB
-        await that._userCollection.updateOne( <def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {}) } });
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {}) } });
         return data;
     }
 
@@ -757,18 +755,16 @@ export class UserManager {
 	 * @returns {Promise<boolean|any>} Returns the value of the set
 	 */
     async setMetaVal( user: def.IUserEntry, name: string, val: any ): Promise<boolean | any> {
-        var that = this;
-
         // There was no user
         if ( !user )
             return false;
 
-        var datum = "meta." + name;
-        var updateToken = { $set: {} };
+        const datum = 'meta.' + name;
+        const updateToken = { $set: {} };
         updateToken.$set[ datum ] = val;
 
         // Remove the user from the DB
-        await that._userCollection.updateOne( <def.IUserEntry>{ _id: user._id }, updateToken );
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user._id }, updateToken );
         return val;
     }
 
@@ -779,14 +775,13 @@ export class UserManager {
 	 * @returns The value to get
 	 */
     async getMetaVal( user: def.IUserEntry, name: string ): Promise<boolean | any> {
-        var that = this;
 
         // There was no user
         if ( !user )
             return false;
 
         // Remove the user from the DB
-        var result: def.IUserEntry = await that._userCollection.find( <def.IUserEntry>{ _id: user._id }).project( { _id: 0, meta: 1 }).limit( 1 ).next();
+        const result: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ _id: user._id }).project( { _id: 0, meta: 1 }).limit( 1 ).next();
         return result.meta[ name ];
     }
 
@@ -796,14 +791,13 @@ export class UserManager {
 	 * @returns The value to get
 	 */
     async getMetaData( user: def.IUserEntry ): Promise<boolean | any> {
-        var that = this;
 
         // There was no user
         if ( !user )
             return false;
 
         // Remove the user from the DB
-        var result: def.IUserEntry = await that._userCollection.find( <def.IUserEntry>{ _id: user._id }).project( { _id: 0, meta: 1 }).limit( 1 ).next();
+        const result: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ _id: user._id }).project( { _id: 0, meta: 1 }).limit( 1 ).next();
         return result.meta;
     }
 
@@ -812,9 +806,9 @@ export class UserManager {
      * @param searchPhrases Search phrases
 	 */
     async numUsers( searchPhrases?: RegExp ): Promise<number> {
-        var that = this;
-        var findToken = { $or: [ <def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
-        var result: number = await that._userCollection.count( findToken );
+
+        const findToken = { $or: [ <def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+        const result: number = await this._userCollection.count( findToken );
         return result;
     }
 
@@ -825,10 +819,10 @@ export class UserManager {
      * @param searchPhrases Search phrases
 	 */
     async getUsers( startIndex: number = 0, limit: number = 0, searchPhrases?: RegExp ): Promise<Array<User>> {
-        var findToken = { $or: [ <def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
-        var results: Array<def.IUserEntry> = await this._userCollection.find( findToken ).skip( startIndex ).limit( limit ).toArray();
-        var users: Array<User> = [];
-        for ( var i = 0, l = results.length; i < l; i++ )
+        const findToken = { $or: [ <def.IUserEntry>{ username: <any>searchPhrases }, <def.IUserEntry>{ email: <any>searchPhrases }] };
+        const results: Array<def.IUserEntry> = await this._userCollection.find( findToken ).skip( startIndex ).limit( limit ).toArray();
+        const users: Array<User> = [];
+        for ( let i = 0, l = results.length; i < l; i++ )
             users.push( new User( results[ i ] ) );
 
         return users;

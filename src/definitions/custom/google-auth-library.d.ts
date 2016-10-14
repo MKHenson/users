@@ -1,12 +1,10 @@
-declare module GoogleAuth
-{
-    export class OAuth2
-    {
-        constructor(clientId?, clientSecret?, redirectUrl?);
-        setCredentials(credentials : any);
+declare namespace GoogleAuth {
+    export class OAuth2 {
+        constructor( clientId?, clientSecret?, redirectUrl?);
+        setCredentials( credentials: any );
     }
 
-    export class JWT{
+    export class JWT {
         /**
         * JWT service account credentials.
         *
@@ -19,22 +17,20 @@ declare module GoogleAuth
         * @param {string=} subject impersonated account's email address.
         * @constructor
         */
-        constructor(email?, keyFile?, key?, scopes?, subject?);
+        constructor( email?, keyFile?, key?, scopes?, subject?);
 
-        authorize(callback?: (err: Error, success : any) => void );
+        authorize( callback?: ( err: Error, success: any ) => void );
 
-        fromJSON(callback?: (err: Error, success : any) => void );
+        fromJSON( callback?: ( err: Error, success: any ) => void );
     }
 
-    export class AuthLib
-    {
+    export class AuthLib {
         OAuth2: typeof OAuth2;
         JWT: typeof JWT;
     }
 }
 
 declare var moment: typeof GoogleAuth.AuthLib;
-declare module "google-auth-library"
-{
+declare module 'google-auth-library' {
     export = moment;
 }

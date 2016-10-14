@@ -1,11 +1,11 @@
-"use strict";
+'use strict';
 
-import { UserManager } from "../users";
-import { ServerInstruction } from "./server-instruction";
-import { ClientInstruction } from "./client-instruction";
-import { CommsController } from "./comms-controller";
-import { ClientInstructionType, ServerInstructionType } from "./socket-event-types";
-import * as def from "webinate-users";
+import { UserManager } from '../users';
+import { ServerInstruction } from './server-instruction';
+import { ClientInstruction } from './client-instruction';
+import { CommsController } from './comms-controller';
+import { ClientInstructionType, ServerInstructionType } from './socket-event-types';
+import * as def from 'webinate-users';
 
 /**
  * Handles express errors
@@ -24,7 +24,7 @@ export class SocketAPI {
      * Responds to a meta request from a client
      */
     private onMeta( e: ServerInstruction<def.SocketTokens.IMetaToken> ) {
-        var comms = this._comms;
+        const comms = this._comms;
 
         if ( !UserManager.get )
             return;
@@ -32,11 +32,11 @@ export class SocketAPI {
         UserManager.get.getUser( e.token.username! ).then( function( user ) {
 
             if ( !user )
-                return Promise.reject( new Error( "Could not find user " + e.token.username ) );
+                return Promise.reject( new Error( 'Could not find user ' + e.token.username ) );
 
             // Make sure the client is authorized to make this request
             if ( !e.from.authorizedThirdParty )
-                return Promise.reject( new Error( "You do not have permission to make this request" ) );
+                return Promise.reject( new Error( 'You do not have permission to make this request' ) );
 
             if ( e.token.property && e.token.val !== undefined )
                 return UserManager.get.setMetaVal( user.dbEntry, e.token.property, e.token.val );

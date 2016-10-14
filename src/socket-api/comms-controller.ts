@@ -1,17 +1,17 @@
-﻿"use strict";
+﻿'use strict';
 
-import * as bcrypt from "bcryptjs";
-import * as ws from "ws";
-import * as events from "events";
-import * as def from "webinate-users";
-import * as https from "https";
-import * as fs from "fs";
-import * as winston from "winston";
-import { ServerInstructionType } from "./socket-event-types";
-import { SocketAPI } from "./socket-api";
-import { ClientConnection } from "./client-connection";
-import { ClientInstruction } from "./client-instruction";
-import { ServerInstruction } from "./server-instruction";
+import * as bcrypt from 'bcryptjs';
+import * as ws from 'ws';
+import * as events from 'events';
+import * as def from 'webinate-users';
+import * as https from 'https';
+import * as fs from 'fs';
+import * as winston from 'winston';
+import { ServerInstructionType } from './socket-event-types';
+import { SocketAPI } from './socket-api';
+import { ClientConnection } from './client-connection';
+import { ClientInstruction } from './client-instruction';
+import { ServerInstruction } from './server-instruction';
 
 /**
  * A controller that deals with any any IPC or web socket communications
@@ -71,7 +71,7 @@ export class CommsController extends events.EventEmitter {
         }
         else {
             for ( let recipient of recipients )
-                if ( recipient.authorizedThirdParty || ( recipient.user && recipient.user.dbEntry.username == username ) )
+                if ( recipient.authorizedThirdParty || ( recipient.user && recipient.user.dbEntry.username === username ) )
                     this.sendToken( recipient, instruction.token );
         }
     }
@@ -131,7 +131,7 @@ export class CommsController extends events.EventEmitter {
             // Check if the connecting client is an authorized third party (more privileges)
             let authorizedThirdParty = false;
             if ( headers[ 'users-api-key' ] && this._hashedApiKey ) {
-                winston.info( "Checking socket API key" );
+                winston.info( 'Checking socket API key' );
                 authorizedThirdParty = await this.checkApiKey( headers[ 'users-api-key' ] );
             }
 
@@ -164,19 +164,19 @@ export class CommsController extends events.EventEmitter {
         let cfg = this._cfg;
 
         // dummy request processing - this is not actually called as its handed off to the socket api
-        var processRequest = function( req, res ) {
+        const processRequest = function( req, res ) {
             req; // Suppress compiler warning
             res.writeHead( 200 );
-            res.end( "All glory to WebSockets!\n" );
+            res.end( 'All glory to WebSockets!\n' );
         };
 
         // Create the web socket server
         if ( cfg.ssl ) {
-            winston.info( "Creating secure socket connection", { process: process.pid });
-            var httpsServer: https.Server;
-            var caChain = [ fs.readFileSync( cfg.sslIntermediate ), fs.readFileSync( cfg.sslRoot ) ];
-            var privkey = cfg.sslKey ? fs.readFileSync( cfg.sslKey ) : null;
-            var theCert = cfg.sslCert ? fs.readFileSync( cfg.sslCert ) : null;
+            winston.info( 'Creating secure socket connection', { process: process.pid });
+            let httpsServer: https.Server;
+            const caChain = [ fs.readFileSync( cfg.sslIntermediate ), fs.readFileSync( cfg.sslRoot ) ];
+            const privkey = cfg.sslKey ? fs.readFileSync( cfg.sslKey ) : null;
+            const theCert = cfg.sslCert ? fs.readFileSync( cfg.sslCert ) : null;
 
             winston.info( `Attempting to start Websocket server with SSL...`, { process: process.pid });
             httpsServer = https.createServer( { key: privkey, cert: theCert, passphrase: cfg.sslPassPhrase, ca: caChain }, processRequest );
@@ -184,15 +184,15 @@ export class CommsController extends events.EventEmitter {
             this._server = new ws.Server( { server: httpsServer });
         }
         else {
-            winston.info( "Creating regular socket connection", { process: process.pid });
+            winston.info( 'Creating regular socket connection', { process: process.pid });
             this._server = new ws.Server( { port: cfg.websocket.port });
         }
 
-        winston.info( "Websockets attempting to listen on HTTP port " + this._cfg.websocket.port, { process: process.pid });
+        winston.info( 'Websockets attempting to listen on HTTP port ' + this._cfg.websocket.port, { process: process.pid });
 
         // Handle errors
         this._server.on( 'error', ( err ) => {
-            winston.error( "Websocket error: " + err.toString() );
+            winston.error( 'Websocket error: ' + err.toString() );
             this._server.close();
         });
 

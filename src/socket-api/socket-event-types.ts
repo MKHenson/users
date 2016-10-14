@@ -1,10 +1,9 @@
-"use strict";
+'use strict';
 
 /**
  * Describes the type of token data being sent to connected clients
  */
-export enum ClientInstructionType
-{
+export enum ClientInstructionType {
     /**
      * Event sent to clients whenever a user logs in.
      * Event type: IUserToken
@@ -63,8 +62,7 @@ export enum ClientInstructionType
 /**
  * Describes the type of token data being sent to connected clients
  */
-export enum ServerInstructionType
-{
+export enum ServerInstructionType {
     /**
      * Event both sent to the server as well as optionally to clients. Gets or sets user meta data.
      * Event type: IMetaToken

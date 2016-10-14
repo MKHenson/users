@@ -1,4 +1,4 @@
-﻿declare module UsersInterface {
+﻿declare namespace UsersInterface {
     export class User {
         dbEntry: IUserEntry;
     }
@@ -6,7 +6,7 @@
     /*
      * Describes the different types of event interfaces we can use to interact with the system via web sockets
      */
-    export module SocketTokens {
+    export namespace SocketTokens {
         export type ClientInstructionType = (
             'Login' |
             'Logout' |
@@ -170,8 +170,8 @@
         /**
          * An array of safe origins for socket communication
          * [
-         *   "webinate.net",
-         *   "localhost"
+         *   'webinate.net',
+         *   'localhost'
          * ]
          */
         approvedSocketDomains: Array<string>;
@@ -250,19 +250,19 @@
 
             /**
              * The name of the mongodb collection for storing bucket details
-             * eg: "buckets"
+             * eg: 'buckets'
              */
             bucketsCollection: string;
 
             /**
              * The name of the mongodb collection for storing file details
-             * eg: "files"
+             * eg: 'files'
              */
             filesCollection: string;
 
             /**
              * The name of the mongodb collection for storing user stats
-             * eg: "storageAPI"
+             * eg: 'storageAPI'
              */
             statsCollection: string;
 
@@ -382,29 +382,29 @@
 
         /**
          * The host to use when listening
-         * eg: "localhost" or "192.168.0.1" or "0.0.0.0"
+         * eg: 'localhost' or '192.168.0.1' or '0.0.0.0'
          */
         host: string;
 
         /**
          * The domain or host name of the site. This is the external URL to use for connecting to users.
-         * eg: "webinate.net"
+         * eg: 'webinate.net'
          */
         hostName: string;
 
         /**
          * The RESTful path of this service.
-         * eg: If "/api", then the API url would be 127.0.0.1:80/api (or rather host:port/api)
+         * eg: If '/api', then the API url would be 127.0.0.1:80/api (or rather host:port/api)
          */
         apiPrefix: string;
 
         /**
          * The URL to redirect to after the user attempts to activate their account.
-         * User's can activate their account via the "/activate-account" URL, and after its validation the server will redirect to this URL
+         * User's can activate their account via the '/activate-account' URL, and after its validation the server will redirect to this URL
          * adding a query ?message=You%20have%20activated%20your%20account&status=success.
          * The status can be either 'success' or 'error'
          *
-         * eg: "http://localhost/notify-user"
+         * eg: 'http://localhost/notify-user'
          */
         accountRedirectURL: string;
 
@@ -412,13 +412,13 @@
          * The URL sent to users emails for when their password is reset. This URL should
          * resolve to a page with a form that allows users to reset their password. (MORE TO COME ON THIS)
          *
-         * eg: "http://localhost/reset-password"
+         * eg: 'http://localhost/reset-password'
          */
         passwordResetURL: string;
 
         /**
          * An array of approved domains that can access this API.
-         * e.g. ["webinate\\.net", "127.0.0.1:80", "http:\/\/127.0.0.1"] etc...
+         * e.g. ['webinate\\.net', '127.0.0.1:80', 'http:\/\/127.0.0.1'] etc...
          */
         approvedDomains: Array<string>;
 
@@ -446,19 +446,19 @@
 
         /**
          * The name of the mongodb collection for storing user details
-         * eg: "users"
+         * eg: 'users'
          */
         userCollection: string;
 
         /**
          * The name of the mongodb collection for storing session details
-         * eg: "sessions"
+         * eg: 'sessions'
          */
         sessionCollection: string;
 
         /**
          * The host the DB is listening on
-         * e.g. "127.0.0.1"
+         * e.g. '127.0.0.1'
          */
         databaseHost: string;
 
@@ -501,8 +501,8 @@
 
         /*
          * If set, the session will be restricted to URLs underneath the given path.
-         * By default the path is "/", which means that the same sessions will be shared across the entire domain.
-         * e.g: "/"
+         * By default the path is '/', which means that the same sessions will be shared across the entire domain.
+         * e.g: '/'
          */
         sessionPath?: string;
 
@@ -510,7 +510,7 @@
          * If present, the cookie (and hence the session) will apply to the given domain, including any subdomains.
          * For example, on a request from foo.example.org, if the domain is set to '.example.org', then this session will persist across any subdomain of example.org.
          * By default, the domain is not set, and the session will only be visible to other requests that exactly match the domain.
-         * Default is blank ""
+         * Default is blank ''
          */
         sessionDomain?: string;
 
@@ -550,10 +550,10 @@
          * This can be anything you like, but try to use passwords that are hard to guess
          * eg:
 
-         "adminUser": {
-                 "username": "root",
-                 "email": "root_email@host.com",
-                 "password": "CHANGE_THIS_PASSWORD"
+         'adminUser': {
+                 'username': 'root',
+                 'email': 'root_email@host.com',
+                 'password': 'CHANGE_THIS_PASSWORD'
              }
          */
         adminUser: IAdminUser;
@@ -572,7 +572,7 @@
              * Specify the type of mailer to use.
              * Currently we support either 'gmail' or 'mailgun'
              */
-            type: "gmail" | "mailgun";
+            type: 'gmail' | 'mailgun';
 
             /**
              * Options to be sent to the desired mailer
@@ -583,16 +583,16 @@
         /**
          * Information relating to the Google storage platform
          *
-         "google": {
-             "keyFile": "",
-             "mail":{
-                 "apiEmail": "",
-                 "from": ""
+         'google': {
+             'keyFile': '',
+             'mail':{
+                 'apiEmail': '',
+                 'from': ''
              },
-             "bucket": {
-                     "projectId": "",
-                     "bucketsCollection": "buckets",
-                     "filesCollection": "files"
+             'bucket': {
+                     'projectId': '',
+                     'bucketsCollection': 'buckets',
+                     'filesCollection': 'files'
                  }
              }
          */
@@ -609,7 +609,6 @@
     export interface IRemoveFiles extends IGetArrayResponse<string> { }
 }
 
-declare module "webinate-users"
-{
+declare module 'webinate-users' {
     export = UsersInterface;
 }
