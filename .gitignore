@@ -23,6 +23,7 @@ bld/
 [Oo]bj/
 node_modules/
 dist/
+.vscode/
 
 changes.md
 
