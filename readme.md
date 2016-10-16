@@ -41,7 +41,7 @@ sudo curl -o- https://raw.githubusercontent.com/Webinate/users/dev/install-scrip
 
 4) Now build the project with gulp
 
-    gulp build-all
+    gulp build
 
 This will create a dist folder that contains the built application. But we still need to add the dependencies that
 the application itself requires.
