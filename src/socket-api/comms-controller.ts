@@ -32,9 +32,6 @@ export class CommsController extends events.EventEmitter {
         CommsController.singleton = this;
         this._connections = [];
         this._cfg = cfg;
-        this._hashedApiKey = bcrypt.hashSync( cfg.websocket.socketApiKey );
-
-
     }
 
     /**
@@ -162,6 +159,12 @@ export class CommsController extends events.EventEmitter {
 	 */
     async initialize(): Promise<void> {
         let cfg = this._cfg;
+
+        // Throw error if no socket api key
+        if ( !cfg.websocket.socketApiKey )
+            throw new Error( 'The socketApiKey was not set in the config file. Make sure it exists (Check the example-config.json) ' );
+
+        this._hashedApiKey = bcrypt.hashSync( cfg.websocket.socketApiKey );
 
         // dummy request processing - this is not actually called as its handed off to the socket api
         const processRequest = function( req, res ) {
