@@ -42,12 +42,16 @@
         "email": "root_email@host.com",
         "password": "CHANGE_THIS_PASSWORD"
     },
+    "mail": {
+        "type": "mailgun",
+        "from": "webinate",
+        "options": {
+            "domain": "",
+            "apiKey": ""
+        }
+    },
     "google": {
         "keyFile": "",
-        "mail": {
-            "apiEmail": "",
-            "from": ""
-        },
         "bucket": {
             "projectId": "",
             "bucketsCollection": "buckets",
