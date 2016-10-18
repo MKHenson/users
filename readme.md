@@ -5,7 +5,7 @@ server with a RESTful API that allows you to interact with the underlying functi
 Node Package Manager (NPM) and a running instance of mongoDB
 
 ## Current stable version
-* Version 0.4.0
+* Version 0.4.1
 
 ## Requirements
 * [MongoDB v3](https://www.mongodb.com/)
@@ -41,7 +41,7 @@ sudo curl -o- https://raw.githubusercontent.com/Webinate/users/dev/install-scrip
 
 4) Now build the project with gulp
 
-    gulp build-all
+    gulp build
 
 This will create a dist folder that contains the built application. But we still need to add the dependencies that
 the application itself requires.
