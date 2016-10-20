@@ -27,8 +27,7 @@ export class BucketController extends Controller {
 
 	/**
 	 * Creates an instance of the user manager
-	 * @param userCollection The mongo collection that stores the users
-	 * @param sessionCollection The mongo collection that stores the session data
+	 * @param e The express app
 	 * @param The config options of this manager
 	 */
     constructor( e: express.Express, config: users.IConfig ) {
