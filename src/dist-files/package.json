@@ -1,37 +1,37 @@
 {
-        "name": "webinate-users",
-        "version": "0.4.1",
-        "description": "User management helper for the webinate product range",
-        "main": "server/Main.js",
-        "repository": {
-                "type": "git",
-                "url": "https://github.com/Webinate/users.git"
-        },
-        "author": "Mathew Henson <mat@webinate.net> (http://webinate.net)",
-        "license": "ISC",
-        "bugs": {
-                "url": "https://github.com/Webinate/users/issues"
-        },
-        "homepage": "https://github.com/Webinate/users",
-        "dependencies": {
-                "entities": "~1.1.1",
-                "morgan": "~1.5.1",
-                "winston": "~1.0.0",
-                "express": "~4.12.2",
-                "body-parser": "~1.12.0",
-                "method-override": "~2.3.1",
-                "mongodb": "~2.0.21",
-                "validator": "~3.39.0",
-                "bcryptjs": "~2.2.0",
-                "yargs": "~3.12.0",
-                "mailgun-js": "^0.7.11",
-                "gcloud": "~0.24.1",
-                "googleapis": "~2.1.7",
-                "google-auth-library": "~0.9.7",
-                "multiparty": "~4.1.2",
-                "compression": "~1.5.1",
-                "compressible": "~2.0.4",
-                "ws": "~0.8.0",
-                "xoauth2": "~1.1.0"
-        }
+    "name": "webinate-users",
+    "version": "0.4.2",
+    "description": "User management helper for the webinate product range",
+    "main": "server/Main.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Webinate/users.git"
+    },
+    "author": "Mathew Henson <mat@webinate.net> (http://webinate.net)",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Webinate/users/issues"
+    },
+    "homepage": "https://github.com/Webinate/users",
+    "dependencies": {
+        "entities": "~1.1.1",
+        "morgan": "~1.5.1",
+        "winston": "~1.0.0",
+        "express": "~4.12.2",
+        "body-parser": "~1.12.0",
+        "method-override": "~2.3.1",
+        "mongodb": "~2.0.21",
+        "validator": "~3.39.0",
+        "bcryptjs": "~2.2.0",
+        "yargs": "~3.12.0",
+        "mailgun-js": "^0.7.11",
+        "gcloud": "~0.24.1",
+        "googleapis": "~2.1.7",
+        "google-auth-library": "~0.9.7",
+        "multiparty": "~4.1.2",
+        "compression": "~1.5.1",
+        "compressible": "~2.0.4",
+        "ws": "~0.8.0",
+        "xoauth2": "~1.1.0"
+    }
 }
