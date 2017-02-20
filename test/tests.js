@@ -155,7 +155,7 @@ describe( 'Testing user API functions', function() {
     describe( 'Checking basic authentication', function() {
         it( 'should not be logged in', function( done ) {
             agent
-                .get( '/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/users/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isNotTrue()
@@ -238,7 +238,7 @@ describe( 'Testing user API functions', function() {
     describe( 'Checking authentication with cookie', function() {
         it( 'should be logged in with hidden user details', function( done ) {
             agent
-                .get( '/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/users/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -262,7 +262,7 @@ describe( 'Testing user API functions', function() {
 
         it( 'should be logged in with visible user details', function( done ) {
             agent
-                .get( '/authenticated?verbose=true' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/users/authenticated?verbose=true' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -452,7 +452,7 @@ describe( 'Testing user API functions', function() {
     describe( 'Logging out', function() {
         it( 'should log out', function( done ) {
             agent
-                .get( '/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/users/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -466,7 +466,7 @@ describe( 'Testing user API functions', function() {
     describe( 'Checking authentication with stale session', function() {
         it( 'should veryify logged out', function( done ) {
             agent
-                .get( '/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/users/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -854,7 +854,7 @@ describe( 'Testing user API functions', function() {
 
         it( 'admin did logout', function( done ) {
             agent
-                .get( '/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/users/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -905,7 +905,7 @@ describe( 'Testing user API functions', function() {
 
         it( 'did not activate with an invalid username', function( done ) {
             agent
-                .get( '/activate-account?user=NONUSER' ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/users/activate-account?user=NONUSER' ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "error" )
@@ -915,7 +915,7 @@ describe( 'Testing user API functions', function() {
 
         it( 'did not activate with an valid username and no key', function( done ) {
             agent
-                .get( '/activate-account?user=george' ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/users/activate-account?user=george' ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "error" )
@@ -925,7 +925,7 @@ describe( 'Testing user API functions', function() {
 
         it( 'did not activate with an valid username and invalid key', function( done ) {
             agent
-                .get( '/activate-account?user=george&key=123' ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/users/activate-account?user=george&key=123' ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "error" )
@@ -949,7 +949,7 @@ describe( 'Testing user API functions', function() {
 
                                     // Logout again
                                     agent
-                                        .get( '/logout' ).set( 'Accept', 'application/json' )
+                                        .get( '/users/logout' ).set( 'Accept', 'application/json' )
                                         .set( 'Cookie', adminCookie )
                                         .end( function( err, res ) {
                                             if ( err ) return done( err );
@@ -966,7 +966,7 @@ describe( 'Testing user API functions', function() {
 
         it( 'did activate with a valid username and key', function( done ) {
             agent
-                .get( '/activate-account?user=george&key=' + activation ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/users/activate-account?user=george&key=' + activation ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "success" )
