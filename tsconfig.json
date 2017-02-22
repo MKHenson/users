@@ -13,7 +13,7 @@
     "outDir": "dist",
     "strictNullChecks": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": false
   },
   "include": [
     "src/references.d.ts",

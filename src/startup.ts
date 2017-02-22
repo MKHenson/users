@@ -14,7 +14,7 @@ import { UserController } from './controllers/user-controller';
 import { CORSController } from './controllers/cors-controller';
 import { ErrorController } from './controllers/error-controller';
 import { CommsController } from './socket-api/comms-controller';
-import { UserManager } from './users';
+import { prepare } from './db-preparation';
 import * as yargs from 'yargs';
 import * as mongodb from 'mongodb';
 
@@ -45,7 +45,7 @@ if ( !args.config || args.config.trim() === '' ) {
 
 // Make sure the file exists
 if ( !fs.existsSync( args.config ) ) {
-    winston.error( `Could not locate the config file at '${args.config}'`, { process: process.pid });
+    winston.error( `Could not locate the config file at '${ args.config }'`, { process: process.pid });
     process.exit();
 }
 
@@ -65,7 +65,7 @@ try {
     }
 }
 catch ( exp ) {
-    winston.error( `There was an error parsing the config file '${exp.toString()}'`, { process: process.pid }, function() {
+    winston.error( `There was an error parsing the config file '${ exp.toString() }'`, { process: process.pid }, function() {
         process.exit();
     });
 }
@@ -93,15 +93,14 @@ async function init() {
         winston.info( `Initializing controllers...`, { process: process.pid });
 
         // Create the user manager
-        this._userManager = UserManager.create( userCollection, sessionCollection, this._config );
-        await this._userManager.initialize();
+        await prepare( db, config! );
 
         await Promise.all( [
-            new CommsController( config! ).initialize(),
-            new CORSController( app, config! ).initialize(),
+            new CommsController( config! ).initialize( db ),
+            new CORSController( app, config! ).initialize( db ),
             new BucketController( app, config! ).initialize( db ),
             new UserController( app, config! ).initialize( db ),
-            new ErrorController( app ).initialize()
+            new ErrorController( app ).initialize( db )
         ] );
 
         // Use middlewares
@@ -111,27 +110,27 @@ async function init() {
         // Start node server.js
         const httpServer = http.createServer( app );
         httpServer.listen( { port: config!.portHTTP, host: config!.host });
-        winston.info( `Listening on ${config!.host}:${config!.portHTTP}`, { process: process.pid });
+        winston.info( `Listening on ${ config!.host }:${ config!.portHTTP }`, { process: process.pid });
 
         // If we use SSL then start listening for that as well
         if ( config!.ssl ) {
             if ( config!.sslIntermediate !== '' && !fs.existsSync( config!.sslIntermediate ) ) {
-                winston.error( `Could not find sslIntermediate: '${config!.sslIntermediate}'`, { process: process.pid });
+                winston.error( `Could not find sslIntermediate: '${ config!.sslIntermediate }'`, { process: process.pid });
                 process.exit();
             }
 
             if ( config!.sslCert !== '' && !fs.existsSync( config!.sslCert ) ) {
-                winston.error( `Could not find sslIntermediate: '${config!.sslCert}'`, { process: process.pid });
+                winston.error( `Could not find sslIntermediate: '${ config!.sslCert }'`, { process: process.pid });
                 process.exit();
             }
 
             if ( config!.sslRoot !== '' && !fs.existsSync( config!.sslRoot ) ) {
-                winston.error( `Could not find sslIntermediate: '${config!.sslRoot}'`, { process: process.pid });
+                winston.error( `Could not find sslIntermediate: '${ config!.sslRoot }'`, { process: process.pid });
                 process.exit();
             }
 
             if ( config!.sslKey !== '' && !fs.existsSync( config!.sslKey ) ) {
-                winston.error( `Could not find sslIntermediate: '${config!.sslKey}'`, { process: process.pid });
+                winston.error( `Could not find sslIntermediate: '${ config!.sslKey }'`, { process: process.pid });
                 process.exit();
             }
 
@@ -145,7 +144,7 @@ async function init() {
             const httpsServer = https.createServer( { key: privkey, cert: theCert, passphrase: config!.sslPassPhrase, ca: caChain }, app );
             httpsServer.listen( { port: port, host: config!.host });
 
-            winston.info( `Listening on HTTPS ${config!.host}:${port}`, { process: process.pid });
+            winston.info( `Listening on HTTPS ${ config!.host }:${ port }`, { process: process.pid });
         }
 
         // Done!
@@ -153,7 +152,7 @@ async function init() {
 
     }
     catch ( error ) {
-        winston.error( `An error has occurred and the application needs to shut down: '${error.message}' : '${error.stack}'`, { process: process.pid }, function() {
+        winston.error( `An error has occurred and the application needs to shut down: '${ error.message }' : '${ error.stack }'`, { process: process.pid }, function() {
             process.exit();
         });
     }

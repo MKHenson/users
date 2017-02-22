@@ -38,7 +38,7 @@ export class CORSController extends Controller {
                     }
 
                 if ( !matched )
-                    console.log( `${( <http.ServerRequest>req ).headers.origin} Does not have permission. Add it to the allowed ` );
+                    console.log( `${ ( <http.ServerRequest>req ).headers.origin } Does not have permission. Add it to the allowed ` );
             }
 
             if ( req.method === 'OPTIONS' ) {
@@ -48,12 +48,5 @@ export class CORSController extends Controller {
             else
                 next();
         });
-    }
-
-    /**
-     * All controllers must successfully return a promise for its initialization phase.
-     */
-    initialize(): Promise<void> {
-        return Promise.resolve();
     }
 }

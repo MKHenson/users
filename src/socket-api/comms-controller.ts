@@ -6,6 +6,7 @@ import * as events from 'events';
 import * as def from 'webinate-users';
 import * as https from 'https';
 import * as fs from 'fs';
+import * as mongodb from 'mongodb';
 import * as winston from 'winston';
 import { ServerInstructionType } from './socket-event-types';
 import { SocketAPI } from './socket-api';
@@ -80,10 +81,10 @@ export class CommsController extends events.EventEmitter {
 	 */
     processServerInstruction( instruction: ServerInstruction<def.SocketTokens.IToken> ) {
         if ( !instruction.token )
-            return winston.error( `Websocket error: An instruction was sent from '${instruction.from.domain}' without a token`, { process: process.pid });
+            return winston.error( `Websocket error: An instruction was sent from '${ instruction.from.domain }' without a token`, { process: process.pid });
 
         if ( !ServerInstructionType[ instruction.token.type ] )
-            return winston.error( `Websocket error: An instruction was sent from '${instruction.from.domain}' with a type that is not recognised`, { process: process.pid });
+            return winston.error( `Websocket error: An instruction was sent from '${ instruction.from.domain }' with a type that is not recognised`, { process: process.pid });
 
 
         this.emit( instruction.token.type, instruction );
@@ -105,7 +106,7 @@ export class CommsController extends events.EventEmitter {
 
             connection.ws.send( serializedData, {}, function( error: Error ) {
                 if ( error ) {
-                    winston.error( `Websocket broadcase error: '${error}'`, { process: process.pid });
+                    winston.error( `Websocket broadcase error: '${ error }'`, { process: process.pid });
                     reject( error );
                 }
 
@@ -121,7 +122,7 @@ export class CommsController extends events.EventEmitter {
         let headers = ws.upgradeReq.headers;
 
         if ( this._cfg.debugMode )
-            winston.info( `Websocket client connected: ${headers.origin}`, { process: process.pid })
+            winston.info( `Websocket client connected: ${ headers.origin }`, { process: process.pid })
 
         let clientApproved = false;
         for ( let domain of this._cfg.websocket.approvedSocketDomains ) {
@@ -148,7 +149,7 @@ export class CommsController extends events.EventEmitter {
 
         // The client was not approved - so kill the connection
         if ( !clientApproved ) {
-            winston.error( `A connection was made by ${headers.origin} but it is not on the approved domain list. Make sure the host is on the approvedSocketDomains parameter in the config file.` );
+            winston.error( `A connection was made by ${ headers.origin } but it is not on the approved domain list. Make sure the host is on the approvedSocketDomains parameter in the config file.` );
             ws.terminate();
             ws.close();
         }
@@ -157,7 +158,7 @@ export class CommsController extends events.EventEmitter {
     /**
 	 * Initializes the comms controller
 	 */
-    async initialize(): Promise<void> {
+    async initialize( db: mongodb.Db ): Promise<void> {
         let cfg = this._cfg;
 
         // Throw error if no socket api key

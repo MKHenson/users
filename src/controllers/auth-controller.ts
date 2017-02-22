@@ -3,7 +3,6 @@
 import express = require( 'express' );
 import bodyParser = require( 'body-parser' );
 import * as def from 'webinate-users';
-import * as mongodb from 'mongodb';
 import { UserManager } from '../users';
 import { ownerRights } from '../permission-controller';
 import { Controller } from './controller'
@@ -51,21 +50,10 @@ export class AuthController extends Controller {
         e.use( config.apiPrefix, router );
     }
 
-	/**
-	 * Called to initialize this controller and its related database objects
-	 */
-    async initialize( db: mongodb.Db ): Promise<void> {
-        const collections = await Promise.all( [
-            this.createCollection( this._config.userCollection, db )
-        ] );
-
-        const userCollection = collections[ 0 ];
-
-        await Promise.all( [
-            this.ensureIndex( userCollection, 'username' ),
-            this.ensureIndex( userCollection, 'createdOn' ),
-            this.ensureIndex( userCollection, 'lastLoggedIn' ),
-        ] );
+    /**
+     * All controllers must successfully return a promise for its initialization phase.
+     */
+    async initialize() {
         return;
     }
 
@@ -78,11 +66,11 @@ export class AuthController extends Controller {
         try {
             // Check the user's activation and forward them onto the admin message page
             await this._userManager.checkActivation( req.query.user, req.query.key );
-            res.redirect( `${redirectURL}?message=${encodeURIComponent( 'Your account has been activated!' )}&status=success&origin=${encodeURIComponent( req.query.origin )}` );
+            res.redirect( `${ redirectURL }?message=${ encodeURIComponent( 'Your account has been activated!' ) }&status=success&origin=${ encodeURIComponent( req.query.origin ) }` );
 
         } catch ( error ) {
             winston.error( error.toString(), { process: process.pid });
-            res.redirect( `${redirectURL}?message=${encodeURIComponent( error.message )}&status=error&origin=${encodeURIComponent( req.query.origin )}` );
+            res.redirect( `${ redirectURL }?message=${ encodeURIComponent( error.message ) }&status=error&origin=${ encodeURIComponent( req.query.origin ) }` );
         };
     }
 

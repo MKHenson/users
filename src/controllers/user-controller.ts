@@ -3,7 +3,6 @@
 import express = require( 'express' );
 import bodyParser = require( 'body-parser' );
 import * as def from 'webinate-users';
-import * as mongodb from 'mongodb';
 import { UserManager, UserPrivileges } from '../users';
 import { ownerRights, adminRights, identifyUser } from '../permission-controller';
 import { Controller } from './controller'
@@ -15,7 +14,6 @@ import * as winston from 'winston';
  * Main class to use for managing users
  */
 export class UserController extends Controller {
-    private _userManager: UserManager;
     private _config: def.IConfig;
 
 
@@ -65,30 +63,6 @@ export class UserController extends Controller {
         e.use( config.apiPrefix, router );
     }
 
-	/**
-	 * Called to initialize this controller and its related database objects
-	 */
-    async initialize( db: mongodb.Db ): Promise<void> {
-        const collections = await Promise.all( [
-            this.createCollection( this._config.userCollection, db ),
-            this.createCollection( this._config.sessionCollection, db )
-        ] );
-
-        const userCollection = collections[ 0 ];
-        const sessionCollection = collections[ 1 ];
-
-        await Promise.all( [
-            this.ensureIndex( userCollection, 'username' ),
-            this.ensureIndex( userCollection, 'createdOn' ),
-            this.ensureIndex( userCollection, 'lastLoggedIn' ),
-        ] );
-
-        // Create the user manager
-        this._userManager = UserManager.create( userCollection, sessionCollection, this._config );
-        await this._userManager.initialize();
-        return;
-    }
-
     /**
 	 * Gets a specific user by username or email - the 'username' parameter must be set. Some of the user data will be obscured unless the verbose parameter
      * is specified. Specify the verbose=true parameter in order to get all user data.
@@ -102,7 +76,7 @@ export class UserController extends Controller {
 
             okJson<def.IGetUser>( {
                 error: false,
-                message: `Found ${user.dbEntry.username}`,
+                message: `Found ${ user.dbEntry.username }`,
                 data: user.generateCleanedData( Boolean( req.query.verbose ) )
             }, res );
 
@@ -126,8 +100,8 @@ export class UserController extends Controller {
             verbose = false;
 
         try {
-            const totalNumUsers = await this._userManager.numUsers( new RegExp( req.query.search ) );
-            const users = await this._userManager.getUsers( parseInt( req.query.index ), parseInt( req.query.limit ), new RegExp( req.query.search ) );
+            const totalNumUsers = await UserManager.get.numUsers( new RegExp( req.query.search ) );
+            const users = await UserManager.get.getUsers( parseInt( req.query.index ), parseInt( req.query.limit ), new RegExp( req.query.search ) );
             const sanitizedData: def.IUserEntry[] = [];
 
             for ( let i = 0, l = users.length; i < l; i++ )
@@ -135,7 +109,7 @@ export class UserController extends Controller {
 
             okJson<def.IGetUsers>( {
                 error: false,
-                message: `Found ${users.length} users`,
+                message: `Found ${ users.length } users`,
                 data: sanitizedData,
                 count: totalNumUsers
             }, res );
@@ -150,12 +124,12 @@ export class UserController extends Controller {
 	 */
     private async getSessions( req: express.Request, res: express.Response ) {
         try {
-            const numSessions = await this._userManager.sessionManager.numActiveSessions();
-            const sessions = await this._userManager.sessionManager.getActiveSessions( parseInt( req.query.index ), parseInt( req.query.limit ) )
+            const numSessions = await UserManager.get.sessionManager.numActiveSessions();
+            const sessions = await UserManager.get.sessionManager.getActiveSessions( parseInt( req.query.index ), parseInt( req.query.limit ) )
 
             okJson<def.IGetSessions>( {
                 error: false,
-                message: `Found ${sessions.length} active sessions`,
+                message: `Found ${ sessions.length } active sessions`,
                 data: sessions,
                 count: numSessions
             }, res );
@@ -170,8 +144,8 @@ export class UserController extends Controller {
 	 */
     private async deleteSession( req: express.Request, res: express.Response ) {
         try {
-            await this._userManager.sessionManager.clearSession( req.params.id, req, res );
-            okJson<def.IResponse>( { error: false, message: `Session ${req.params.id} has been removed` }, res );
+            await UserManager.get.sessionManager.clearSession( req.params.id, req, res );
+            okJson<def.IResponse>( { error: false, message: `Session ${ req.params.id } has been removed` }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -186,12 +160,12 @@ export class UserController extends Controller {
 
         try {
             // Check the user's activation and forward them onto the admin message page
-            await this._userManager.checkActivation( req.query.user, req.query.key );
-            res.redirect( `${redirectURL}?message=${encodeURIComponent( 'Your account has been activated!' )}&status=success&origin=${encodeURIComponent( req.query.origin )}` );
+            await UserManager.get.checkActivation( req.query.user, req.query.key );
+            res.redirect( `${ redirectURL }?message=${ encodeURIComponent( 'Your account has been activated!' ) }&status=success&origin=${ encodeURIComponent( req.query.origin ) }` );
 
         } catch ( error ) {
             winston.error( error.toString(), { process: process.pid });
-            res.redirect( `${redirectURL}?message=${encodeURIComponent( error.message )}&status=error&origin=${encodeURIComponent( req.query.origin )}` );
+            res.redirect( `${ redirectURL }?message=${ encodeURIComponent( error.message ) }&status=error&origin=${ encodeURIComponent( req.query.origin ) }` );
         };
     }
 
@@ -202,7 +176,7 @@ export class UserController extends Controller {
         try {
             const origin = encodeURIComponent( req.headers[ 'origin' ] || req.headers[ 'referer' ] );
 
-            await this._userManager.resendActivation( req.params.user, origin );
+            await UserManager.get.resendActivation( req.params.user, origin );
             okJson<def.IResponse>( { error: false, message: 'An activation link has been sent, please check your email for further instructions' }, res );
 
         } catch ( err ) {
@@ -217,7 +191,7 @@ export class UserController extends Controller {
         try {
             const origin = encodeURIComponent( req.headers[ 'origin' ] || req.headers[ 'referer' ] );
 
-            await this._userManager.requestPasswordReset( req.params.user, origin );
+            await UserManager.get.requestPasswordReset( req.params.user, origin );
 
             okJson<def.IResponse>( { error: false, message: 'Instructions have been sent to your email on how to change your password' }, res );
 
@@ -241,7 +215,7 @@ export class UserController extends Controller {
                 throw new Error( 'Please specify a password' );
 
             // Check the user's activation and forward them onto the admin message page
-            await this._userManager.resetPassword( req.body.user, req.body.key, req.body.password );
+            await UserManager.get.resetPassword( req.body.user, req.body.key, req.body.password );
 
             okJson<def.IResponse>( { error: false, message: 'Your password has been reset' }, res );
 
@@ -255,7 +229,7 @@ export class UserController extends Controller {
 	 */
     private async approveActivation( req: express.Request, res: express.Response ) {
         try {
-            await this._userManager.approveActivation( req.params.user );
+            await UserManager.get.approveActivation( req.params.user );
             okJson<def.IResponse>( { error: false, message: 'Activation code has been approved' }, res );
 
         } catch ( err ) {
@@ -269,7 +243,7 @@ export class UserController extends Controller {
     private async login( req: express.Request, res: express.Response ) {
         try {
             const token: def.ILoginToken = req.body;
-            const user = await this._userManager.logIn( token.username, token.password, token.rememberMe, req, res );
+            const user = await UserManager.get.logIn( token.username, token.password, token.rememberMe, req, res );
 
             okJson<def.IAuthenticationResponse>( {
                 message: ( user ? 'User is authenticated' : 'User is not authenticated' ),
@@ -293,7 +267,7 @@ export class UserController extends Controller {
 	 */
     private async logout( req: express.Request, res: express.Response ) {
         try {
-            await this._userManager.logOut( req, res );
+            await UserManager.get.logOut( req, res );
             okJson<def.IResponse>( { error: false, message: 'Successfully logged out' }, res );
 
         } catch ( err ) {
@@ -311,7 +285,7 @@ export class UserController extends Controller {
             if ( !token.message )
                 throw new Error( 'Please specify a message to send' );
 
-            await this._userManager.sendAdminEmail( token.message, token.name, token.from );
+            await UserManager.get.sendAdminEmail( token.message, token.name, token.from );
             okJson<def.IResponse>( { error: false, message: 'Your message has been sent to the support team' }, res );
 
         } catch ( err ) {
@@ -325,7 +299,7 @@ export class UserController extends Controller {
     private async register( req: express.Request, res: express.Response ) {
         try {
             const token: def.IRegisterToken = req.body;
-            const user = await this._userManager.register( token.username!, token.password!, token.email!, token.captcha!, {}, req );
+            const user = await UserManager.get.register( token.username!, token.password!, token.email!, token.captcha!, {}, req );
 
             return okJson<def.IAuthenticationResponse>( {
                 message: ( user ? 'Please activate your account with the link sent to your email address' : 'User is not authenticated' ),
@@ -349,7 +323,7 @@ export class UserController extends Controller {
             val = {};
 
         try {
-            await this._userManager.setMeta( user, val );
+            await UserManager.get.setMeta( user, val );
             okJson<def.IResponse>( { message: `User's data has been updated`, error: false }, res );
 
         } catch ( err ) {
@@ -365,8 +339,8 @@ export class UserController extends Controller {
         const name = req.params.name;
 
         try {
-            await this._userManager.setMetaVal( user, name, req.body.value );
-            okJson<def.IResponse>( { message: `Value '${name}' has been updated`, error: false }, res );
+            await UserManager.get.setMetaVal( user, name, req.body.value );
+            okJson<def.IResponse>( { message: `Value '${ name }' has been updated`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -381,7 +355,7 @@ export class UserController extends Controller {
         const name = req.params.name;
 
         try {
-            const val = await this._userManager.getMetaVal( user, name );
+            const val = await UserManager.get.getMetaVal( user, name );
             okJson<any>( val, res );
 
         } catch ( err ) {
@@ -396,7 +370,7 @@ export class UserController extends Controller {
         const user = req._user!.dbEntry;
 
         try {
-            const val = await this._userManager.getMetaData( user );
+            const val = await UserManager.get.getMetaData( user );
             okJson<any>( val, res );
 
         } catch ( err ) {
@@ -413,9 +387,9 @@ export class UserController extends Controller {
             if ( !toRemove )
                 throw new Error( 'No user found' );
 
-            await this._userManager.removeUser( toRemove );
+            await UserManager.get.removeUser( toRemove );
 
-            return okJson<def.IResponse>( { message: `User ${toRemove} has been removed`, error: false }, res );
+            return okJson<def.IResponse>( { message: `User ${ toRemove } has been removed`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -436,10 +410,10 @@ export class UserController extends Controller {
             if ( token.privileges === UserPrivileges.SuperAdmin )
                 throw new Error( 'You cannot create a user with super admin permissions' );
 
-            const user = await this._userManager.createUser( token.username!, token.email, token.password, ( this._config.ssl ? 'https://' : 'http://' ) + this._config.host, token.privileges, token.meta );
+            const user = await UserManager.get.createUser( token.username!, token.email, token.password, ( this._config.ssl ? 'https://' : 'http://' ) + this._config.host, token.privileges, token.meta );
             okJson<def.IGetUser>( {
                 error: false,
-                message: `User ${user.dbEntry.username} has been created`,
+                message: `User ${ user.dbEntry.username } has been created`,
                 data: user.dbEntry
             }, res );
 
@@ -453,7 +427,7 @@ export class UserController extends Controller {
 	 */
     private async authenticated( req: express.Request, res: express.Response ) {
         try {
-            const user = await this._userManager.loggedIn( req, res );
+            const user = await UserManager.get.loggedIn( req, res );
             return okJson<def.IAuthenticationResponse>( {
                 message: ( user ? 'User is authenticated' : 'User is not authenticated' ),
                 authenticated: ( user ? true : false ),

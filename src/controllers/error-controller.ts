@@ -22,11 +22,4 @@ export class ErrorController extends Controller {
             return res.end( JSON.stringify( <def.IResponse>{ message: err.toString(), error: true }) );
         });
     }
-
-    /**
-     * All controllers must successfully return a promise for its initialization phase.
-     */
-    initialize(): Promise<void> {
-        return Promise.resolve();
-    }
 }
