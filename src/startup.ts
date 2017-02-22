@@ -14,6 +14,7 @@ import { UserController } from './controllers/user-controller';
 import { CORSController } from './controllers/cors-controller';
 import { ErrorController } from './controllers/error-controller';
 import { CommsController } from './socket-api/comms-controller';
+import { UserManager } from './users';
 import * as yargs from 'yargs';
 import * as mongodb from 'mongodb';
 
@@ -69,85 +70,95 @@ catch ( exp ) {
     });
 }
 
-winston.info( `Opening the database...`, { process: process.pid });
-openDB( config! ).then( function( db ) {
-    winston.info( `Initializing controllers...`, { process: process.pid });
-    return Promise.all( [
-        new CommsController( config! ).initialize(),
-        new CORSController( app, config! ).initialize(),
-        new BucketController( app, config! ).initialize( db ),
-        new UserController( app, config! ).initialize( db ),
-        new ErrorController( app ).initialize()
-    ] );
-
-}).then( function() {
-    // Use middlewares
-    app.use( morgan( 'dev' ) );
-    app.use( methodOverride() );
-
-    // Start node server.js
-    const httpServer = http.createServer( app );
-    httpServer.listen( { port: config!.portHTTP, host: config!.host });
-    winston.info( `Listening on ${config!.host}:${config!.portHTTP}`, { process: process.pid });
-
-    // If we use SSL then start listening for that as well
-    if ( config!.ssl ) {
-        if ( config!.sslIntermediate !== '' && !fs.existsSync( config!.sslIntermediate ) ) {
-            winston.error( `Could not find sslIntermediate: '${config!.sslIntermediate}'`, { process: process.pid });
-            process.exit();
-        }
-
-        if ( config!.sslCert !== '' && !fs.existsSync( config!.sslCert ) ) {
-            winston.error( `Could not find sslIntermediate: '${config!.sslCert}'`, { process: process.pid });
-            process.exit();
-        }
-
-        if ( config!.sslRoot !== '' && !fs.existsSync( config!.sslRoot ) ) {
-            winston.error( `Could not find sslIntermediate: '${config!.sslRoot}'`, { process: process.pid });
-            process.exit();
-        }
-
-        if ( config!.sslKey !== '' && !fs.existsSync( config!.sslKey ) ) {
-            winston.error( `Could not find sslIntermediate: '${config!.sslKey}'`, { process: process.pid });
-            process.exit();
-        }
-
-        const caChain = [ fs.readFileSync( config!.sslIntermediate ), fs.readFileSync( config!.sslRoot ) ];
-        const privkey = config!.sslKey ? fs.readFileSync( config!.sslKey ) : null;
-        const theCert = config!.sslCert ? fs.readFileSync( config!.sslCert ) : null;
-        const port = config!.portHTTPS ? config!.portHTTPS : 443;
-
-        winston.info( `Attempting to start SSL server...`, { process: process.pid });
-
-        const httpsServer = https.createServer( { key: privkey, cert: theCert, passphrase: config!.sslPassPhrase, ca: caChain }, app );
-        httpsServer.listen( { port: port, host: config!.host });
-
-        winston.info( `Listening on HTTPS ${config!.host}:${port}`, { process: process.pid });
-    }
-
-    // Done!
-    winston.info( 'Users is up and running!', { process: process.pid });
-
-}).catch( function( error: Error ) {
-    winston.error( `An error has occurred and the application needs to shut down: '${error.message}' : '${error.stack}'`, { process: process.pid }, function() {
-        process.exit();
-    });
-});
-
 /**
  * Connects to a mongo database
- * @param config
- * @param opts Any additional options
  */
-function openDB( config: IConfig, opts?: mongodb.ServerOptions ): Promise<mongodb.Db> {
-    return new Promise<mongodb.Db>( function( resolve, reject ) {
-        const mongoServer: mongodb.Server = new mongodb.Server( config.databaseHost, config.databasePort, opts );
-        const mongoDB: mongodb.Db = new mongodb.Db( config.databaseName, mongoServer, { w: 1 });
-        mongoDB.open( function( err: Error, db: mongodb.Db ) {
-            if ( err || !db )
-                reject( err );
-            else
-                resolve( db );
-        });
-    });
+async function openDB( config: IConfig, opts?: mongodb.ServerOptions ): Promise<mongodb.Db> {
+    const mongoServer: mongodb.Server = new mongodb.Server( config.databaseHost, config.databasePort, opts );
+    const mongoDB: mongodb.Db = new mongodb.Db( config.databaseName, mongoServer, { w: 1 });
+    return await mongoDB.open();
 }
+
+/**
+ * Initializes the db connection and controllers
+ */
+async function init() {
+    try {
+
+        winston.info( `Opening the database...`, { process: process.pid });
+
+        // Open the database
+        const db = await openDB( config! );
+
+        winston.info( `Initializing controllers...`, { process: process.pid });
+
+        // Create the user manager
+        this._userManager = UserManager.create( userCollection, sessionCollection, this._config );
+        await this._userManager.initialize();
+
+        await Promise.all( [
+            new CommsController( config! ).initialize(),
+            new CORSController( app, config! ).initialize(),
+            new BucketController( app, config! ).initialize( db ),
+            new UserController( app, config! ).initialize( db ),
+            new ErrorController( app ).initialize()
+        ] );
+
+        // Use middlewares
+        app.use( morgan( 'dev' ) );
+        app.use( methodOverride() );
+
+        // Start node server.js
+        const httpServer = http.createServer( app );
+        httpServer.listen( { port: config!.portHTTP, host: config!.host });
+        winston.info( `Listening on ${config!.host}:${config!.portHTTP}`, { process: process.pid });
+
+        // If we use SSL then start listening for that as well
+        if ( config!.ssl ) {
+            if ( config!.sslIntermediate !== '' && !fs.existsSync( config!.sslIntermediate ) ) {
+                winston.error( `Could not find sslIntermediate: '${config!.sslIntermediate}'`, { process: process.pid });
+                process.exit();
+            }
+
+            if ( config!.sslCert !== '' && !fs.existsSync( config!.sslCert ) ) {
+                winston.error( `Could not find sslIntermediate: '${config!.sslCert}'`, { process: process.pid });
+                process.exit();
+            }
+
+            if ( config!.sslRoot !== '' && !fs.existsSync( config!.sslRoot ) ) {
+                winston.error( `Could not find sslIntermediate: '${config!.sslRoot}'`, { process: process.pid });
+                process.exit();
+            }
+
+            if ( config!.sslKey !== '' && !fs.existsSync( config!.sslKey ) ) {
+                winston.error( `Could not find sslIntermediate: '${config!.sslKey}'`, { process: process.pid });
+                process.exit();
+            }
+
+            const caChain = [ fs.readFileSync( config!.sslIntermediate ), fs.readFileSync( config!.sslRoot ) ];
+            const privkey = config!.sslKey ? fs.readFileSync( config!.sslKey ) : null;
+            const theCert = config!.sslCert ? fs.readFileSync( config!.sslCert ) : null;
+            const port = config!.portHTTPS ? config!.portHTTPS : 443;
+
+            winston.info( `Attempting to start SSL server...`, { process: process.pid });
+
+            const httpsServer = https.createServer( { key: privkey, cert: theCert, passphrase: config!.sslPassPhrase, ca: caChain }, app );
+            httpsServer.listen( { port: port, host: config!.host });
+
+            winston.info( `Listening on HTTPS ${config!.host}:${port}`, { process: process.pid });
+        }
+
+        // Done!
+        winston.info( 'Users is up and running!', { process: process.pid });
+
+    }
+    catch ( error ) {
+        winston.error( `An error has occurred and the application needs to shut down: '${error.message}' : '${error.stack}'`, { process: process.pid }, function() {
+            process.exit();
+        });
+    }
+}
+
+// Fire up the engines!
+init();
+
