@@ -28,7 +28,7 @@ child = exec( 'git log ' + prevTag + '...' + nextTag + ' --pretty=format:"{ \\"a
                 if ( err )
                     throw err;
                 console.log( 'It\'s saved!' );
-            });
+            } );
         }
         catch ( err ) {
             console.log( 'Could not write file:  ' + err );
@@ -43,4 +43,4 @@ child = exec( 'git log ' + prevTag + '...' + nextTag + ' --pretty=format:"{ \\"a
     if ( error !== null ) {
         console.log( 'exec error: ' + error );
     }
-});
+} );

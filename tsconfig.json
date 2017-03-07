@@ -1,26 +1,26 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "removeComments": false,
-    "noEmitOnError": true,
-    "declaration": false,
-    "sourceMap": false,
-    "preserveConstEnums": true,
-    "target": "es6",
-    "noImplicitAny": false,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "outDir": "dist",
-    "strictNullChecks": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": false
-  },
-  "include": [
-    "src/references.d.ts",
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/definitions/generated/*",
-    "src/definitions/required/**/*"
-  ]
+    "compilerOptions": {
+        "module": "commonjs",
+        "removeComments": false,
+        "noEmitOnError": true,
+        "declaration": false,
+        "sourceMap": false,
+        "preserveConstEnums": true,
+        "target": "es6",
+        "noImplicitAny": false,
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "outDir": "dist",
+        "strictNullChecks": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": false
+    },
+    "include": [
+        "src/references.d.ts",
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "src/definitions/generated/*",
+        "src/definitions/required/**/*"
+    ]
 }
