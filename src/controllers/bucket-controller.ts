@@ -39,9 +39,9 @@ export class BucketController extends Controller {
         // Setup the rest calls
         const router = express.Router();
         router.use( compression() );
-        router.use( bodyParser.urlencoded( { 'extended': true }) );
+        router.use( bodyParser.urlencoded( { 'extended': true } ) );
         router.use( bodyParser.json() );
-        router.use( bodyParser.json( { type: 'application/vnd.api+json' }) );
+        router.use( bodyParser.json( { type: 'application/vnd.api+json' } ) );
 
         router.get( '/files/:id/download', <any>[ this.getFile.bind( this ) ] );
         router.get( '/users/:user/buckets/:bucket/files', <any>[ ownerRights, this.getFiles.bind( this ) ] );
@@ -61,7 +61,7 @@ export class BucketController extends Controller {
         router.put( '/files/:id/make-private', <any>[ requireUser, this.makePrivate.bind( this ) ] );
 
         // Register the path
-        e.use( `${ config.apiPrefix }`, router );
+        e.use( `${config.apiPrefix}`, router );
     }
 
     /**
@@ -82,7 +82,7 @@ export class BucketController extends Controller {
             const user = await UserManager.get.getUser( req.params.target );
 
             if ( !user )
-                throw new Error( `Could not find the user '${ req.params.target }'` );
+                throw new Error( `Could not find the user '${req.params.target}'` );
 
             req._target = user;
             next();
@@ -99,8 +99,8 @@ export class BucketController extends Controller {
         try {
             const value = parseInt( req.params.value );
             const manager = BucketManager.get;
-            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ apiCallsUsed: value });
-            okJson<def.IResponse>( { message: `Updated the user API calls to [${ value }]`, error: false }, res );
+            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ apiCallsUsed: value } );
+            okJson<def.IResponse>( { message: `Updated the user API calls to [${value}]`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -114,9 +114,9 @@ export class BucketController extends Controller {
         try {
             const value = parseInt( req.params.value );
             const manager = BucketManager.get;
-            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ memoryUsed: value });
+            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ memoryUsed: value } );
 
-            okJson<def.IResponse>( { message: `Updated the user memory to [${ value }] bytes`, error: false }, res );
+            okJson<def.IResponse>( { message: `Updated the user memory to [${value}] bytes`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -130,8 +130,8 @@ export class BucketController extends Controller {
         try {
             const value = parseInt( req.params.value );
             const manager = BucketManager.get;
-            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ apiCallsAllocated: value });
-            okJson<def.IResponse>( { message: `Updated the user API calls to [${ value }]`, error: false }, res );
+            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ apiCallsAllocated: value } );
+            okJson<def.IResponse>( { message: `Updated the user API calls to [${value}]`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -145,8 +145,8 @@ export class BucketController extends Controller {
         try {
             const value = parseInt( req.params.value );
             const manager = BucketManager.get;
-            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ memoryAllocated: value });
-            okJson<def.IResponse>( { message: `Updated the user memory to [${ value }] bytes`, error: false }, res );
+            await manager.updateStorage( req._target.dbEntry.username!, <users.IStorageStats>{ memoryAllocated: value } );
+            okJson<def.IResponse>( { message: `Updated the user memory to [${value}] bytes`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -168,7 +168,7 @@ export class BucketController extends Controller {
             const filesRemoved = await manager.removeFilesByIdentifiers( files, req._user!.dbEntry.username );
 
             okJson<users.IRemoveFiles>( {
-                message: `Removed [${ filesRemoved.length }] files`,
+                message: `Removed [${filesRemoved.length}] files`,
                 error: false,
                 data: filesRemoved,
                 count: filesRemoved.length
@@ -194,10 +194,10 @@ export class BucketController extends Controller {
             const fileEntry = await manager.getFile( req.params.file, req._user!.dbEntry.username );
 
             if ( !fileEntry )
-                throw new Error( `Could not find the file '${ req.params.file }'` );
+                throw new Error( `Could not find the file '${req.params.file}'` );
 
             await manager.renameFile( fileEntry, req.body.name );
-            okJson<def.IResponse>( { message: `Renamed file to '${ req.body.name }'`, error: false }, res );
+            okJson<def.IResponse>( { message: `Renamed file to '${req.body.name}'`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -220,7 +220,7 @@ export class BucketController extends Controller {
             const filesRemoved = await manager.removeBucketsByName( buckets, req._user!.dbEntry.username! );
 
             return okJson<users.IRemoveFiles>( {
-                message: `Removed [${ filesRemoved.length }] buckets`,
+                message: `Removed [${filesRemoved.length}] buckets`,
                 error: false,
                 data: filesRemoved,
                 count: filesRemoved.length
@@ -240,7 +240,7 @@ export class BucketController extends Controller {
             const stats = await manager.getUserStats( req._user!.dbEntry.username );
 
             return okJson<users.IGetUserStorageData>( {
-                message: `Successfully retrieved ${ req._user!.dbEntry.username }'s stats`,
+                message: `Successfully retrieved ${req._user!.dbEntry.username}'s stats`,
                 error: false,
                 data: stats
             }, res );
@@ -273,7 +273,7 @@ export class BucketController extends Controller {
             manager.incrementAPI( file.user! );
 
         } catch ( err ) {
-            winston.error( err.toString(), { process: process.pid });
+            winston.error( err.toString(), { process: process.pid } );
             return res.status( 404 ).send( 'File not found' );
         }
     }
@@ -342,13 +342,13 @@ export class BucketController extends Controller {
             bucketEntry = await manager.getIBucket( req.params.bucket, req._user!.dbEntry.username );
 
             if ( !bucketEntry )
-                throw new Error( `Could not find the bucket '${ req.params.bucket }'` );
+                throw new Error( `Could not find the bucket '${req.params.bucket}'` );
 
-            const count = await manager.numFiles( { bucketId: bucketEntry.identifier });
+            const count = await manager.numFiles( { bucketId: bucketEntry.identifier } );
             const files = await manager.getFilesByBucket( bucketEntry, index, limit, searchTerm );
 
             return okJson<users.IGetFiles>( {
-                message: `Found [${ count }] files`,
+                message: `Found [${count}] files`,
                 error: false,
                 data: files,
                 count: count
@@ -375,7 +375,7 @@ export class BucketController extends Controller {
             const buckets = await manager.getBucketEntries( user, searchTerm );
 
             return okJson<users.IGetBuckets>( {
-                message: `Found [${ buckets.length }] buckets`,
+                message: `Found [${buckets.length}] buckets`,
                 error: false,
                 data: buckets,
                 count: buckets.length
@@ -393,7 +393,7 @@ export class BucketController extends Controller {
         try {
             const manager = BucketManager.get;
             await manager.createUserStats( req.params.target );
-            okJson<users.IResponse>( { message: `Stats for the user '${ req.params.target }' have been created`, error: false }, res );
+            okJson<users.IResponse>( { message: `Stats for the user '${req.params.target}' have been created`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -425,14 +425,14 @@ export class BucketController extends Controller {
 
             const user = await UserManager.get.getUser( username );
             if ( !user )
-                throw new Error( `Could not find a user with the name '${ username }'` );
+                throw new Error( `Could not find a user with the name '${username}'` );
 
             const inLimits = await manager.withinAPILimit( username );
             if ( !inLimits )
                 throw new Error( `You have run out of API calls, please contact one of our sales team or upgrade your account.` );
 
             await manager.createBucket( bucketName, username );
-            okJson<users.IResponse>( { message: `Bucket '${ bucketName }' created`, error: false }, res );
+            okJson<users.IResponse>( { message: `Bucket '${bucketName}' created`, error: false }, res );
 
         } catch ( err ) {
             return errJson( err, res );
@@ -494,11 +494,11 @@ export class BucketController extends Controller {
 
             part.on( 'data', function( chunk ) {
                 data += chunk;
-            });
+            } );
 
             part.on( 'error', function( err: Error ) {
                 return reject( new Error( 'Could not download meta: ' + err.toString() ) );
-            });
+            } );
 
             part.on( 'end', function() {
                 try {
@@ -506,15 +506,15 @@ export class BucketController extends Controller {
                 } catch ( err ) {
                     return reject( new Error( 'Meta data is not a valid JSON: ' + err.toString() ) );
                 }
-            });
-        });
+            } );
+        } );
     }
 
     /**
 	 * Attempts to upload a file to the user's bucket
 	 */
     private uploadUserFiles( req: users.AuthRequest, res: express.Response ) {
-        const form = new multiparty.Form( { maxFields: 8, maxFieldsSize: 5 * 1024 * 1024, maxFilesSize: 10 * 1024 * 1024 });
+        const form = new multiparty.Form( { maxFields: 8, maxFieldsSize: 5 * 1024 * 1024, maxFilesSize: 10 * 1024 * 1024 } );
         let numParts = 0;
         let completedParts = 0;
         let closed = false;
@@ -529,7 +529,7 @@ export class BucketController extends Controller {
 
         manager.getIBucket( bucketName, username ).then(( bucketEntry ) => {
             if ( !bucketEntry )
-                return okJson<users.IUploadResponse>( { message: `No bucket exists with the name '${ bucketName }'`, error: true, tokens: [] }, res );
+                return okJson<users.IUploadResponse>( { message: `No bucket exists with the name '${bucketName}'`, error: true, tokens: [] }, res );
 
             let metaJson: any | Error;
 
@@ -584,12 +584,12 @@ export class BucketController extends Controller {
                         manager.uploadStream( part, bucketEntry, username, true, parentFile ).then( function( file ) {
                             fileUploaded( file, uploadToken );
 
-                        }).catch( function( err: Error ) {
+                        } ).catch( function( err: Error ) {
                             errFunc( err.toString(), uploadToken );
-                        });
+                        } );
                     }
                     else {
-                        errFunc( `File '${ part.filename }' cannot be uploaded as its file type is not currently supported`, uploadToken );
+                        errFunc( `File '${part.filename}' cannot be uploaded as its file type is not currently supported`, uploadToken );
                     }
                 }
                 // Check if this part is a meta tag
@@ -603,11 +603,11 @@ export class BucketController extends Controller {
                         completedParts++;
                         checkIfComplete();
 
-                    }).catch( function( err: Error ) {
+                    } ).catch( function( err: Error ) {
 
                         metaJson = err;
                         errFunc( err.toString(), null );
-                    })
+                    } )
                 }
                 // Check if this (non-file) stream is allowed
                 else if ( this.isPartAllowed( part ) ) {
@@ -620,35 +620,35 @@ export class BucketController extends Controller {
                     manager.uploadStream( part, bucketEntry, username, true, parentFile ).then( function( file ) {
                         fileUploaded( file, uploadToken );
 
-                    }).catch( function( err: Error ) {
+                    } ).catch( function( err: Error ) {
                         errFunc( err.toString(), uploadToken );
-                    });
+                    } );
                 }
                 else
                     part.resume();
-            });
+            } );
 
             // Close emitted after form parsed
             form.on( 'close', function() {
                 closed = true;
                 checkIfComplete();
-            });
+            } );
 
             // Checks if the connection is closed and all the parts have been uploaded
             const checkIfComplete = () => {
                 if ( closed && completedParts === numParts ) {
                     this.finalizeUploads( metaJson, filesUploaded, username, uploadedTokens ).then( function( token ) {
                         return okJson<users.IUploadResponse>( token, res );
-                    });
+                    } );
                 }
             }
 
             // Parse req
             form.parse( <express.Request><Express.Request>req );
 
-        }).catch( function( err ) {
+        } ).catch( function( err ) {
             return okJson<users.IUploadResponse>( { message: 'Could not get bucket: ' + err.toString(), error: true, tokens: [] }, res );
-        });
+        } );
     }
 
     /**
@@ -663,7 +663,7 @@ export class BucketController extends Controller {
         try {
             const manager = BucketManager.get;
             let error = false;
-            let msg = `Upload complete. [${ files.length }] Files have been saved.`;
+            let msg = `Upload complete. [${files.length}] Files have been saved.`;
 
             // If we have any an error with the meta, then remove all the uploaded files
             if ( meta && meta instanceof Error ) {
@@ -679,7 +679,7 @@ export class BucketController extends Controller {
             else if ( meta && meta && files.length > 0 ) {
                 const query = { $or: [] as users.IFileEntry[] };
                 for ( let i = 0, l = files.length; i < l; i++ ) {
-                    query.$or.push( <users.IFileEntry>{ _id: new mongodb.ObjectID( files[ i ]._id ) });
+                    query.$or.push( <users.IFileEntry>{ _id: new mongodb.ObjectID( files[ i ]._id ) } );
 
                     // Manually add the meta to the files
                     files[ i ].meta = meta;

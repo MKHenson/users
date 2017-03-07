@@ -47,7 +47,7 @@ export class SocketAPI {
             else
                 return UserManager.get.getMetaData( user.dbEntry );
 
-        }).then( function( metaVal ) {
+        } ).then( function( metaVal ) {
 
             let responseToken: def.SocketTokens.IMetaToken = {
                 type: ClientInstructionType[ ClientInstructionType.MetaRequest ],
@@ -58,7 +58,7 @@ export class SocketAPI {
 
             comms.processClientInstruction( new ClientInstruction<def.SocketTokens.IMetaToken>( responseToken, [ e.from ] ) );
 
-        }).catch( function( err: Error ) {
+        } ).catch( function( err: Error ) {
 
             let responseToken: def.SocketTokens.IMetaToken = {
                 type: ClientInstructionType[ ClientInstructionType.MetaRequest ],
@@ -66,6 +66,6 @@ export class SocketAPI {
             };
 
             comms.processClientInstruction( new ClientInstruction<def.SocketTokens.IMetaToken>( responseToken, [ e.from ] ) );
-        });
+        } );
     }
 }

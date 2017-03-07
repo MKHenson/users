@@ -30,20 +30,20 @@ export class ClientConnection {
             ws.on( 'close', this.onClose.bind( this ) );
             ws.on( 'error', this.onError.bind( this ) );
 
-        }).catch( this.onError );
+        } ).catch( this.onError );
     }
 
     /**
 	 * Called whenever we recieve a message from a client
 	 */
     private onMessage( message: string ) {
-        winston.info( `Received message from client: '${message}'`, { process: process.pid });
+        winston.info( `Received message from client: '${message}'`, { process: process.pid } );
         try {
             const token: def.SocketTokens.IToken = JSON.parse( message );
             this._controller.processServerInstruction( new ServerInstruction( token, this ) );
         }
         catch ( err ) {
-            winston.error( `Could not parse socket message: '${err}'`, { process: process.pid });
+            winston.error( `Could not parse socket message: '${err}'`, { process: process.pid } );
         }
     }
 
@@ -54,7 +54,7 @@ export class ClientConnection {
         if ( this.onDisconnected )
             this.onDisconnected( this );
 
-        winston.info( `Websocket disconnected: ${this.domain}`, { process: process.pid })
+        winston.info( `Websocket disconnected: ${this.domain}`, { process: process.pid } )
 
         this.ws.removeAllListeners( 'message' );
         this.ws.removeAllListeners( 'close' );
@@ -65,6 +65,6 @@ export class ClientConnection {
 	 * Called whenever an error has occurred
 	 */
     private onError( err: Error ) {
-        winston.error( `An error has occurred for web socket : '${err.message}'`, { process: process.pid })
+        winston.error( `An error has occurred for web socket : '${err.message}'`, { process: process.pid } )
     }
 }

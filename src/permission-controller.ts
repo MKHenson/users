@@ -12,13 +12,13 @@ export function ownerRights( req: def.AuthRequest, res: express.Response, next: 
     requestHasPermission( UserPrivileges.Admin, req, res, username ).then( function() {
         next();
 
-    }).catch( function( error: Error ) {
+    } ).catch( function( error: Error ) {
         res.setHeader( 'Content-Type', 'application/json' );
         return res.end( JSON.stringify( <def.IResponse>{
             message: error.message,
             error: true
-        }) );
-    });
+        } ) );
+    } );
 }
 
 /**
@@ -27,14 +27,14 @@ export function ownerRights( req: def.AuthRequest, res: express.Response, next: 
 export function adminRights( req: def.AuthRequest, res: express.Response, next: Function ): any {
     UserManager.get.loggedIn( <express.Request><Express.Request>req, res ).then( function( user ) {
         if ( !user )
-            return res.end( JSON.stringify( <def.IResponse>{ message: 'You must be logged in to make this request', error: true }) );
+            return res.end( JSON.stringify( <def.IResponse>{ message: 'You must be logged in to make this request', error: true } ) );
 
         req._user = user;
         if ( user.dbEntry.privileges > UserPrivileges.Admin )
-            return res.end( JSON.stringify( <def.IResponse>{ message: 'You don\'t have permission to make this request', error: true }) );
+            return res.end( JSON.stringify( <def.IResponse>{ message: 'You don\'t have permission to make this request', error: true } ) );
         else
             next();
-    });
+    } );
 }
 
 /**
@@ -45,9 +45,9 @@ export function identifyUser( req: def.AuthRequest, res: express.Response, next:
         req._user = null;
         next();
 
-    }).catch( function() {
+    } ).catch( function() {
         next();
-    });
+    } );
 }
 
 /**
@@ -60,15 +60,15 @@ export function requireUser( req: def.AuthRequest, res: express.Response, next: 
             return res.end( JSON.stringify( <def.IResponse>{
                 message: 'You must be logged in to make this request',
                 error: true
-            }) );
+            } ) );
         }
 
         req._user = user;
         next();
 
-    }).catch( function() {
+    } ).catch( function() {
         next();
-    });
+    } );
 }
 
 /**

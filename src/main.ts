@@ -40,7 +40,7 @@ else if ( cluster.isMaster ) {
     // List each of the process ID's
     Object.keys( cluster.workers ).forEach( function( id ) {
         console.log( 'Starting cluster with ID : ' + cluster.workers[ id ].process.pid );
-    });
+    } );
 
     // When a cluster dies - lets try start it up again
     cluster.on( 'exit', function( deadWorker ) {
@@ -56,7 +56,7 @@ else if ( cluster.isMaster ) {
         // Log the event
         console.log( `worker ${oldPID} died` );
         console.log( `worker ${newPID} born` );
-    });
+    } );
 }
 else {
     require( './startup.js' );

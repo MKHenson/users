@@ -77,7 +77,7 @@ export class SessionManager extends EventEmitter {
      * Gets an array of all active sessions
      */
     async numActiveSessions(): Promise<number> {
-        const result = await this._dbCollection.count( {});
+        const result = await this._dbCollection.count( {} );
         return result;
     }
 
@@ -87,7 +87,7 @@ export class SessionManager extends EventEmitter {
      * @param limit
      */
     async getActiveSessions( startIndex?: number, limit: number = -1 ): Promise<Array<ISessionEntry>> {
-        const results: Array<ISessionEntry> = await this._dbCollection.find( {}).skip( startIndex! ).limit( limit ).toArray();
+        const results: Array<ISessionEntry> = await this._dbCollection.find( {} ).skip( startIndex! ).limit( limit ).toArray();
         return results;
     }
 
@@ -103,14 +103,14 @@ export class SessionManager extends EventEmitter {
 
         if ( sId !== '' ) {
             // We have a session ID, lets try to find it in the DB
-            await this._dbCollection.find( <ISessionEntry>{ sessionId: sId }).limit( 1 ).next();
+            await this._dbCollection.find( <ISessionEntry>{ sessionId: sId } ).limit( 1 ).next();
 
             // Create a new session
             const session = new Session( sId, this._options );
             session.expiration = -1;
 
             // Deletes the session entry
-            await this._dbCollection.deleteOne( <ISessionEntry>{ sessionId: session.sessionId });
+            await this._dbCollection.deleteOne( <ISessionEntry>{ sessionId: session.sessionId } );
 
             this.emit( 'sessionRemoved', sId );
 
@@ -136,7 +136,7 @@ export class SessionManager extends EventEmitter {
 
         if ( sessionId !== '' ) {
             // We have a session ID, lets try to find it in the DB
-            const sessionDB: ISessionEntry = await this._dbCollection.find( { sessionId: sessionId }).limit( 1 ).next();
+            const sessionDB: ISessionEntry = await this._dbCollection.find( { sessionId: sessionId } ).limit( 1 ).next();
 
             // Cant seem to find any session - so create a new one
             if ( !sessionDB )
@@ -210,7 +210,7 @@ export class SessionManager extends EventEmitter {
 
                 // If the session's time is up
                 if ( expiration < now || force )
-                    toRemoveQuery.$or.push( <ISessionEntry>{ _id: sessions[ i ]._id, sessionId: sessions[ i ].sessionId });
+                    toRemoveQuery.$or.push( <ISessionEntry>{ _id: sessions[ i ]._id, sessionId: sessions[ i ].sessionId } );
                 else
                     // Session time is not up, but may be the next time target
                     next = next < expiration ? next : expiration;

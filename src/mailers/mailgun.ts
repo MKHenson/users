@@ -24,9 +24,9 @@ export class Mailguner implements def.IMailer {
     initialize( options: def.IMailgun ): Promise<boolean> {
 
         return new Promise(( resolve ) => {
-            this.mailgun = require( 'mailgun-js' )( { apiKey: options.apiKey, domain: options.domain });
+            this.mailgun = require( 'mailgun-js' )( { apiKey: options.apiKey, domain: options.domain } );
             resolve( true );
-        });
+        } );
     }
 
     /**
@@ -39,24 +39,24 @@ export class Mailguner implements def.IMailer {
     sendMail( to: string, from: string, subject: string, msg: string ): Promise<boolean> {
         return new Promise(( resolve, reject ) => {
 
-            winston.info( `Sending email to: ${to}`, { process: process.pid });
+            winston.info( `Sending email to: ${to}`, { process: process.pid } );
 
             if ( this._debugMode )
                 return resolve( true );
 
-            winston.info( `Sending: ${msg}`, { process: process.pid });
+            winston.info( `Sending: ${msg}`, { process: process.pid } );
 
             // Send the message
             this.mailgun.messages().send( { from: from, subject: subject, text: msg, to: to }, function( err, response ) {
 
                 if ( err ) {
-                    winston.error( `Could not send email to ${to}: ${err}`, { process: process.pid });
+                    winston.error( `Could not send email to ${to}: ${err}`, { process: process.pid } );
                     return reject( err );
                 }
 
-                winston.info( `Email sent ${JSON.stringify( response )} unmodified`, { process: process.pid });
+                winston.info( `Email sent ${JSON.stringify( response )} unmodified`, { process: process.pid } );
                 return resolve( true );
-            });
-        });
+            } );
+        } );
     }
 }

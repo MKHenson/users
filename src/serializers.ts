@@ -9,7 +9,7 @@ import * as winston from 'winston';
  */
 export function okJson<T extends def.IResponse>( data: T, res: express.Response ) {
     if ( data.error )
-        winston.error( data.message, { process: process.pid });
+        winston.error( data.message, { process: process.pid } );
 
     res.setHeader( 'Content-Type', 'application/json' );
     res.end( JSON.stringify( data ) );
@@ -19,7 +19,7 @@ export function okJson<T extends def.IResponse>( data: T, res: express.Response 
  * Helper function to return a status 200 json object of type T
  */
 export function errJson( err: Error, res: express.Response ) {
-    winston.error( err.message, { process: process.pid });
+    winston.error( err.message, { process: process.pid } );
     res.setHeader( 'Content-Type', 'application/json' );
-    res.end( JSON.stringify( <def.IResponse>{ error: true, message: err.message }) );
+    res.end( JSON.stringify( <def.IResponse>{ error: true, message: err.message } ) );
 }

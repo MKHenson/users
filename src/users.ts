@@ -137,7 +137,7 @@ export class UserManager {
             path: config.sessionPath,
             persistent: config.sessionPersistent,
             secure: config.ssl
-        });
+        } );
 
         this.sessionManager.on( 'sessionRemoved', this.onSessionRemoved.bind( this ) );
     }
@@ -149,12 +149,12 @@ export class UserManager {
         if ( !sessionId || sessionId === '' )
             return;
 
-        const useEntry: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ sessionId: sessionId }).limit( 1 ).next();
+        const useEntry: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ sessionId: sessionId } ).limit( 1 ).next();
         if ( useEntry ) {
             // Send logged out event to socket
             const token: def.SocketTokens.IUserToken = { username: useEntry.username!, type: ClientInstructionType[ ClientInstructionType.Logout ] };
             await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, useEntry.username ) );
-            winston.info( `User '${useEntry.username}' has logged out`, { process: process.pid });
+            winston.info( `User '${useEntry.username}' has logged out`, { process: process.pid } );
         }
 
         return;
@@ -185,7 +185,7 @@ export class UserManager {
         await this._userCollection.dropIndexes();
 
         // Make sure the user collection has an index to search the username field
-        await this._userCollection.createIndex( <def.IUserEntry>{ username: 'text', email: 'text' });
+        await this._userCollection.createIndex( <def.IUserEntry>{ username: 'text', email: 'text' } );
 
         // See if we have an admin user
         let user = await this.getUser( config.adminUser.username );
@@ -209,7 +209,7 @@ export class UserManager {
                 let data = '';
                 res.on( 'data', function( chunk ) {
                     data += chunk.toString();
-                });
+                } );
                 res.on( 'end', function() {
                     try {
                         const parsedData = JSON.parse( data );
@@ -221,10 +221,10 @@ export class UserManager {
                     } catch ( e ) {
                         return reject( new Error( 'There was an error connecting to Google Captcha: ' + e.message ) );
                     }
-                });
-            });
+                } );
+            } );
 
-        });
+        } );
     }
 
 	/**
@@ -290,13 +290,13 @@ export class UserManager {
             throw new Error( 'No user exists with the specified details' );
 
         // Clear the user's activation
-        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: '' } });
+        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: '' } } );
 
         // Send activated event
         const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Activated ] };
         await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
 
-        winston.info( `User '${username}' has been activated`, { process: process.pid });
+        winston.info( `User '${username}' has been activated`, { process: process.pid } );
         return;
     }
 
@@ -339,7 +339,7 @@ export class UserManager {
         user.dbEntry.registerKey = newKey;
 
         // Update the collection with a new key
-        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } });
+        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: newKey } } );
 
         // Send a message to the user to say they are registered but need to activate their account
         const message: string = 'Thank you for registering with Webinate!\nTo activate your account please click the link below:' +
@@ -379,7 +379,7 @@ export class UserManager {
         user.dbEntry.passwordTag = newKey;
 
         // Update the collection with a new key
-        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } });
+        await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: newKey } } );
 
         // Send a message to the user to say they are registered but need to activate their account
         const message: string = 'A request has been made to reset your password. To change your password please click the link below:\n\n' +
@@ -413,8 +413,8 @@ export class UserManager {
                     return reject( err )
                 else
                     return resolve( encrypted );
-            });
-        });
+            } );
+        } );
     }
 
     /**
@@ -429,8 +429,8 @@ export class UserManager {
                     return reject( err );
                 else
                     return resolve( same );
-            });
-        });
+            } );
+        } );
     }
 
     /**
@@ -458,7 +458,7 @@ export class UserManager {
         const hashed = await this.hashPassword( newPassword );
 
         // Update the key to be blank
-        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: '', password: hashed } });
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ passwordTag: '', password: hashed } } );
 
         // All done :)
         return true;
@@ -485,13 +485,13 @@ export class UserManager {
             throw new Error( 'Activation key is not valid. Please try send another.' );
 
         // Update the key to be blank
-        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: '' } });
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user.dbEntry._id }, { $set: <def.IUserEntry>{ registerKey: '' } } );
 
         // Send activated event
         const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Activated ] };
         await CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
 
-        winston.info( `User '${username}' has been activated`, { process: process.pid });
+        winston.info( `User '${username}' has been activated`, { process: process.pid } );
         return true;
     }
 
@@ -507,7 +507,7 @@ export class UserManager {
         if ( !session )
             return null;
 
-        const useEntry = await this._userCollection.find( { sessionId: session.sessionId }).limit( 1 ).next();
+        const useEntry = await this._userCollection.find( { sessionId: session.sessionId } ).limit( 1 ).next();
         if ( !useEntry )
             return null;
         else
@@ -566,7 +566,7 @@ export class UserManager {
             privileges: privilege,
             passwordTag: '',
             meta: meta
-        });
+        } );
 
         // Update the database
         const insertResult = await this._userCollection.insertOne( newUser.generateDbEntry() );
@@ -618,7 +618,7 @@ export class UserManager {
         username = userInstance.dbEntry.username!;
 
         await BucketManager.get.removeUser( username );
-        const result = await this._userCollection.deleteOne( <def.IUserEntry>{ _id: userInstance.dbEntry._id! });
+        const result = await this._userCollection.deleteOne( <def.IUserEntry>{ _id: userInstance.dbEntry._id! } );
 
         if ( result.deletedCount === 0 )
             throw new Error( 'Could not remove the user from the database' );
@@ -627,7 +627,7 @@ export class UserManager {
         const token: def.SocketTokens.IUserToken = { username: username, type: ClientInstructionType[ ClientInstructionType.Removed ] };
         CommsController.singleton.processClientInstruction( new ClientInstruction( token, null, username ) );
 
-        winston.info( `User '${username}' has been removed`, { process: process.pid });
+        winston.info( `User '${username}' has been removed`, { process: process.pid } );
 
         return;
     }
@@ -653,7 +653,7 @@ export class UserManager {
         const target = [ { email: email }, { username: user }];
 
         // Search the collection for the user
-        const userEntry: def.IUserEntry = await this._userCollection.find( { $or: target }).limit( 1 ).next();
+        const userEntry: def.IUserEntry = await this._userCollection.find( { $or: target } ).limit( 1 ).next();
         if ( !userEntry )
             return null;
         else
@@ -693,13 +693,13 @@ export class UserManager {
         user.dbEntry.lastLoggedIn = Date.now();
 
         // Update the collection
-        let result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } });
+        let result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { lastLoggedIn: user.dbEntry.lastLoggedIn } } );
 
         if ( result.matchedCount === 0 )
             throw new Error( 'Could not find the user in the database, please make sure its setup correctly' );
 
         const session: Session = await this.sessionManager.createSession( !rememberMe, response );
-        result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } });
+        result = await this._userCollection.updateOne( { _id: user.dbEntry._id }, { $set: { sessionId: session.sessionId } } );
 
         if ( result.matchedCount === 0 )
             throw new Error( 'Could not find the user in the database, please make sure its setup correctly' );
@@ -723,7 +723,7 @@ export class UserManager {
             return false;
 
         // Remove the user from the DB
-        const result = await this._userCollection.deleteOne( { _id: user.dbEntry._id });
+        const result = await this._userCollection.deleteOne( { _id: user.dbEntry._id } );
         if ( result.deletedCount === 0 )
             return false;
         else
@@ -743,7 +743,7 @@ export class UserManager {
             return false;
 
         // Remove the user from the DB
-        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {}) } });
+        await this._userCollection.updateOne( <def.IUserEntry>{ _id: user._id }, { $set: <def.IUserEntry>{ meta: ( data ? data : {} ) } } );
         return data;
     }
 
@@ -781,7 +781,7 @@ export class UserManager {
             return false;
 
         // Remove the user from the DB
-        const result: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ _id: user._id }).project( { _id: 0, meta: 1 }).limit( 1 ).next();
+        const result: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ _id: user._id } ).project( { _id: 0, meta: 1 } ).limit( 1 ).next();
         return result.meta[ name ];
     }
 
@@ -797,7 +797,7 @@ export class UserManager {
             return false;
 
         // Remove the user from the DB
-        const result: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ _id: user._id }).project( { _id: 0, meta: 1 }).limit( 1 ).next();
+        const result: def.IUserEntry = await this._userCollection.find( <def.IUserEntry>{ _id: user._id } ).project( { _id: 0, meta: 1 } ).limit( 1 ).next();
         return result.meta;
     }
 

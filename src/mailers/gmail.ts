@@ -45,14 +45,14 @@ export class GMailer implements def.IMailer {
             // Authorize a client with the loaded credentials
             this.authorize( this._keyFile )
                 .then( function() {
-                    winston.info( `Connected to Google Authentication`, { process: process.pid });
+                    winston.info( `Connected to Google Authentication`, { process: process.pid } );
                     resolve( true )
-                })
+                } )
                 .catch( function( err: Error ) {
-                    winston.error( `Could not authorize Google API: ${err.message}`, { process: process.pid });
+                    winston.error( `Could not authorize Google API: ${err.message}`, { process: process.pid } );
                     resolve( false );
-                });
-        });
+                } );
+        } );
     }
 
     /**
@@ -78,8 +78,8 @@ export class GMailer implements def.IMailer {
 
                 this._authorizer = jwt;
                 resolve( jwt );
-            });
-        });
+            } );
+        } );
     }
 
     /**
@@ -93,7 +93,7 @@ export class GMailer implements def.IMailer {
 
         return new Promise(( resolve, reject ) => {
 
-            winston.info( `Sending email to: ${to}`, { process: process.pid });
+            winston.info( `Sending email to: ${to}`, { process: process.pid } );
 
             // Build the message string
             const message = this.buildMessage( to, from, subject, msg );
@@ -101,7 +101,7 @@ export class GMailer implements def.IMailer {
             if ( this._debugMode )
                 return resolve( true );
 
-            winston.info( `Sending: ${message}`, { process: process.pid });
+            winston.info( `Sending: ${message}`, { process: process.pid } );
 
             // Send the message
             this.gmail.users.messages.insert( {
@@ -111,13 +111,13 @@ export class GMailer implements def.IMailer {
             }, ( err, response ) => {
 
                 if ( err ) {
-                    winston.error( `Could not send email to ${to}: ${err}`, { process: process.pid });
+                    winston.error( `Could not send email to ${to}: ${err}`, { process: process.pid } );
                     return reject( err );
                 }
 
                 // See explanation on next line
                 if ( this._apiEmail !== to ) {
-                    winston.info( `Email sent ${JSON.stringify( response )} unmodified`, { process: process.pid });
+                    winston.info( `Email sent ${JSON.stringify( response )} unmodified`, { process: process.pid } );
                     return resolve( true );
                 }
 
@@ -131,16 +131,16 @@ export class GMailer implements def.IMailer {
                     resource: { addLabelIds: [ 'UNREAD', 'INBOX', 'IMPORTANT' ] }
                 }, function( err ) {
                     if ( !err ) {
-                        winston.info( `Modified email sent ${JSON.stringify( response )}`, { process: process.pid });
+                        winston.info( `Modified email sent ${JSON.stringify( response )}`, { process: process.pid } );
                         return resolve( true );
                     }
                     else {
-                        winston.error( `Could not modify email ${JSON.stringify( response )}: ${err}`, { process: process.pid });
+                        winston.error( `Could not modify email ${JSON.stringify( response )}: ${err}`, { process: process.pid } );
                         return reject( err );
                     }
-                });
-            });
-        });
+                } );
+            } );
+        } );
     }
 
     /**
