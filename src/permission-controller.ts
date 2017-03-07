@@ -30,7 +30,7 @@ export function adminRights( req: def.AuthRequest, res: express.Response, next: 
             return res.end( JSON.stringify( <def.IResponse>{ message: 'You must be logged in to make this request', error: true } ) );
 
         req._user = user;
-        if ( user.dbEntry.privileges > UserPrivileges.Admin )
+        if ( user.dbEntry.privileges! > UserPrivileges.Admin )
             return res.end( JSON.stringify( <def.IResponse>{ message: 'You don\'t have permission to make this request', error: true } ) );
         else
             next();
@@ -86,10 +86,10 @@ export async function requestHasPermission( level: UserPrivileges, req: def.Auth
         throw new Error( 'You must be logged in to make this request' );
 
     if ( existingUser !== undefined ) {
-        if ( ( user.dbEntry.email !== existingUser && user.dbEntry.username !== existingUser ) && user.dbEntry.privileges > level )
+        if ( ( user.dbEntry.email !== existingUser && user.dbEntry.username !== existingUser ) && user.dbEntry.privileges! > level )
             throw new Error( 'You don\'t have permission to make this request' );
     }
-    else if ( user.dbEntry.privileges > level )
+    else if ( user.dbEntry.privileges! > level )
         throw new Error( 'You don\'t have permission to make this request' );
 
     req._user = user;

@@ -314,7 +314,7 @@ export class Session {
         this.sessionId = sessionId;
         this.data = { shortTerm: true };
         this.options = options;
-        this.expiration = ( new Date( Date.now() + options.lifetime * 1000 ) ).getTime();
+        this.expiration = ( new Date( Date.now() + options.lifetime! * 1000 ) ).getTime();
     }
 
     /**
@@ -334,7 +334,7 @@ export class Session {
         const data: ISessionEntry = {
             sessionId: this.sessionId,
             data: this.data,
-            expiration: ( new Date( Date.now() + ( this.data.shortTerm ? this.options.lifetime : this.options.lifetimeExtended ) * 1000 ) ).getTime()
+            expiration: ( new Date( Date.now() + ( this.data.shortTerm! ? this.options.lifetime! : this.options.lifetimeExtended! ) * 1000 ) ).getTime()
         };
         return data;
     }

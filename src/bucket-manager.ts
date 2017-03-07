@@ -387,9 +387,9 @@ export class BucketManager {
         await this.deleteGFile( bucketEntry.identifier!, fileEntry.identifier! );
 
         // Update the bucket data usage
-        await bucketCollection.updateOne( <users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size } } );
+        await bucketCollection.updateOne( <users.IBucketEntry>{ identifier: bucketEntry.identifier }, { $inc: <users.IBucketEntry>{ memoryUsed: -fileEntry.size! } } );
         await files.deleteOne( <users.IFileEntry>{ _id: fileEntry._id } );
-        await stats.updateOne( <users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size, apiCallsUsed: 1 } } );
+        await stats.updateOne( <users.IStorageStats>{ user: bucketEntry.user }, { $inc: <users.IStorageStats>{ memoryUsed: -fileEntry.size!, apiCallsUsed: 1 } } );
 
         // Update any listeners on the sockets
         const token: def.SocketTokens.IFileToken = { type: ClientInstructionType[ ClientInstructionType.FileRemoved ], file: fileEntry, username: fileEntry.user! };
@@ -487,8 +487,8 @@ export class BucketManager {
 
         const result: users.IStorageStats = await stats.find( <users.IStorageStats>{ user: user } ).limit( 1 ).next();
 
-        if ( result.memoryUsed + part.byteCount < result.memoryAllocated ) {
-            if ( result.apiCallsUsed + 1 < result.apiCallsAllocated )
+        if ( result.memoryUsed! + part.byteCount < result.memoryAllocated! ) {
+            if ( result.apiCallsUsed! + 1 < result.apiCallsAllocated! )
                 return result;
             else
                 throw new Error( 'You have reached your API call limit. Please upgrade your plan for more API calls' );
@@ -508,7 +508,7 @@ export class BucketManager {
         if ( !result )
             throw new Error( `Could not find the user ${user}` );
 
-        else if ( result.apiCallsUsed + 1 < result.apiCallsAllocated )
+        else if ( result.apiCallsUsed! + 1 < result.apiCallsAllocated! )
             return true;
         else
             return false;
