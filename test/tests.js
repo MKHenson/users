@@ -1,13 +1,15 @@
-var test = require( 'unit.js' );
-var fs = require( 'fs' );
-var ws = require( 'ws' );
+const test = require( 'unit.js' );
+const fs = require( 'fs' );
+const ws = require( 'ws' );
 
 // Load the file
-var jsonConfig = fs.readFileSync( "../dist/config.json", "utf8" )
+const jsonConfig = fs.readFileSync( "../dist/config.json", "utf8" );
+let config;
+
 try {
     // Parse the config
     console.log( "Parsing file config..." );
-    var config = JSON.parse( jsonConfig );
+    config = JSON.parse( jsonConfig );
 
 }
 catch ( exp ) {
@@ -15,18 +17,18 @@ catch ( exp ) {
     process.exit();
 }
 
-var apiPrefix = "";
-var agent = test.httpAgent( "http://" + config.host + ":" + config.portHTTP + apiPrefix );
-var adminCookie = "";
-var georgeCookie = "";
-var george2Cookie = "";
-var activation = "";
-var fileId = "";
-var publicURL = "";
-var wsClient;
+let apiPrefix = "";
+const agent = test.httpAgent( "http://" + config.host + ":" + config.portHTTP + apiPrefix );
+let adminCookie = "";
+let georgeCookie = "";
+let george2Cookie = "";
+let activation = "";
+let fileId = "";
+let publicURL = "";
+let wsClient;
 
 // A map of all web socket events
-var socketEvents = {
+const socketEvents = {
     login: null,
     logout: null,
     activated: null,
@@ -38,7 +40,7 @@ var socketEvents = {
     metaRequest: null,
 };
 
-var numWSCalls = {
+const numWSCalls = {
     login: 0,
     logout: 0,
     activated: 0,
@@ -55,7 +57,7 @@ var numWSCalls = {
  */
 function onWsEvent( data ) {
 
-    var token = JSON.parse( data );
+    const token = JSON.parse( data );
 
     if ( !token.type )
         throw new Error( "type does not exist on socket token" );
@@ -109,7 +111,7 @@ describe( 'Testing WS connectivity', function() {
 
     it( 'should not connect when the origin is not approved', function( done ) {
 
-        var socketUrl = "ws://localhost:" + config.websocket.port;
+        const socketUrl = "ws://localhost:" + config.websocket.port;
         wsClient = new ws( socketUrl, { headers: { origin: "badhost" } } );
 
         // Opens a stream to the users socket events
@@ -121,8 +123,8 @@ describe( 'Testing WS connectivity', function() {
 
     it( 'connected to the users socket API', function( done ) {
 
-        var socketUrl = "ws://localhost:" + config.websocket.port;
-        var options = { headers: { origin: "localhost" } };
+        const socketUrl = "ws://localhost:" + config.websocket.port;
+        const options = { headers: { origin: "localhost" } };
         options.headers[ 'users-api-key' ] = config.websocket.socketApiKey;
 
         wsClient = new ws( socketUrl, options );
@@ -1083,8 +1085,8 @@ describe( 'Testing user API functions', function() {
 describe( 'Testing WS API calls', function() {
 
     it( 'Cannot set meta data for unkown user', function( done ) {
-        var onMessge = function( data ) {
-            var response = JSON.parse( data );
+        const onMessge = function( data ) {
+            const response = JSON.parse( data );
             wsClient.removeListener( 'message', onMessge );
             test.string( response.error ).is( "Could not find user george3" )
             done();
@@ -1095,8 +1097,8 @@ describe( 'Testing WS API calls', function() {
     } );
 
     it( 'Can set meta data for user george', function( done ) {
-        var onMessge = function( data ) {
-            var response = JSON.parse( data );
+        const onMessge = function( data ) {
+            const response = JSON.parse( data );
             wsClient.removeListener( 'message', onMessge );
             test.string( response.val.sister ).is( "sam" )
             test.string( response.val.brother ).is( "mat" )
@@ -1108,8 +1110,8 @@ describe( 'Testing WS API calls', function() {
     } );
 
     it( 'Can get meta data for user george', function( done ) {
-        var onMessge = function( data ) {
-            var response = JSON.parse( data );
+        const onMessge = function( data ) {
+            const response = JSON.parse( data );
             wsClient.removeListener( 'message', onMessge );
             test.string( response.val.sister ).is( "sam" )
             test.string( response.val.brother ).is( "mat" )
@@ -1121,8 +1123,8 @@ describe( 'Testing WS API calls', function() {
     } );
 
     it( 'Can set the meta property "brother" for user george', function( done ) {
-        var onMessge = function( data ) {
-            var response = JSON.parse( data );
+        const onMessge = function( data ) {
+            const response = JSON.parse( data );
             wsClient.removeListener( 'message', onMessge );
             test.string( response.val ).is( "George's brother" )
             done();
@@ -1133,8 +1135,8 @@ describe( 'Testing WS API calls', function() {
     } );
 
     it( 'Can get the meta property "brother" for user george', function( done ) {
-        var onMessge = function( data ) {
-            var response = JSON.parse( data );
+        const onMessge = function( data ) {
+            const response = JSON.parse( data );
             wsClient.removeListener( 'message', onMessge );
             test.string( response.val ).is( "George's brother" )
             done();
