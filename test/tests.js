@@ -110,14 +110,14 @@ describe( 'Testing WS connectivity', function() {
     it( 'should not connect when the origin is not approved', function( done ) {
 
         var socketUrl = "ws://localhost:" + config.websocket.port;
-        wsClient = new ws( socketUrl, { headers: { origin: "badhost" } });
+        wsClient = new ws( socketUrl, { headers: { origin: "badhost" } } );
 
         // Opens a stream to the users socket events
         wsClient.on( 'close', function() {
             wsClient.close();
             return done();
-        });
-    })
+        } );
+    } )
 
     it( 'connected to the users socket API', function( done ) {
 
@@ -131,14 +131,14 @@ describe( 'Testing WS connectivity', function() {
         wsClient.on( 'open', function() {
             wsClient.on( 'message', onSocketMessage );
             return done();
-        });
+        } );
 
         // Report if there are any errors
         wsClient.on( 'error', function( err ) {
             return done( err );
-        });
-    })
-})
+        } );
+    } )
+} )
 
 
 describe( 'Hook WS API events', function() {
@@ -146,8 +146,8 @@ describe( 'Hook WS API events', function() {
     it( 'hooked all relevant events to (onWsEvent) event handler', function( done ) {
         wsClient.on( 'message', onWsEvent );
         done();
-    });
-});
+    } );
+} );
 
 
 describe( 'Testing user API functions', function() {
@@ -155,75 +155,75 @@ describe( 'Testing user API functions', function() {
     describe( 'Checking basic authentication', function() {
         it( 'should not be logged in', function( done ) {
             agent
-                .get( '/users/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isNotTrue()
                     test.bool( res.body.authenticated ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Checking login with admin user', function() {
 
         it( 'did not log in with empty credentials', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "", password: "" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "", password: "" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.bool( res.body.authenticated ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not log in with bad credentials', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "$%^\}{}\"&*[]@~�&$", password: "$%^&*�&@#`{}/\"�%\"$" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "$%^\}{}\"&*[]@~�&$", password: "$%^&*�&@#`{}/\"�%\"$" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.bool( res.body.authenticated ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not log in with false credentials', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "GeorgeTheTwat", password: "FakePass" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "GeorgeTheTwat", password: "FakePass" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.bool( res.body.authenticated ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not log in with a valid username but invalid password', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: config.adminUser.username, password: "FakePass" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: config.adminUser.username, password: "FakePass" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.bool( res.body.authenticated ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 25000 )
+                } );
+        } ).timeout( 25000 )
 
         it( 'did log in with a valid username & valid password', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: config.adminUser.username, password: config.adminUser.password })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: config.adminUser.username, password: config.adminUser.password } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isNotTrue()
@@ -231,14 +231,14 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     adminCookie = res.headers[ "set-cookie" ][ 0 ].split( ";" )[ 0 ];
                     done();
-                });
-        }).timeout( 25000 )
-    })
+                } );
+        } ).timeout( 25000 )
+    } )
 
     describe( 'Checking authentication with cookie', function() {
         it( 'should be logged in with hidden user details', function( done ) {
             agent
-                .get( '/users/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -257,12 +257,12 @@ describe( 'Testing user API functions', function() {
                     test.number( res.body.user.privileges ).is( 1 )
                     test.value( res.body.user.passwordTag ).isUndefined()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should be logged in with visible user details', function( done ) {
             agent
-                .get( '/users/authenticated?verbose=true' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/authenticated?verbose=true' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -281,9 +281,9 @@ describe( 'Testing user API functions', function() {
                     test.number( res.body.user.privileges ).is( 1 )
                     test.value( res.body.user.passwordTag )
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Getting user data with admin cookie', function() {
         it( 'should get admin user without details', function( done ) {
@@ -305,8 +305,8 @@ describe( 'Testing user API functions', function() {
                     test.number( res.body.data.privileges ).is( 1 )
                     test.value( res.body.data.passwordTag ).isUndefined()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should get admin user with details', function( done ) {
             agent
@@ -327,8 +327,8 @@ describe( 'Testing user API functions', function() {
                     test.number( res.body.data.privileges ).is( 1 )
                     test.value( res.body.data.passwordTag )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should get admin user by email without details', function( done ) {
             agent
@@ -349,8 +349,8 @@ describe( 'Testing user API functions', function() {
                     test.number( res.body.data.privileges ).is( 1 )
                     test.value( res.body.data.passwordTag ).isUndefined()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should get admin user by email with details', function( done ) {
             agent
@@ -371,13 +371,13 @@ describe( 'Testing user API functions', function() {
                     test.string( res.body.data.username ).is( config.adminUser.username )
                     test.number( res.body.data.privileges ).is( 1 )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did set user meta data of myself', function( done ) {
             agent
                 .post( "/users/" + config.adminUser.username + "/meta" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { value: { sister: "sam", brother: "mat" } })
+                .send( { value: { sister: "sam", brother: "mat" } } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -385,8 +385,8 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "User's data has been updated" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did get user meta "sister"', function( done ) {
             agent
@@ -396,8 +396,8 @@ describe( 'Testing user API functions', function() {
                     if ( err ) return done( err );
                     test.string( res.body ).is( "sam" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did get user meta "brother"', function( done ) {
             agent
@@ -407,13 +407,13 @@ describe( 'Testing user API functions', function() {
                     if ( err ) return done( err );
                     test.string( res.body ).is( "mat" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did update user meta "brother" to john', function( done ) {
             agent
                 .post( "/users/" + config.adminUser.username + "/meta/brother" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { value: "john" })
+                .send( { value: "john" } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -421,8 +421,8 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Value 'brother' has been updated" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did get user meta "brother" and its john', function( done ) {
             agent
@@ -432,8 +432,8 @@ describe( 'Testing user API functions', function() {
                     if ( err ) return done( err );
                     test.string( res.body ).is( "john" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did set clear all user data', function( done ) {
             agent
@@ -445,28 +445,28 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "User's data has been updated" )
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Logging out', function() {
         it( 'should log out', function( done ) {
             agent
-                .get( '/users/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Checking authentication with stale session', function() {
         it( 'should veryify logged out', function( done ) {
             agent
-                .get( '/users/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/authenticated' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -474,9 +474,9 @@ describe( 'Testing user API functions', function() {
                     test.bool( res.body.authenticated ).isNotTrue()
                     test.object( res.body ).hasProperty( "message" )
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'When not logged in', function() {
         it( 'should get no user with username', function( done ) {
@@ -488,8 +488,8 @@ describe( 'Testing user API functions', function() {
                     test.bool( res.body.error ).isTrue()
                     test.string( res.body.message ).is( "You must be logged in to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should get no user with email or verbose', function( done ) {
             agent
@@ -500,8 +500,8 @@ describe( 'Testing user API functions', function() {
                     test.bool( res.body.error ).isTrue()
                     test.string( res.body.message ).is( "You must be logged in to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should get no sessions', function( done ) {
             agent
@@ -512,21 +512,21 @@ describe( 'Testing user API functions', function() {
                     test.bool( res.body.error ).isTrue()
                     test.string( res.body.message ).is( "You must be logged in to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not be able to create a new user', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "George", password: "Password", email: "george@webinate.net", privileges: 1 })
+                .send( { username: "George", password: "Password", email: "george@webinate.net", privileges: 1 } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You must be logged in to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not be able to get user meta data', function( done ) {
             agent
@@ -537,123 +537,123 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You must be logged in to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
-    })
+    } )
 
     describe( 'Registering as a new user', function() {
         it( 'should not register with blank credentials', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "", password: "" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "", password: "" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Please enter a valid username" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with existing username', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: config.adminUser.username, password: "FakePass" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: config.adminUser.username, password: "FakePass" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "That username or email is already in use; please choose another or login." )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with blank username', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "", password: "FakePass" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "", password: "FakePass" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Please enter a valid username" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with blank password', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "sdfsdsdfsdfdf", password: "" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "sdfsdsdfsdfdf", password: "" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Password cannot be null or empty" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with bad characters', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "!\"�$%^^&&*()-=~#}{}", password: "!\"./<>;�$$%^&*()_+" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "!\"�$%^^&&*()-=~#}{}", password: "!\"./<>;�$$%^&*()_+" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Please only use alpha numeric characters for your username" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with valid information but no email', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "George", password: "Password" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "George", password: "Password" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Email cannot be null or empty" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with valid information but invalid email', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "George", password: "Password", email: "bad_email" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "George", password: "Password", email: "bad_email" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Please use a valid email address" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'should not register with valid information, email & no captcha', function( done ) {
             agent
-                .post( '/users/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "George", password: "Password", email: "george@webinate.net" })
+                .post( '/auth/register' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "George", password: "Password", email: "george@webinate.net" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Captcha cannot be null or empty" )
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Create a new user when logged in as admin', function() {
 
         it( 'did log in with an admin username & valid password', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: config.adminUser.username, password: config.adminUser.password })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: config.adminUser.username, password: config.adminUser.password } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isNotTrue()
@@ -661,15 +661,15 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     adminCookie = res.headers[ "set-cookie" ][ 0 ].split( ";" )[ 0 ];
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
 
 
         it( 'did not create a new user without a username', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "", password: "" })
+                .send( { username: "", password: "" } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -677,13 +677,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Username cannot be empty" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user without a password', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "", email: "thisisatest@test.com" })
+                .send( { username: "george", password: "", email: "thisisatest@test.com" } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -691,13 +691,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Password cannot be empty" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user with invalid characters', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "!\"�$%^&*()", password: "password" })
+                .send( { username: "!\"�$%^&*()", password: "password" } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -705,13 +705,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Username must be alphanumeric" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user without email', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password" })
+                .send( { username: "george", password: "password" } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -719,13 +719,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Email cannot be empty" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user with invalid email', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password", email: "matmat" })
+                .send( { username: "george", password: "password", email: "matmat" } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -733,13 +733,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Email must be valid" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user with invalid privilege', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password", email: "matmat@yahoo.com", privileges: 4 })
+                .send( { username: "george", password: "password", email: "matmat@yahoo.com", privileges: 4 } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -747,13 +747,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Privilege type is unrecognised" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user with an existing username', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: config.adminUser.username, password: "password", email: "matmat@yahoo.com", privileges: 2 })
+                .send( { username: config.adminUser.username, password: "password", email: "matmat@yahoo.com", privileges: 2 } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -761,13 +761,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "A user with that name or email already exists" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user with an existing email', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password", email: config.adminUser.email, privileges: 2 })
+                .send( { username: "george", password: "password", email: config.adminUser.email, privileges: 2 } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -775,13 +775,13 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "A user with that name or email already exists" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create user george with super admin privileges', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password", email: "thisisatest@test.com", privileges: 1 })
+                .send( { username: "george", password: "password", email: "thisisatest@test.com", privileges: 1 } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -789,20 +789,20 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You cannot create a user with super admin permissions" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did create regular user george with valid details', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password", email: "thisisatest@test.com", privileges: 3 })
+                .send( { username: "george", password: "password", email: "thisisatest@test.com", privileges: 3 } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.body.message ).is( "User george has been created" )
                     done();
-                });
-        }).timeout( 16000 )
+                } );
+        } ).timeout( 16000 )
 
         it( 'should get george when searching all registered users', function( done ) {
             agent
@@ -814,20 +814,20 @@ describe( 'Testing user API functions', function() {
                     test.bool( res.body.error ).isFalse()
                     test.value( res.body.data[ 0 ].password ).isUndefined()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did create another regular user george2 with valid details', function( done ) {
             agent
                 .post( '/users' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george2", password: "password", email: "thisisatest2@test.com", privileges: 3 })
+                .send( { username: "george2", password: "password", email: "thisisatest2@test.com", privileges: 3 } )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.body.message ).is( "User george2 has been created" )
                     done();
-                });
-        }).timeout( 16000 )
+                } );
+        } ).timeout( 16000 )
 
         it( 'did create an activation key for george', function( done ) {
             agent
@@ -838,37 +838,37 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body.data ).hasProperty( "registerKey" )
                     activation = res.body.data.registerKey
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did activate george2 through the admin', function( done ) {
             agent
-                .put( '/users/george2/approve-activation' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .put( '/auth/george2/approve-activation' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isFalse()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'admin did logout', function( done ) {
             agent
-                .get( '/users/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/logout' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', adminCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Checking user login with activation code present', function() {
 
         it( 'did not log in with an activation code present', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "george", password: "password" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
@@ -876,56 +876,56 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "Please authorise your account by clicking on the link that was sent to your email" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not resend an activation with an invalid user', function( done ) {
             agent
-                .get( '/users/NONUSER5/resend-activation' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/NONUSER5/resend-activation' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isTrue()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "No user exists with the specified details" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did resend an activation email with a valid user', function( done ) {
             agent
-                .get( '/users/george/resend-activation' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .get( '/auth/george/resend-activation' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isFalse()
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "An activation link has been sent, please check your email for further instructions" )
                     done();
-                });
-        }).timeout( 16000 )
+                } );
+        } ).timeout( 16000 )
 
         it( 'did not activate with an invalid username', function( done ) {
             agent
-                .get( '/users/activate-account?user=NONUSER' ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/auth/activate-account?user=NONUSER' ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "error" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not activate with an valid username and no key', function( done ) {
             agent
-                .get( '/users/activate-account?user=george' ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/auth/activate-account?user=george' ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "error" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not activate with an valid username and invalid key', function( done ) {
             agent
-                .get( '/users/activate-account?user=george&key=123' ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/auth/activate-account?user=george&key=123' ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "error" )
@@ -933,8 +933,8 @@ describe( 'Testing user API functions', function() {
                     // We need to get the new key - so we log in as admin, get the user details and then log out again
                     // Login as admin
                     agent
-                        .post( '/users/login' ).set( 'Accept', 'application/json' )
-                        .send( { username: config.adminUser.username, password: config.adminUser.password })
+                        .post( '/auth/login' ).set( 'Accept', 'application/json' )
+                        .send( { username: config.adminUser.username, password: config.adminUser.password } )
                         .end( function( err, res ) {
                             if ( err ) return done( err );
                             adminCookie = res.headers[ "set-cookie" ][ 0 ].split( ";" )[ 0 ];
@@ -949,35 +949,35 @@ describe( 'Testing user API functions', function() {
 
                                     // Logout again
                                     agent
-                                        .get( '/users/logout' ).set( 'Accept', 'application/json' )
+                                        .get( '/auth/logout' ).set( 'Accept', 'application/json' )
                                         .set( 'Cookie', adminCookie )
                                         .end( function( err, res ) {
                                             if ( err ) return done( err );
 
                                             // Finished
                                             done();
-                                        });
-                                });
+                                        } );
+                                } );
 
-                        });
-                });
+                        } );
+                } );
 
-        }).timeout( 30000 )
+        } ).timeout( 30000 )
 
         it( 'did activate with a valid username and key', function( done ) {
             agent
-                .get( '/users/activate-account?user=george&key=' + activation ).set( 'Accept', 'application/json' ).expect( 302 )
+                .get( '/auth/activate-account?user=george&key=' + activation ).set( 'Accept', 'application/json' ).expect( 302 )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.string( res.headers[ "location" ] ).contains( "success" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did log in with valid details and an activated account', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george", password: "password" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "george", password: "password" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     test.bool( res.body.error ).isNotTrue()
@@ -985,9 +985,9 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     georgeCookie = res.headers[ "set-cookie" ][ 0 ].split( ";" )[ 0 ];
                     done();
-                });
-        })
-    }).timeout( 20000 )
+                } );
+        } )
+    } ).timeout( 20000 )
 
     describe( 'Getting/Setting data when a regular user', function() {
 
@@ -1001,8 +1001,8 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not get sessions (no permission)', function( done ) {
             agent
@@ -1014,8 +1014,8 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not remove the admin user (no permission)', function( done ) {
             agent
@@ -1027,12 +1027,12 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not approve activation (no permission)', function( done ) {
             agent
-                .put( "/users/" + config.adminUser.username + "/approve-activation" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .put( "/auth/" + config.adminUser.username + "/approve-activation" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', georgeCookie )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
@@ -1040,8 +1040,8 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a new user (no permission)', function( done ) {
             agent
@@ -1053,8 +1053,8 @@ describe( 'Testing user API functions', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did get user data of myself', function( done ) {
             agent
@@ -1075,10 +1075,10 @@ describe( 'Testing user API functions', function() {
                     test.string( res.body.data.username ).is( "george" )
                     test.number( res.body.data.privileges ).is( 3 )
                     done();
-                });
-        }).timeout( 20000 )
-    })
-})
+                } );
+        } ).timeout( 20000 )
+    } )
+} )
 
 describe( 'Testing WS API calls', function() {
 
@@ -1091,8 +1091,8 @@ describe( 'Testing WS API calls', function() {
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify( { type: "MetaRequest", val: { sister: "sam", brother: "mat" }, username: "george3" }) );
-    });
+        wsClient.send( JSON.stringify( { type: "MetaRequest", val: { sister: "sam", brother: "mat" }, username: "george3" } ) );
+    } );
 
     it( 'Can set meta data for user george', function( done ) {
         var onMessge = function( data ) {
@@ -1104,8 +1104,8 @@ describe( 'Testing WS API calls', function() {
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify( { type: "MetaRequest", val: { sister: "sam", brother: "mat" }, username: "george" }) );
-    });
+        wsClient.send( JSON.stringify( { type: "MetaRequest", val: { sister: "sam", brother: "mat" }, username: "george" } ) );
+    } );
 
     it( 'Can get meta data for user george', function( done ) {
         var onMessge = function( data ) {
@@ -1117,8 +1117,8 @@ describe( 'Testing WS API calls', function() {
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify( { type: "MetaRequest", username: "george" }) );
-    });
+        wsClient.send( JSON.stringify( { type: "MetaRequest", username: "george" } ) );
+    } );
 
     it( 'Can set the meta property "brother" for user george', function( done ) {
         var onMessge = function( data ) {
@@ -1129,8 +1129,8 @@ describe( 'Testing WS API calls', function() {
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify( { type: "MetaRequest", property: "brother", val: "George's brother", username: "george" }) );
-    });
+        wsClient.send( JSON.stringify( { type: "MetaRequest", property: "brother", val: "George's brother", username: "george" } ) );
+    } );
 
     it( 'Can get the meta property "brother" for user george', function( done ) {
         var onMessge = function( data ) {
@@ -1141,9 +1141,9 @@ describe( 'Testing WS API calls', function() {
         }
 
         wsClient.on( 'message', onMessge );
-        wsClient.send( JSON.stringify( { type: "MetaRequest", property: "brother", username: "george" }) );
-    });
-})
+        wsClient.send( JSON.stringify( { type: "MetaRequest", property: "brother", username: "george" } ) );
+    } );
+} )
 
 describe( 'Checking media API', function() {
 
@@ -1159,8 +1159,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not get buckets for admin', function( done ) {
             agent
@@ -1172,8 +1172,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create stats for admin', function( done ) {
             agent
@@ -1185,8 +1185,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage calls for admin', function( done ) {
             agent
@@ -1198,8 +1198,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage memory for admin', function( done ) {
             agent
@@ -1211,8 +1211,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage allocated calls for admin', function( done ) {
             agent
@@ -1224,8 +1224,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage allocated memory for admin', function( done ) {
             agent
@@ -1237,8 +1237,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage calls for itself', function( done ) {
             agent
@@ -1250,8 +1250,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage memory for itself', function( done ) {
             agent
@@ -1263,8 +1263,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage allocated calls for itself', function( done ) {
             agent
@@ -1276,8 +1276,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create storage allocated memory for itself', function( done ) {
             agent
@@ -1289,8 +1289,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "message" )
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did get stats for itself', function( done ) {
             agent
@@ -1309,8 +1309,8 @@ describe( 'Checking media API', function() {
                     test.number( res.body.data.apiCallsUsed ).is( 1 )
                     test.number( res.body.data.memoryUsed ).is( 0 )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did get buckets for itself', function( done ) {
             agent
@@ -1324,8 +1324,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body ).hasProperty( "data" )
                     test.number( res.body.count ).is( 1 )
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not get files for another user\'s bucket', function( done ) {
             agent
@@ -1338,8 +1338,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not get files for a non existant bucket', function( done ) {
             agent
@@ -1352,8 +1352,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "Could not find the bucket 'test'" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a bucket for another user', function( done ) {
             agent
@@ -1366,8 +1366,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "You don't have permission to make this request" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a bucket with bad characters', function( done ) {
             agent
@@ -1380,8 +1380,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "Please only use safe characters" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did create a new bucket called dinosaurs', function( done ) {
             agent
@@ -1393,8 +1393,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "Bucket 'dinosaurs' created" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not create a bucket with the same name as an existing one', function( done ) {
             agent
@@ -1406,8 +1406,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "A Bucket with the name 'dinosaurs' has already been registered" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        })
+                } );
+        } )
 
         it( 'did create a bucket with a different name', function( done ) {
             agent
@@ -1419,8 +1419,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "Bucket 'dinosaurs2' created" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not delete any buckets when the name is wrong', function( done ) {
             agent
@@ -1433,8 +1433,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.data ).isEmpty()
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        })
+                } );
+        } )
 
         it( 'did get the 2 buckets for george', function( done ) {
             agent
@@ -1447,8 +1447,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.data ).hasLength( 3 )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not upload a file to a bucket that does not exist', function( done ) {
             agent
@@ -1463,8 +1463,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.tokens ).hasLength( 0 )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did upload a file to dinosaurs', function( done ) {
             agent
@@ -1484,8 +1484,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body.tokens[ 0 ] ).hasProperty( "file" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not upload a file when the meta was invalid', function( done ) {
             agent
@@ -1501,8 +1501,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.tokens ).hasLength( 0 )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not upload a file when the meta was invalid', function( done ) {
             agent
@@ -1518,8 +1518,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.tokens ).hasLength( 1 )
                     test.bool( res.body.error ).isFalse()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'fetched the files of the dinosaur bucket', function( done ) {
             agent
@@ -1552,8 +1552,8 @@ describe( 'Checking media API', function() {
                     publicURL = res.body.data[ 0 ].publicURL
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not make a non-file public', function( done ) {
             agent
@@ -1565,8 +1565,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "File '123' does not exist" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        })
+                } );
+        } )
 
         it( 'did not make a non-file private', function( done ) {
             agent
@@ -1578,8 +1578,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "File '123' does not exist" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        })
+                } );
+        } )
 
         it( 'did make a file public', function( done ) {
             agent
@@ -1592,8 +1592,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "File is now public" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did download the file off the bucket', function( done ) {
             test.httpAgent( publicURL )
@@ -1602,8 +1602,8 @@ describe( 'Checking media API', function() {
                     if ( err ) return done( err );
 
                     done();
-                });
-        })
+                } );
+        } )
 
         it( 'did make a file private', function( done ) {
             agent
@@ -1616,8 +1616,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "File is now private" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'updated its stats accordingly', function( done ) {
             agent
@@ -1630,8 +1630,8 @@ describe( 'Checking media API', function() {
                     test.number( res.body.data.memoryUsed ).is( 226 * 2 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did upload another file to dinosaurs2', function( done ) {
             agent
@@ -1652,8 +1652,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body.tokens[ 0 ] ).hasProperty( "file" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'updated its stats with the 2nd upload accordingly', function( done ) {
             agent
@@ -1666,8 +1666,8 @@ describe( 'Checking media API', function() {
                     test.number( res.body.data.memoryUsed ).is( 226 * 3 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not download a file with an invalid id anonomously', function( done ) {
             agent
@@ -1675,8 +1675,8 @@ describe( 'Checking media API', function() {
                 .end( function( err, res ) {
                     if ( err ) return done( err );
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did download an image file with a valid id anonomously', function( done ) {
             agent
@@ -1684,8 +1684,8 @@ describe( 'Checking media API', function() {
                 .end( function( err, res ) {
                     //if (err) return done(err);
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did update the api calls to 5', function( done ) {
             agent
@@ -1697,8 +1697,8 @@ describe( 'Checking media API', function() {
                     test.number( res.body.data.apiCallsUsed ).is( 11 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did upload another file to dinosaurs2', function( done ) {
             agent
@@ -1719,8 +1719,8 @@ describe( 'Checking media API', function() {
                     test.object( res.body.tokens[ 0 ] ).hasProperty( "file" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'fetched the uploaded file Id of the dinosaur2 bucket', function( done ) {
             agent
@@ -1731,15 +1731,15 @@ describe( 'Checking media API', function() {
                     test.bool( res.body.error ).isNotTrue()
                     fileId = res.body.data[ 1 ].identifier
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not rename an incorrect file to testy', function( done ) {
             agent
                 .put( "/files/123/rename-file" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', georgeCookie )
                 .set( "contentType", 'application/json' )
-                .send( { name: "testy" })
+                .send( { name: "testy" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
 
@@ -1747,15 +1747,15 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "File '123' does not exist" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not rename a correct file with an empty name', function( done ) {
             agent
                 .put( "/files/" + fileId + "/rename-file" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', georgeCookie )
                 .set( "contentType", 'application/json' )
-                .send( { name: "" })
+                .send( { name: "" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
 
@@ -1763,15 +1763,15 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "Please specify the new name of the file" )
                     test.bool( res.body.error ).isTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did rename a correct file to testy', function( done ) {
             agent
                 .put( "/files/" + fileId + "/rename-file" ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
                 .set( 'Cookie', georgeCookie )
                 .set( "contentType", 'application/json' )
-                .send( { name: "testy" })
+                .send( { name: "testy" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
 
@@ -1779,8 +1779,8 @@ describe( 'Checking media API', function() {
                     test.string( res.body.message ).is( "Renamed file to 'testy'" )
                     test.bool( res.body.error ).isNotTrue()
                     done()
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not remove a file from dinosaurs2 with a bad id', function( done ) {
             agent
@@ -1794,8 +1794,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.data ).hasLength( 0 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did remove a file from dinosaurs2 with a valid id', function( done ) {
             agent
@@ -1809,8 +1809,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.data ).hasLength( 1 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'updated its stats to reflect a file was deleted', function( done ) {
             agent
@@ -1823,8 +1823,8 @@ describe( 'Checking media API', function() {
                     test.number( res.body.data.memoryUsed ).is( 226 * 3 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did not remove a bucket with a bad name', function( done ) {
             agent
@@ -1838,8 +1838,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.data ).hasLength( 0 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'did remove the bucket dinosaurs2', function( done ) {
             agent
@@ -1853,8 +1853,8 @@ describe( 'Checking media API', function() {
                     test.array( res.body.data ).hasLength( 1 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
+                } );
+        } ).timeout( 20000 )
 
         it( 'updated its stats that both a file and bucket were deleted', function( done ) {
             agent
@@ -1867,16 +1867,16 @@ describe( 'Checking media API', function() {
                     test.number( res.body.data.memoryUsed ).is( 226 * 2 )
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
-    })
+                } );
+        } ).timeout( 20000 )
+    } )
 
     describe( 'Checking permission data for another regular user', function() {
 
         it( 'did log in with valid details for george2', function( done ) {
             agent
-                .post( '/users/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
-                .send( { username: "george2", password: "password" })
+                .post( '/auth/login' ).set( 'Accept', 'application/json' ).expect( 200 ).expect( 'Content-Type', /json/ )
+                .send( { username: "george2", password: "password" } )
                 .end( function( err, res ) {
                     if ( err ) return done( err );
 
@@ -1885,24 +1885,24 @@ describe( 'Checking media API', function() {
                     george2Cookie = res.headers[ "set-cookie" ][ 0 ].split( ";" )[ 0 ];
                     test.bool( res.body.error ).isNotTrue()
                     done();
-                });
-        }).timeout( 20000 )
-    })
-})
+                } );
+        } ).timeout( 20000 )
+    } )
+} )
 
 describe( 'Cleaning up', function() {
 
     it( 'We did log in as admin', function( done ) {
         // Login as admin
         agent
-            .post( '/users/login' ).set( 'Accept', 'application/json' )
-            .send( { username: config.adminUser.username, password: config.adminUser.password })
+            .post( '/auth/login' ).set( 'Accept', 'application/json' )
+            .send( { username: config.adminUser.username, password: config.adminUser.password } )
             .end( function( err, res ) {
                 if ( err ) return done( err );
                 adminCookie = res.headers[ "set-cookie" ][ 0 ].split( ";" )[ 0 ];
                 done();
-            })
-    })
+            } )
+    } )
 
     it( 'did remove any users called george', function( done ) {
         agent
@@ -1912,8 +1912,8 @@ describe( 'Cleaning up', function() {
                 if ( err ) return done( err );
                 test.string( res.body.message ).is( "User george has been removed" )
                 done();
-            });
-    }).timeout( 25000 )
+            } );
+    } ).timeout( 25000 )
 
     it( 'did remove any users called george2', function( done ) {
         agent
@@ -1923,9 +1923,9 @@ describe( 'Cleaning up', function() {
                 if ( err ) return done( err );
                 test.string( res.body.message ).is( "User george2 has been removed" )
                 done();
-            });
-    }).timeout( 25000 )
-})
+            } );
+    } ).timeout( 25000 )
+} )
 
 describe( 'Test WS API events are valid', function() {
 
@@ -1934,18 +1934,18 @@ describe( 'Test WS API events are valid', function() {
         test.object( socketEvents.logout ).hasProperty( 'username' );
         test.object( socketEvents.activated ).hasProperty( 'username' );
         done();
-    });
+    } );
 
     it( 'has valid fileAdded event properties', function( done ) {
         test.object( socketEvents.fileUploaded ).hasProperty( 'username' );
         test.object( socketEvents.fileUploaded ).hasProperty( 'file' );
         done();
-    });
+    } );
 
     it( 'has valid fileRemoved event properties', function( done ) {
         test.object( socketEvents.fileRemoved ).hasProperty( 'file' );
         done();
-    });
+    } );
 
     it( 'has valid bucket added event properties', function( done ) {
 
@@ -1958,7 +1958,7 @@ describe( 'Test WS API events are valid', function() {
         test.number( socketEvents.bucketUploaded.bucket.memoryUsed )
         test.string( socketEvents.bucketUploaded.bucket._id )
         done();
-    });
+    } );
 
     it( 'has valid bucket removed event properties', function( done ) {
         test.object( socketEvents.bucketRemoved ).hasProperty( 'bucket' );
@@ -1969,7 +1969,7 @@ describe( 'Test WS API events are valid', function() {
         test.number( socketEvents.bucketRemoved.bucket.memoryUsed )
         test.string( socketEvents.bucketRemoved.bucket._id )
         done();
-    });
+    } );
 
     it( 'has the correct number of events registered', function( done ) {
         test.number( numWSCalls.login ).is( 6 )
@@ -1982,8 +1982,8 @@ describe( 'Test WS API events are valid', function() {
         test.number( numWSCalls.metaRequest ).is( 5 )
         test.number( numWSCalls.removed ).is( 2 )
         done();
-    });
-});
+    } );
+} );
 
 describe( 'Cleaning up socket', function() {
 
@@ -1996,8 +1996,8 @@ describe( 'Cleaning up socket', function() {
             wsClient2 = null;
         }
         done();
-    })
-})
+    } )
+} )
 
 
 
