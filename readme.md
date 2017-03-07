@@ -85,7 +85,7 @@ By default the information of the user that is returned is obscured. You can tur
 by adding the *verbose=true* query parameter. The verbose parameter will only be respected for admin users and if the
 user making the call is the same as the user's details being requested.
 
-    `/authenticated`
+    `/auth/authenticated`
 
 **Request Type: GET**
 
@@ -94,7 +94,7 @@ user making the call is the same as the user's details being requested.
 
 **Examples**
 ```
-http://localhost:8000/api/authenticated
+http://localhost:8000/api/auth/authenticated
 
 {
 	message: "User is authenticated",
@@ -114,7 +114,7 @@ http://localhost:8000/api/authenticated
 
 Attempts to log the user in with the provided credentials
 
-    `/login`
+    `/auth/login`
 
 **Request Type: POST**
 
@@ -125,7 +125,7 @@ Attempts to log the user in with the provided credentials
 
 **Examples**
 ```
-http://localhost:8000/api/login
+http://localhost:8000/api/auth/login
 
 {
 	message: "User is authenticated",
@@ -139,13 +139,13 @@ http://localhost:8000/api/login
 
 Attempts to log out the current user. This removes the user's session and they will have to login again to be authenticated.
 
-    `/logout`
+    `/auth/logout`
 
 **Request Type: GET**
 
 **Examples**
 ```
-http://localhost:8000/api/logout
+http://localhost:8000/api/auth/logout
 
 {
 	message: "Successfully logged out",
@@ -237,7 +237,7 @@ Approves a user's activation code so they can login without email validation. Us
 they have to click a link to activate their account. This function allows you to approve a user without them
 doing that.
 
-    `/approve-activation/:user`
+    `/auth/approve-activation/:user`
 
 **Request Type: PUT**
 
@@ -246,7 +246,7 @@ doing that.
 
 **Example calls**
 ```
-http://localhost:8000/api/users/mat/approve-activation // Activates the account with the username "mat"
+http://localhost:8000/api/users/mat/auth/approve-activation // Activates the account with the username "mat"
 
 {
 	error: false,
@@ -261,7 +261,7 @@ http://localhost:8000/api/users/mat/approve-activation // Activates the account 
 Attempts to register a new user. This process will create a new user and send them an email with intructions
 on how to activate their account
 
-    `/register`
+    `/auth/register`
 
 **Request Type: POST**
 
@@ -274,7 +274,7 @@ on how to activate their account
 
 **Example calls**
 ```
-http://localhost:8000/api/register // Activates the account with the username "mat"
+http://localhost:8000/api/auth/register // Activates the account with the username "mat"
 
 {
 	error: false,
@@ -345,7 +345,7 @@ http://localhost:8000/api/users/mat/remove-user // Removes the account with the 
 ### Resend Activation Link
 Resends the activation link to the user
 
-    `/resend-activation/:user`
+    `/auth/resend-activation/:user`
 
 **Request Type: GET**
 
@@ -354,7 +354,7 @@ Resends the activation link to the user
 
 **Example calls**
 ```
-http://localhost:8000/api/users/mat/resend-activation // Sends an activation link to the user with the username "mat".
+http://localhost:8000/api/auth/resend-activation/mat // Sends an activation link to the user with the username "mat".
 {
 	error: false,
 	message: "An activation link has been sent, please check your email for further instructions"
@@ -366,7 +366,7 @@ http://localhost:8000/api/users/mat/resend-activation // Sends an activation lin
 ### Activation User Account
 Activates the user's account. After this function is called the server redirects the page to config.accountRedirectURL
 
-    `/activate-account`
+    `/auth/activate-account`
 
 **Request Type: GET**
 
@@ -376,7 +376,7 @@ Activates the user's account. After this function is called the server redirects
 
 **Example calls**
 ```
-http://localhost:8000/api/activate-account
+http://localhost:8000/api/auth/activate-account
 
 REDIRECTS THE PAGE TO  config.accountRedirectURL WITH THE QUERY PARAMS
 message=Your%20account%20is%20activated
@@ -390,7 +390,7 @@ Sends a password reset link the user's email and generates a password key that m
 The link generated is config.passwordResetURL with "key" and "user" query parameters. So if the passwordResetURL is 127.0.0.1 then
 the link would be something like 127.0.0.1?key=sdgthdf&user=mat
 
-    `/request-password-reset/:user`
+    `/auth/request-password-reset/:user`
 
 **Request Type: GET**
 
@@ -399,7 +399,7 @@ the link would be something like 127.0.0.1?key=sdgthdf&user=mat
 
 **Example calls**
 ```
-http://localhost:8000/api/users/mat/request-password-reset // Sends a password reset for the user with the username "mat".
+http://localhost:8000/api/auth/request-password-reset/mat // Sends a password reset for the user with the username "mat".
 {
 	error: false,
 	message: "Instructions have been sent to your email on how to change your password"
@@ -413,7 +413,7 @@ http://localhost:8000/api/users/mat/request-password-reset // Sends a password r
 Attempts to reset a user's password. This function requires you send the password change token which
 is sent to the user's email.
 
-    `/password-reset`
+    `/auth/password-reset`
 
 **Request Type: GET**
 
@@ -424,7 +424,7 @@ is sent to the user's email.
 
 **Example calls**
 ```
-http://localhost:8000/api/password-reset // Removes the account with the username "mat"
+http://localhost:8000/api/auth/password-reset // Removes the account with the username "mat"
 
 REDIRECTS THE PAGE TO config.passwordRedirectURL WITH THE QUERY PARAMETERS
 message="It was a success"
