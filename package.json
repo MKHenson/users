@@ -1,6 +1,6 @@
 {
     "name": "webinate-users",
-    "version": "0.4.2",
+    "version": "0.5.0",
     "description": "The server side code for App Engine. ",
     "main": "gulpfile.js",
     "author": "Mathew Henson",
