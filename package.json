@@ -12,11 +12,5 @@
         "tslint": "^4.5.1",
         "gulp-tslint": "^7.1.0",
         "glob": "^7.1.1"
-    },
-    "scripts": {
-        "patch": "node ./scripts/version-bumps.js patch",
-        "minor": "node ./scripts/version-bumps.js minor",
-        "major": "node ./scripts/version-bumps.js major",
-        "build": "node ./scripts/build.js"
     }
 }
