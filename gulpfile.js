@@ -22,11 +22,11 @@ gulp.task( 'tslint', [ 'ts-code' ], function() {
         .pipe( tslint( {
             configuration: 'tslint.json',
             formatter: 'verbose'
-        }) )
+        } ) )
         .pipe( tslint.report( {
             emitError: false
-        }) )
-});
+        } ) )
+} );
 
 // Builds each of the ts files into JS files in the output folder
 gulp.task( 'ts-code', function() {
@@ -35,22 +35,21 @@ gulp.task( 'ts-code', function() {
         .pipe( tsProject() );
 
     return tsResult.js.pipe( gulp.dest( './dist' ) );
-});
+} );
 
 // Copies the distribution files from src to the dist folder
 gulp.task( 'dist-files', function() {
-    return gulp.src( [ 'src/dist-files/*.json' ], { base: 'src/dist-files/' })
+    return gulp.src( [ 'src/dist-files/*.json' ], { base: 'src/dist-files/' } )
         .pipe( gulp.dest( './dist' ) );
-});
+} );
 
 // Builds each of the ts files into JS files in the output folder
 gulp.task( 'ts-code-definitions', function() {
-    return gulp.src( [ 'src/definitions/custom/users.d.ts' ], { base: 'src/definitions/custom/' })
+    return gulp.src( [ 'src/definitions/custom/users.d.ts' ], { base: 'src/definitions/custom/' } )
         .pipe( gulp.dest( './src/definitions/generated' ) );
-});
+} );
 
-
-gulp.task( 'bump-patch', function() { return setup.bumpVersion( setup.bumpPatchNum, configFiles ) });
-gulp.task( 'bump-minor', function() { return setup.bumpVersion( setup.bumpMidNum, configFiles ) });
-gulp.task( 'bump-major', function() { return setup.bumpVersion( setup.bumpMajorNum, configFiles ) });
+gulp.task( 'bump-patch', function() { return setup.bumpVersion( setup.bumpPatchNum, configFiles ) } );
+gulp.task( 'bump-minor', function() { return setup.bumpVersion( setup.bumpMidNum, configFiles ) } );
+gulp.task( 'bump-major', function() { return setup.bumpVersion( setup.bumpMajorNum, configFiles ) } );
 gulp.task( 'build', [ 'tslint', 'ts-code-definitions', 'dist-files' ] );

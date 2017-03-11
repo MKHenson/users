@@ -21,7 +21,7 @@ child = exec( 'git log ' + prevTag + '...' + nextTag + ' --pretty=format:"{ \\"a
 
         var changes = "";
         for ( var i = 0, l = json.length; i < l; i++ )
-            changes += `* ${json[ i ].title} - see ${json[ i ].commit} \n`;
+            changes += `* ${ json[ i ].title } - see ${ json[ i ].commit } \n`;
 
         try {
             fs.writeFile( 'changes.md', changes, function( err ) {
